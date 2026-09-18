@@ -38,6 +38,9 @@ let isFirstLoad = true;
 const CC = ['#2563eb','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
 const DIV_COLORS = { 'PG2':'#2563eb','FM4':'#f59e0b','OP2':'#10b981' };
 const DIV_CLASS = { 'PG2':'pg2','FM4':'fm4','OP2':'op2' };
+// Palet khusus untuk jenis engine/irigator (muncul di card header)
+const ENG_COLORS = { 'DEM':'#f97316','DEC':'#dc2626','SPC':'#8b5cf6','PMP':'#06b6d4' };
+const IRR_COLORS = { 'BTI':'#ec4899','RKD':'#06b6d4','KPP':'#84cc16','SPR':'#6366f1' };
 const GRID_COLOR='rgba(148,163,184,0.12)';
 const TICK_COLOR='#64748b';
 
@@ -403,6 +406,8 @@ function applyFilters() {
     renderOverview();
     renderDamageTab();
     renderDivisiTab();
+    renderEngineTab();
+    renderIrrTab();
     renderCalendar();
     renderCalDayDetail();
     renderTable();
@@ -551,7 +556,7 @@ function mkDoughnutOpts(opts={}){
 
 function renderCharts() {
     // Destroy dulu semua
-    ['trend','status','lokasi','sparepart','jenis','divisi','divStacked'].forEach(k=>dk(k));
+    ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType'].forEach(k=>dk(k));
 
     // ==== TREND (overview tab) ====
     const trendEl = document.getElementById('trendChart');
@@ -730,6 +735,108 @@ function renderCharts() {
                         y:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true}
                     }
                 })
+            });
+        }
+    }
+
+    // ==== ENGINE TOP UNITS H-BAR (engine tab) ====
+    const engEl = document.getElementById('engineChart');
+    if(engEl && isElVisible(engEl)){
+        const eu = {};
+        filteredData.forEach(d=>{
+            if(d.engineCode&&d.engineCode!=='-'&&d.engineType&&d.engineType!=='-'){
+                const k = `${d.engineType} ${d.engineCode}`;
+                eu[k] = (eu[k]||0)+1;
+            }
+        });
+        const es = Object.entries(eu).sort((a,b)=>b[1]-a[1]).slice(0,12).reverse();
+        const ctx=engEl.getContext('2d');
+        if(ctx && es.length){
+            charts.engine = new Chart(ctx,{
+                type:'bar',
+                data:{labels:es.map(x=>x[0]),datasets:[{
+                    label:'Kerusakan',data:es.map(x=>x[1]),
+                    backgroundColor:es.map((x)=>{
+                        const t=x[0].split(' ')[0];
+                        return ENG_COLORS[t]||'#f97316';
+                    }),
+                    borderRadius:6,borderSkipped:false,borderWidth:0,maxBarThickness:24
+                }]},
+                options:mkOpts(true,{indexAxis:'y',plugins:{legend:{display:false},datalabels:false},scales:{
+                    x:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,title:{display:false}},
+                    y:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:11,weight:'600'}},border:{display:false}}
+                }})
+            });
+        }
+    }
+
+    // ==== ENGINE TYPE DONUT (engine tab) ====
+    const engTypeEl = document.getElementById('engineTypeChart');
+    if(engTypeEl && isElVisible(engTypeEl)){
+        const et = {};
+        filteredData.forEach(d=>{ if(d.engineType&&d.engineType!=='-') et[d.engineType]=(et[d.engineType]||0)+1; });
+        const labels = Object.keys(et);
+        const ctx=engTypeEl.getContext('2d');
+        if(ctx && labels.length){
+            charts.engineType = new Chart(ctx,{
+                type:'doughnut',
+                data:{labels,datasets:[{
+                    data:Object.values(et),
+                    backgroundColor:labels.map(l=>ENG_COLORS[l]||CC[labels.indexOf(l)%CC.length]),
+                    borderWidth:0,hoverOffset:6
+                }]},
+                options:mkDoughnutOpts()
+            });
+        }
+    }
+
+    // ==== IRIGATOR TOP UNITS H-BAR (irrigator tab) ====
+    const irrEl = document.getElementById('irrigatorChart');
+    if(irrEl && isElVisible(irrEl)){
+        const iu = {};
+        filteredData.forEach(d=>{
+            if(d.irrCode&&d.irrCode!=='-'&&d.irrType&&d.irrType!=='-'){
+                const k = `${d.irrType} ${d.irrCode}`;
+                iu[k] = (iu[k]||0)+1;
+            }
+        });
+        const is_ = Object.entries(iu).sort((a,b)=>b[1]-a[1]).slice(0,12).reverse();
+        const ctx=irrEl.getContext('2d');
+        if(ctx && is_.length){
+            charts.irrigator = new Chart(ctx,{
+                type:'bar',
+                data:{labels:is_.map(x=>x[0]),datasets:[{
+                    label:'Kerusakan',data:is_.map(x=>x[1]),
+                    backgroundColor:is_.map((x)=>{
+                        const t=x[0].split(' ')[0];
+                        return IRR_COLORS[t]||'#ec4899';
+                    }),
+                    borderRadius:6,borderSkipped:false,borderWidth:0,maxBarThickness:24
+                }]},
+                options:mkOpts(true,{indexAxis:'y',plugins:{legend:{display:false}},scales:{
+                    x:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true},
+                    y:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:11,weight:'600'}},border:{display:false}}
+                }})
+            });
+        }
+    }
+
+    // ==== IRIGATOR TYPE DONUT (irrigator tab) ====
+    const irrTypeEl = document.getElementById('irrTypeChart');
+    if(irrTypeEl && isElVisible(irrTypeEl)){
+        const it = {};
+        filteredData.forEach(d=>{ if(d.irrType&&d.irrType!=='-') it[d.irrType]=(it[d.irrType]||0)+1; });
+        const labels = Object.keys(it);
+        const ctx=irrTypeEl.getContext('2d');
+        if(ctx && labels.length){
+            charts.irrType = new Chart(ctx,{
+                type:'doughnut',
+                data:{labels,datasets:[{
+                    data:Object.values(it),
+                    backgroundColor:labels.map(l=>IRR_COLORS[l]||CC[labels.indexOf(l)%CC.length]),
+                    borderWidth:0,hoverOffset:6
+                }]},
+                options:mkDoughnutOpts()
             });
         }
     }
@@ -1103,6 +1210,226 @@ function showDivisiDetails(dv){
     if(el) el.classList.toggle('hidden');
 }
 
+// ---------- Unit Tab (Engine & Irigator) builder ----------
+// unitKey: misal "DEM 0032" = type + " " + code
+// Returns object per-unit: { key, type, code, items, total, pending, proses, locMap, dmgMap, spMap, divMap, latest }
+function aggregateByUnit(typeField, codeField, data) {
+    const byKey = {};
+    data.forEach(d=>{
+        const t=d[typeField], c=d[codeField];
+        if(!t||t==='-'||!c||c==='-') return;
+        const k=`${t} ${c}`;
+        if(!byKey[k]) byKey[k]={type:t,code:c,key:k,items:[]};
+        byKey[k].items.push(d);
+    });
+    Object.values(byKey).forEach(u=>{
+        u.total = u.items.length;
+        u.pending = u.items.filter(x=>x.status==='Belum Ditangani').length;
+        u.proses = u.total - u.pending;
+        u.locMap = {}; u.dmgMap = {}; u.spMap = {}; u.divMap = {};
+        u.items.forEach(x=>{
+            if(x.lokasi&&x.lokasi!=='-') u.locMap[x.lokasi]=(u.locMap[x.lokasi]||0)+1;
+            if(x.damageType&&x.damageType!=='-') u.dmgMap[x.damageType]=(u.dmgMap[x.damageType]||0)+1;
+            if(x.sparepart&&x.sparepart!=='-') x.sparepart.split(/;\s*/).forEach(s=>{s=s.trim();if(s)u.spMap[s]=(u.spMap[s]||0)+1;});
+            if(x.divisi&&x.divisi!=='-') u.divMap[x.divisi]=(u.divMap[x.divisi]||0)+1;
+        });
+        u.latest = u.items.slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
+        u.firstSeen = u.items.slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp))[0];
+    });
+    return byKey;
+}
+function severityBadge(pctPending){
+    if(pctPending>60) return {cls:'bg-red-50 text-red-600',icon:'fa-triangle-exclamation',label:'Kritis'};
+    if(pctPending>30) return {cls:'bg-amber-50 text-amber-600',icon:'fa-circle-exclamation',label:'Perlu Perhatian'};
+    if(pctPending>0)  return {cls:'bg-emerald-50 text-emerald-600',icon:'fa-circle-check',label:'Terkendali'};
+    return {cls:'bg-emerald-50 text-emerald-600',icon:'fa-circle-check',label:'Selesai'};
+}
+function renderUnitTypeCards(cardsContainerId, data, typeField, colorMap, defaultColor, iconClass, emptyLabel){
+    const c = document.getElementById(cardsContainerId);
+    if(!c) return;
+    const types = {};
+    data.forEach(d=>{
+        const t=d[typeField]; if(!t||t==='-') return;
+        if(!types[t]) types[t]={type:t,items:[]};
+        types[t].items.push(d);
+    });
+    const entries = Object.values(types);
+    entries.sort((a,b)=>b.items.length-a.items.length);
+    if(!entries.length){ c.innerHTML=`<div class="card p-5 col-span-full text-center text-slate-400 text-xs italic"><i class="fas fa-inbox text-2xl mb-2 block text-slate-200"></i>${emptyLabel}</div>`; return; }
+    c.innerHTML = entries.map(t=>{
+        const total=t.items.length;
+        const pending=t.items.filter(x=>x.status==='Belum Ditangani').length;
+        const units = new Set(t.items.map(x=>x.engineCode||x.irrCode||'-').filter(v=>v&&v!=='-')).size;
+        const color = colorMap[t.type]||defaultColor;
+        // Top damage & sparepart
+        const dmg={}, sp={};
+        t.items.forEach(x=>{
+            if(x.damageType&&x.damageType!=='-') dmg[x.damageType]=(dmg[x.damageType]||0)+1;
+            if(x.sparepart&&x.sparepart!=='-') x.sparepart.split(/;\s*/).forEach(s=>{s=s.trim();if(s)sp[s]=(sp[s]||0)+1;});
+        });
+        const topDmg = Object.entries(dmg).sort((a,b)=>b[1]-a[1])[0];
+        const topSp = Object.entries(sp).sort((a,b)=>b[1]-a[1])[0];
+        return `<div class="card overflow-hidden card-hover">
+            <div class="p-4 text-white" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-lg"><i class="fas ${iconClass}"></i></div>
+                        <div>
+                            <div class="text-[10px] uppercase tracking-widest font-semibold opacity-80">Jenis</div>
+                            <h3 class="display-font font-bold text-xl">${escapeHtml(t.type)}</h3>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="stat-number text-3xl">${total}</div>
+                        <div class="text-[10px] opacity-80 font-semibold uppercase">laporan</div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3">
+                <div class="grid grid-cols-3 gap-2 mb-2 text-center">
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Unit</div><div class="text-base font-bold text-slate-700">${units}</div></div>
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Belum</div><div class="text-base font-bold text-slate-700">${pending}</div></div>
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Proses</div><div class="text-base font-bold text-amber-600">${total-pending}</div></div>
+                </div>
+                <div class="text-[10px] text-slate-600 space-y-0.5">
+                    ${topDmg?`<div><i class="fas fa-triangle-exclamation text-red-400 mr-1"></i>Kerusakan: <b>${escapeHtml(topDmg[0])}</b> (${topDmg[1]}×)</div>`:''}
+                    ${topSp?`<div><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart: <b>${escapeHtml(topSp[0])}</b></div>`:''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel){
+    const g = document.getElementById(gridId);
+    if(!g) return;
+    const units = Object.values(byUnit).sort((a,b)=>b.total-a.total);
+    if(!units.length){ g.innerHTML=`<div class="card p-10 col-span-full text-center text-slate-400 text-sm italic"><i class="fas fa-inbox text-4xl mb-2 block text-slate-200"></i>Tidak ada data unit pada filter ini</div>`; return; }
+    // Batasi yang ditampilkan; unit dengan >=2 laporan selalu tampil, sisanya top 12
+    const freq = units.filter(u=>u.total>=2);
+    const rest = units.filter(u=>u.total<2).slice(0,12);
+    const show = freq.length?freq.concat(rest.length?rest:[]).slice(0,24):units.slice(0,12);
+    const maxV = units[0].total;
+    g.innerHTML = show.map((u,idx)=>{
+        const color = colorMap[u.type]||defaultColor;
+        const pctP = Math.round(u.pending/u.total*100);
+        const sev = severityBadge(pctP);
+        const topLoc = Object.entries(u.locMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const topDmg = Object.entries(u.dmgMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const topSp = Object.entries(u.spMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const divs = Object.entries(u.divMap).sort((a,b)=>b[1]-a[1]);
+        const latest = u.latest;
+        const firstDt = fmtDateShort(u.firstSeen.timestamp);
+        const lastDt = fmtDateShort(latest.timestamp);
+        return `<div class="card p-4 card-hover">
+            <div class="flex items-start justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs flex-shrink-0 font-bold" style="background:${color}">${escapeHtml(u.type)}</div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <h4 class="font-bold text-slate-900 text-base leading-tight">${codeLabel} <span class="font-mono" style="color:${color}">${escapeHtml(u.code)}</span></h4>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${sev.cls}"><i class="fas ${sev.icon} text-[5px] mr-0.5"></i>${sev.label}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mt-0.5">Jenis ${escapeHtml(u.type)} · ${divs.map(x=>x[0]).join('/')||'-'}</div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end flex-shrink-0">
+                    <span class="stat-number text-2xl" style="color:${color}">${u.total}</span>
+                    <span class="text-[9px] text-slate-400 font-semibold uppercase">laporan</span>
+                </div>
+            </div>
+            <!-- Progress -->
+            <div class="mb-3">
+                <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                    <span>${u.pending} belum · ${u.proses} proses</span>
+                    <span>${pctP}% tertunda</span>
+                </div>
+                <div class="pbar"><span style="width:${pctP}%;background:${pctP>60?'#ef4444':pctP>30?'#f59e0b':'#10b981'}"></span></div>
+                <div class="text-[10px] text-slate-400 mt-1"><i class="far fa-calendar mr-0.5"></i>${firstDt === lastDt ? lastDt : firstDt+' → '+lastDt}</div>
+            </div>
+            <!-- 3 kolom info -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <div>
+                    <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1"><i class="fas fa-map-pin mr-0.5 text-red-400"></i>Lokasi</div>
+                    <div class="flex flex-wrap gap-1">
+                        ${topLoc.length?topLoc.map(([l,c])=>`<span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-semibold">${escapeHtml(l)}<span class="text-slate-400 ml-0.5">×${c}</span></span>`).join(''):'<span class="text-[10px] text-slate-400 italic">—</span>'}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1"><i class="fas fa-triangle-exclamation mr-0.5 text-purple-400"></i>Kerusakan</div>
+                    <div class="flex flex-wrap gap-1">
+                        ${topDmg.length?topDmg.map(([k,c])=>`<span class="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded text-[10px] font-semibold">${escapeHtml(k)}<span class="text-purple-400 ml-0.5">×${c}</span></span>`).join(''):'<span class="text-[10px] text-slate-400 italic">—</span>'}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1"><i class="fas fa-cog mr-0.5 text-amber-400"></i>Sparepart</div>
+                    <div class="flex flex-wrap gap-1">
+                        ${topSp.length?topSp.map(([s,c])=>`<span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-semibold">${escapeHtml(s.length>14?s.slice(0,13)+'…':s)}<span class="text-amber-400 ml-0.5">×${c}</span></span>`).join(''):'<span class="text-[10px] text-slate-400 italic">—</span>'}
+                    </div>
+                </div>
+            </div>
+            <!-- Detail laporan terbaru -->
+            <details class="group">
+                <summary class="text-[11px] font-semibold cursor-pointer list-none flex items-center gap-1" style="color:${color}"><i class="fas fa-chevron-right text-[9px] group-open:rotate-90 transition"></i>Detail ${u.items.length} laporan</summary>
+                <div class="mt-2 space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    ${u.items.slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).slice(0,10).map(d=>{
+                        const sb = d.status==='Proses'
+                            ? '<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses</span>'
+                            : '<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum</span>';
+                        return `<div class="p-2 rounded-lg bg-slate-50 text-[11px] border-l-2" style="border-color:${color}">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="font-semibold text-slate-700">${d.lokasi} · ${d.divisi}</span>
+                                <span class="text-[9px] text-slate-400">${fmtDateShort(d.timestamp)}</span>
+                            </div>
+                            <div class="text-slate-800 font-medium mb-0.5">${escapeHtml(d.damageType||'-')}</div>
+                            ${d.keterangan?`<div class="text-slate-600 mb-0.5">${escapeHtml(d.keterangan)}</div>`:''}
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                ${sb}
+                                ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700 text-[10px]"><i class="fas fa-cog text-[8px]"></i> ${escapeHtml(d.sparepart)}</span>`:''}
+                                ${d.prNumber?`<span class="text-blue-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </details>
+        </div>`;
+    }).join('');
+}
+// Utility: gelapkan/terangin hex
+function shade(hex,pct){
+    let c=hex.replace('#','');
+    if(c.length===3) c=c.split('').map(x=>x+x).join('');
+    const num=parseInt(c,16);
+    let r=(num>>16)+Math.round(255*pct/100);
+    let g=((num>>8)&0xff)+Math.round(255*pct/100);
+    let b=(num&0xff)+Math.round(255*pct/100);
+    r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function renderEngineTab(){
+    const typeCards = document.getElementById('engineTypeCards');
+    if(!typeCards) return;
+    // Filter data yang punya engine info
+    const engData = filteredData.filter(d=>d.engineType&&d.engineType!=='-'&&d.engineCode&&d.engineCode!=='-');
+    document.getElementById('engTotalTypes').textContent = new Set(engData.map(d=>d.engineType)).size;
+    document.getElementById('engTotalUnits').textContent = new Set(engData.map(d=>`${d.engineType} ${d.engineCode}`)).size;
+    document.getElementById('engTotalReports').textContent = engData.length;
+    renderUnitTypeCards('engineTypeCards', engData, 'engineType', ENG_COLORS, '#f97316', 'fa-oil-can', 'Belum ada data mesin pada filter ini');
+    const byUnit = aggregateByUnit('engineType','engineCode',filteredData);
+    renderUnitDetailGrid('engineDetailGrid', byUnit, ENG_COLORS, '#f97316', 'Kode');
+}
+function renderIrrTab(){
+    const typeCards = document.getElementById('irrTypeCards');
+    if(!typeCards) return;
+    const irrData = filteredData.filter(d=>d.irrType&&d.irrType!=='-'&&d.irrCode&&d.irrCode!=='-');
+    document.getElementById('irrTotalTypes').textContent = new Set(irrData.map(d=>d.irrType)).size;
+    document.getElementById('irrTotalUnits').textContent = new Set(irrData.map(d=>`${d.irrType} ${d.irrCode}`)).size;
+    document.getElementById('irrTotalReports').textContent = irrData.length;
+    renderUnitTypeCards('irrTypeCards', irrData, 'irrType', IRR_COLORS, '#ec4899', 'fa-spray-can', 'Belum ada data irigator pada filter ini');
+    const byUnit = aggregateByUnit('irrType','irrCode',filteredData);
+    renderUnitDetailGrid('irrDetailGrid', byUnit, IRR_COLORS, '#ec4899', 'Kode');
+}
+
 // ---------- Calendar ----------
 function renderCalendar() {
     const grid=document.getElementById('calendarGrid');
@@ -1271,10 +1598,16 @@ function nextPage(){const tp=Math.ceil(filteredData.length/state.pageSize);if(st
 function updateTabBadges(){
     const bd=document.getElementById('badgeDamage');
     const bv=document.getElementById('badgeDivisi');
+    const be=document.getElementById('badgeEngine');
+    const bi=document.getElementById('badgeIrr');
     const types = new Set(filteredData.map(d=>d.damageType).filter(v=>v&&v!=='-')).size;
     const divs = new Set(filteredData.map(d=>d.divisi).filter(v=>v&&v!=='-')).size;
+    const engUnits = new Set(filteredData.filter(d=>d.engineCode&&d.engineCode!=='-'&&d.engineType&&d.engineType!=='-').map(d=>`${d.engineType} ${d.engineCode}`)).size;
+    const irrUnits = new Set(filteredData.filter(d=>d.irrCode&&d.irrCode!=='-'&&d.irrType&&d.irrType!=='-').map(d=>`${d.irrType} ${d.irrCode}`)).size;
     if(bd) bd.textContent = types;
     if(bv) bv.textContent = divs;
+    if(be) be.textContent = engUnits;
+    if(bi) bi.textContent = irrUnits;
 }
 
 // ---------- Search debounce ----------
