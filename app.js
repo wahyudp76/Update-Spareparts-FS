@@ -110,6 +110,7 @@ function normalizeFromCSV(rows) {
         const spNorm = sp ? sp.replace(/[\r\n]+/g,'; ').replace(/\s*;\s*/g,'; ') : '-';
         const status = pr ? 'Proses' : 'Belum Ditangani';
         if (!lok && !ic && !dt && spNorm === '-') continue;
+        // Normalize engine field untuk menghindari null
         out.push({
             timestamp: tgl.toISOString(),
             tanggalInspeksi: tgl.toISOString().slice(0,10),
@@ -559,63 +560,112 @@ function renderCharts() {
     }
     filteredData.forEach(d=>{const k=getKey(new Date(d.timestamp));groups[k]=(groups[k]||0)+1;});
     const ctx=trendEl.getContext('2d');
-    const g=ctx.createLinearGradient(0,0,0,280);
-    g.addColorStop(0,'rgba(37,99,235,0.35)');g.addColorStop(1,'rgba(37,99,235,0)');
-    charts.trend = new Chart(ctx,{
-        type:'line',
-        data:{labels:Object.keys(groups),datasets:[{label:'Laporan',data:Object.values(groups),borderColor:'#2563eb',backgroundColor:g,borderWidth:2.5,fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#2563eb'}]},
-        options:makeOpts(false,{plugins:{legend:{display:false}}})
-    });
+    if(ctx){
+        const g=ctx.createLinearGradient(0,0,0,220);
+        g.addColorStop(0,'rgba(37,99,235,0.35)');g.addColorStop(1,'rgba(37,99,235,0)');
+        charts.trend = new Chart(ctx,{
+            type:'line',
+            data:{labels:Object.keys(groups),datasets:[{
+                label:'Laporan',data:Object.values(groups),
+                borderColor:'#2563eb',backgroundColor:g,
+                borderWidth:2.5,fill:true,tension:0.4,
+                pointRadius:0,
+                pointHoverRadius:5,
+                pointHoverBackgroundColor:'#1d4ed8',
+                pointHoverBorderColor:'#fff',
+                pointHoverBorderWidth:2
+            }]},
+            options:mkOpts(false,{plugins:{legend:{display:false}}})
+        });
+    }
 
-    // Status
+    // Status (doughnut)
     const sg={'Belum Ditangani':0,'Proses':0};
     filteredData.forEach(d=>{if(sg[d.status]!==undefined)sg[d.status]++;});
-    charts.status=new Chart(document.getElementById('statusChart').getContext('2d'),{
-        type:'doughnut',
-        data:{labels:Object.keys(sg),datasets:[{data:Object.values(sg),backgroundColor:['#64748b','#f59e0b'],borderWidth:0,hoverOffset:8}]},
-        options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:15,font:{size:11}}}}}
-    });
+    const statusCtx=document.getElementById('statusChart');
+    if(statusCtx&&statusCtx.getContext('2d')){
+        charts.status=new Chart(statusCtx.getContext('2d'),{
+            type:'doughnut',
+            data:{labels:Object.keys(sg),datasets:[{
+                data:Object.values(sg),
+                backgroundColor:['#94a3b8','#f59e0b'],
+                borderWidth:0,hoverOffset:6
+            }]},
+            options:mkDoughnutOpts()
+        });
+    }
 
-    // Lokasi
+    // Lokasi (bar horizontal)
     const lg={};
     filteredData.forEach(d=>{if(d.lokasi&&d.lokasi!=='-')lg[d.lokasi]=(lg[d.lokasi]||0)+1;});
     const ls=Object.entries(lg).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    charts.lokasi=new Chart(document.getElementById('lokasiChart').getContext('2d'),{
-        type:'bar',
-        data:{labels:ls.map(x=>x[0]),datasets:[{label:'Jumlah',data:ls.map(x=>x[1]),backgroundColor:ls.map((_,i)=>CC[i%CC.length]),borderRadius:6,borderSkipped:false}]},
-        options:makeOpts(true,{plugins:{legend:{display:false}}})
-    });
+    const lokasiCtx=document.getElementById('lokasiChart');
+    if(lokasiCtx&&lokasiCtx.getContext('2d')){
+        charts.lokasi=new Chart(lokasiCtx.getContext('2d'),{
+            type:'bar',
+            data:{labels:ls.map(x=>x[0]),datasets:[{
+                label:'Jumlah',data:ls.map(x=>x[1]),
+                backgroundColor:ls.map((_,i)=>CC[i%CC.length]),
+                borderRadius:6,borderSkipped:false,borderWidth:0,
+                maxBarThickness:28
+            }]},
+            options:mkOpts(true,{plugins:{legend:{display:false}}})
+        });
+    }
 
-    // Sparepart (pecah jika dipisah ;)
+    // Sparepart (bar horizontal)
     const spg={};
     filteredData.forEach(d=>{
         if(d.sparepart&&d.sparepart!=='-')d.sparepart.split(/;\s*/).forEach(sp=>{sp=sp.trim();if(sp)spg[sp]=(spg[sp]||0)+1;});
     });
     const sps=Object.entries(spg).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    charts.sparepart=new Chart(document.getElementById('sparepartChart').getContext('2d'),{
-        type:'bar',
-        data:{labels:sps.map(x=>x[0]),datasets:[{label:'Kebutuhan',data:sps.map(x=>x[1]),backgroundColor:'#f59e0b',borderRadius:6,borderSkipped:false}]},
-        options:makeOpts(true,{plugins:{legend:{display:false}}})
-    });
+    const spCtx=document.getElementById('sparepartChart');
+    if(spCtx&&spCtx.getContext('2d')){
+        charts.sparepart=new Chart(spCtx.getContext('2d'),{
+            type:'bar',
+            data:{labels:sps.map(x=>x[0]),datasets:[{
+                label:'Kebutuhan',data:sps.map(x=>x[1]),
+                backgroundColor:'#f59e0b',
+                borderRadius:6,borderSkipped:false,borderWidth:0,
+                maxBarThickness:24
+            }]},
+            options:mkOpts(true,{plugins:{legend:{display:false}}})
+        });
+    }
 
-    // Jenis Kerusakan
+    // Jenis Kerusakan (bar vertikal)
     const jg={};
     filteredData.forEach(d=>{if(d.damageType&&d.damageType!=='-')jg[d.damageType]=(jg[d.damageType]||0)+1;});
     const js=Object.entries(jg).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    charts.jenis=new Chart(document.getElementById('jenisChart').getContext('2d'),{
-        type:'bar',
-        data:{labels:js.map(x=>x[0]),datasets:[{label:'Jumlah',data:js.map(x=>x[1]),backgroundColor:CC.slice(0,8),borderRadius:6,borderSkipped:false}]},
-        options:makeOpts(false,{plugins:{legend:{display:false}}})
-    });
+    const jenisCtx=document.getElementById('jenisChart');
+    if(jenisCtx&&jenisCtx.getContext('2d')){
+        charts.jenis=new Chart(jenisCtx.getContext('2d'),{
+            type:'bar',
+            data:{labels:js.map(x=>x[0]),datasets:[{
+                label:'Jumlah',data:js.map(x=>x[1]),
+                backgroundColor:CC.slice(0,8),
+                borderRadius:6,borderSkipped:false,borderWidth:0,
+                maxBarThickness:36
+            }]},
+            options:mkOpts(false,{plugins:{legend:{display:false}}})
+        });
+    }
 
-    // Divisi
+    // Divisi (doughnut)
     const dg={};
     filteredData.forEach(d=>{if(d.divisi&&d.divisi!=='-')dg[d.divisi]=(dg[d.divisi]||0)+1;});
-    charts.divisi=new Chart(document.getElementById('divisiChart').getContext('2d'),{
-        type:'doughnut',
-        data:{labels:Object.keys(dg),datasets:[{data:Object.values(dg),backgroundColor:CC,borderWidth:0,hoverOffset:8}]},
-        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:12,font:{size:11}}}}}
-    });
+    const divisiCtx=document.getElementById('divisiChart');
+    if(divisiCtx&&divisiCtx.getContext('2d')){
+        charts.divisi=new Chart(divisiCtx.getContext('2d'),{
+            type:'doughnut',
+            data:{labels:Object.keys(dg),datasets:[{
+                data:Object.values(dg),
+                backgroundColor:CC,
+                borderWidth:0,hoverOffset:6
+            }]},
+            options:mkDoughnutOpts()
+        });
+    }
 }
 function dateRangeDays() {
     if(!state.dateFrom||!state.dateTo) return 0;
