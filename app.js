@@ -297,9 +297,24 @@ function animateNumber(id,tgt){
 const CC=['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
 function dk(k){if(charts[k]){charts[k].destroy();}}
 function baseOpts(extra={}){
-    return{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:true,labels:{font:{size:11}}},tooltip:{backgroundColor:'#1e293b',padding:12,cornerRadius:8,titleFont:{size:12,weight:'bold'},bodyFont:{size:11}}},
-        scales:extra.indexAxis==='y'?{x:{grid:{display:false},ticks:{font:{size:10}},beginAtZero:true},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}}}:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12},y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},precision:0},beginAtZero:true}},...extra};
+    const horiz = extra.indexAxis === 'y';
+    delete extra.indexAxis;
+    const scales = horiz ? {
+        x:{grid:{display:false},ticks:{font:{size:10}},beginAtZero:true},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}}
+    } : {
+        x:{grid:{display:false},ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},precision:0},beginAtZero:true}
+    };
+    return {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+            legend:{display:true,labels:{font:{size:11}}},
+            tooltip:{backgroundColor:'#1e293b',padding:12,cornerRadius:8,titleFont:{size:12,weight:'bold'},bodyFont:{size:11}}
+        },
+        scales,
+        ...extra
+    };
 }
 function renderCharts(){
     dk('trend');dk('status');dk('lokasi');dk('sparepart');dk('jenis');dk('divisi');
@@ -544,8 +559,12 @@ function showToast(msg,type='info'){
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('dateTo').max=isoDate(new Date());
-    // default filter "Semua" agar kalender terisi penuh saat load pertama
-    setFilter('all');
+    // Set tampilan tombol filter "Semua" sebagai aktif tanpa memanggil applyFilters dulu
+    // (data belum ada pada saat ini). applyFilters akan dipanggil dari refreshData().
+    document.querySelectorAll('.filter-btn').forEach(b=>{
+        if(b.dataset.filter==='all'){b.classList.add('active');b.classList.remove('text-slate-600');}
+        else{b.classList.remove('active');b.classList.add('text-slate-600');}
+    });
     refreshData(false);
     setInterval(()=>refreshData(false),5*60*1000);
 });
