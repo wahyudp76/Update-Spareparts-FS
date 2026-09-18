@@ -2,394 +2,378 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PG2 - Dashboard Monitoring Kerusakan & Spareparts Irigasi</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+    <title>PG2 Irrigation Monitor</title>
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Dashboard monitoring kerusakan dan kebutuhan spareparts unit irigasi PG2">
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+    <link rel="apple-touch-icon" href="assets/icon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter','sans-serif'] },
+                    fontFamily: { sans:['Inter','sans-serif'], display:['Space Grotesk','sans-serif'] },
                     colors: {
-                        primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
-                        success: { 50:'#ecfdf5',500:'#10b981',600:'#059669' },
-                        warning: { 50:'#fffbeb',500:'#f59e0b',600:'#d97706' },
-                        danger:  { 50:'#fef2f2',500:'#ef4444',600:'#dc2626' },
-                        dark:    { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+                        brand:{50:'#eff6ff',100:'#dbeafe',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af'},
+                        ok:{500:'#10b981',600:'#059669'},
+                        warn:{500:'#f59e0b',600:'#d97706'},
+                        bad:{500:'#ef4444',600:'#dc2626'},
                     }
                 }
             }
         }
     </script>
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .stat-card { transition: all 0.3s ease; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .filter-btn.active { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; box-shadow: 0 4px 14px 0 rgba(37,99,235,0.4); }
-        .table-row:hover { background:#f8fafc; }
-        .status-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:4px; }
-        .pulse-dot { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+        *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+        html,body{background:#f1f5f9}
+        body{
+            background:
+                radial-gradient(1200px 500px at 10% -10%, rgba(37,99,235,0.12), transparent 60%),
+                radial-gradient(1000px 400px at 90% 0%, rgba(236,72,153,0.08), transparent 60%),
+                radial-gradient(800px 500px at 50% 100%, rgba(16,185,129,0.08), transparent 60%),
+                #f1f5f9;
+            min-height:100vh;
+        }
+        .display-font{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+        .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 4px 12px rgba(15,23,42,.03)}
+        .card-hover:hover{box-shadow:0 2px 4px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.06);transform:translateY(-2px)}
+        .card-hover{transition:all .25s ease}
+        .stat-number{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.03em}
+        .filter-btn.active{background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;box-shadow:0 4px 10px rgba(37,99,235,.25);border-color:transparent}
+        .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px}
+        .status-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+        .dot{width:6px;height:6px;border-radius:999px;display:inline-block}
+        .pulse{animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        .fade-in{animation:fi .4s ease both}
+        @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         /* Calendar */
-        .cal-day { aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; font-size:13px; border-radius:10px; position:relative; cursor:pointer; transition: all 0.15s ease; user-select:none; }
-        .cal-day:hover:not(.cal-empty) { background:#dbeafe; }
-        .cal-day.selected { background:#2563eb !important; color:#fff !important; font-weight:700; box-shadow:0 4px 10px rgba(37,99,235,0.4); }
-        .cal-day.has-data { font-weight:600; color:#1e40af; background:#eff6ff; }
-        .cal-day.has-many { background:#fef2f2; color:#b91c1c; font-weight:700; }
-        .cal-day.today { outline: 2px solid #2563eb; outline-offset:-2px; }
-        .cal-day.other-month { color:#cbd5e1; cursor:default; }
-        .cal-day.other-month:hover { background:transparent; }
-        .cal-dot { position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:#2563eb; }
-        .cal-day.selected .cal-dot { background:#fff; }
-        .cal-day.has-many .cal-dot { background:#dc2626; }
-        .cal-day.selected.has-many .cal-dot { background:#fff; }
-        .cal-weekday { text-align:center; font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; padding:8px 0; }
+        .cal-day{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:12.5px;border-radius:10px;position:relative;cursor:pointer;transition:all .15s;user-select:none;font-weight:500}
+        .cal-day:hover:not(.other-month){background:#eff6ff}
+        .cal-day.selected{background:linear-gradient(135deg,#2563eb,#1e40af)!important;color:#fff!important;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)}
+        .cal-day.has-data{color:#1e40af;background:#eff6ff}
+        .cal-day.has-many{background:#fef2f2;color:#b91c1c;font-weight:700}
+        .cal-day.today{outline:2px solid #2563eb;outline-offset:-2px}
+        .cal-day.other-month{color:#cbd5e1;cursor:default}
+        .cal-day.other-month:hover{background:transparent}
+        .cal-dot{position:absolute;bottom:4px;width:3px;height:3px;border-radius:999px;background:#2563eb}
+        .cal-day.selected .cal-dot{background:#fff}
+        .cal-day.has-many .cal-dot{background:#dc2626}
+        .cal-day.selected.has-many .cal-dot{background:#fff}
+        .cal-wd{text-align:center;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;padding:6px 0}
         /* Multi-select */
-        .ms-wrapper { position:relative; }
-        .ms-btn { background:#fff; transition: all 0.15s; }
-        .ms-btn:hover { border-color:#93c5fd; }
-        .ms-wrapper.open .ms-menu { display:block !important; }
-        .ms-wrapper.open .ms-btn { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,0.15); }
-        .ms-menu { animation: fadeIn 0.15s ease-out; }
-        .ms-option:hover { background-color:#eff6ff; }
-        .ms-check { flex-shrink:0; transition: all 0.15s; }
-        .ms-check.checked { background-color:#2563eb; border-color:#2563eb; color:#fff; }
+        .ms-wrap{position:relative}
+        .ms-btn{background:#fff;border:1px solid #e2e8f0;transition:all .15s;font-size:13px}
+        .ms-btn:hover{border-color:#93c5fd}
+        .ms-wrap.open .ms-menu{display:block!important}
+        .ms-wrap.open .ms-btn{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+        .ms-opt:hover{background:#eff6ff}
+        .ms-check{width:16px;height:16px;border:1.5px solid #cbd5e1;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;transition:all .1s}
+        .ms-check.on{background:#2563eb;border-color:#2563eb}
+        .table-row:hover{background:#f8fafc}
+        .table-row td{padding:10px 14px!important}
+        /* Minimalist chart canvas container */
+        .chart-wrap{position:relative}
+        .chart-wrap canvas{width:100%!important}
+        /* Spinner */
+        @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+        /* Section heading accent */
+        .h-accent{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;color:#fff;font-size:12px;margin-right:8px}
+        /* Responsive tighten */
+        @media (max-width: 640px){
+            .stat-number{font-size:1.5rem!important}
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 min-h-screen">
+<body>
     <!-- Header -->
-    <header class="bg-white/80 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/70">
+        <div class="max-w-[1400px] mx-auto px-4 lg:px-6">
+            <div class="h-14 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg">
-                        <i class="fas fa-tint text-white text-lg"></i>
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-800 flex items-center justify-center shadow-md shadow-blue-500/30">
+                        <img src="assets/icon.svg" alt="" class="w-6 h-6">
                     </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-slate-800 leading-tight">PG2 Irrigation Monitor</h1>
-                        <p class="text-xs text-slate-500">Monitoring Kerusakan & Kebutuhan Spareparts Unit Irigasi</p>
+                    <div class="leading-tight">
+                        <h1 class="display-font font-bold text-slate-900 text-[17px]">PG2 Irrigation</h1>
+                        <p class="text-[11px] text-slate-500 -mt-0.5">Monitoring Kerusakan & Spareparts</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
-                        <span id="dataSourceDot" class="w-2 h-2 bg-blue-500 rounded-full pulse-dot"></span>
-                        <span id="dataSource">Memuat...</span>
+                <div class="flex items-center gap-2.5">
+                    <div class="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-100/70 px-2.5 py-1 rounded-full border border-slate-200/70">
+                        <span id="dataSourceDot" class="dot bg-blue-500 pulse"></span>
+                        <span id="dataSource">Memuat…</span>
                     </div>
-                    <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-                        <i class="fas fa-clock"></i><span>Update: <span id="syncTime">--:--</span></span>
+                    <div class="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
+                        <i class="far fa-clock"></i>
+                        <span id="syncTime">--:--</span>
                     </div>
-                    <button onclick="refreshData(true)" title="Refresh data dari Google Sheets" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md hover:shadow-lg">
-                        <i class="fas fa-sync-alt" id="refreshIcon"></i><span class="hidden sm:inline">Refresh</span>
+                    <button onclick="refreshData(true)" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
+                        <i class="fas fa-sync-alt text-[11px]" id="refreshIcon"></i>
+                        <span class="hidden sm:inline">Refresh</span>
                     </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Filter Section -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 fade-in">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-filter text-blue-600"></i>
-                    <span class="text-sm font-semibold text-slate-700">Filter Periode:</span>
+    <main class="max-w-[1400px] mx-auto px-4 lg:px-6 py-5">
+        <!-- Filter -->
+        <div class="card p-4 mb-4 fade-in">
+            <div class="flex flex-col xl:flex-row xl:items-center gap-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1"><i class="fas fa-filter text-blue-600 mr-1"></i>Filter</span>
+                    <div class="flex bg-slate-100 rounded-lg p-0.5">
+                        <button onclick="setPeriod('daily')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition text-slate-600" data-filter="daily">Harian</button>
+                        <button onclick="setPeriod('weekly')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition text-slate-600" data-filter="weekly">Mingguan</button>
+                        <button onclick="setPeriod('monthly')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition text-slate-600" data-filter="monthly">Bulanan</button>
+                        <button onclick="setPeriod('all')" class="filter-btn active px-3 py-1.5 rounded-md text-xs font-semibold transition" data-filter="all">Semua</button>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <input type="date" id="dateFrom" onchange="applyCustomDate()" class="px-2 py-1.5 border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <span class="text-slate-400 text-xs">—</span>
+                        <input type="date" id="dateTo" onchange="applyCustomDate()" class="px-2 py-1.5 border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex bg-slate-100 rounded-lg p-1 gap-1">
-                        <button onclick="setPeriod('daily')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition text-slate-600 hover:text-slate-800" data-filter="daily"><i class="fas fa-calendar-day mr-1"></i>Harian</button>
-                        <button onclick="setPeriod('weekly')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition text-slate-600 hover:text-slate-800" data-filter="weekly"><i class="fas fa-calendar-week mr-1"></i>Mingguan</button>
-                        <button onclick="setPeriod('monthly')" class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition text-slate-600 hover:text-slate-800" data-filter="monthly"><i class="fas fa-calendar-alt mr-1"></i>Bulanan</button>
-                        <button onclick="setPeriod('all')" class="filter-btn active px-4 py-2 rounded-md text-sm font-medium transition" data-filter="all"><i class="fas fa-infinity mr-1"></i>Semua</button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-500">Tgl:</label>
-                        <input type="date" id="dateFrom" onchange="applyCustomFilter()" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                        <label class="text-xs text-slate-400">—</label>
-                        <input type="date" id="dateTo" onchange="applyCustomFilter()" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="ms-wrapper relative" id="divisiFilter" data-state-key="divisi" data-placeholder="Semua Divisi">
-                        <button type="button" class="ms-btn flex items-center justify-between gap-2 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 min-w-[140px]">
-                            <span class="ms-btn-text text-slate-700 truncate">Semua Divisi</span>
-                            <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
-                        </button>
-                        <div class="ms-menu hidden absolute z-40 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[180px]">
-                            <label class="ms-option-all flex items-center gap-2 px-3 py-1.5 text-sm font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0">
-                                <span class="ms-check w-4 h-4 border-2 border-slate-300 rounded flex items-center justify-center text-[10px] text-white"></span>
-                                <span class="text-slate-700">Pilih Semua</span>
-                            </label>
-                            <div class="ms-list max-h-60 overflow-y-auto py-1"></div>
+                <div class="flex-1"></div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <!-- Divisi multi -->
+                    <div class="ms-wrap" id="divisiFilter" data-state-key="divisi" data-ph="Semua Divisi">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Divisi</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-44">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
-                    <div class="ms-wrapper relative" id="lokasiFilter" data-state-key="lokasi" data-placeholder="Semua Lokasi">
-                        <button type="button" class="ms-btn flex items-center justify-between gap-2 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 min-w-[140px]">
-                            <span class="ms-btn-text text-slate-700 truncate">Semua Lokasi</span>
-                            <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
-                        </button>
-                        <div class="ms-menu hidden absolute z-40 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[180px]">
-                            <label class="ms-option-all flex items-center gap-2 px-3 py-1.5 text-sm font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0">
-                                <span class="ms-check w-4 h-4 border-2 border-slate-300 rounded flex items-center justify-center text-[10px] text-white"></span>
-                                <span class="text-slate-700">Pilih Semua</span>
-                            </label>
-                            <div class="ms-list max-h-60 overflow-y-auto py-1"></div>
+                    <!-- Lokasi multi -->
+                    <div class="ms-wrap" id="lokasiFilter" data-state-key="lokasi" data-ph="Semua Lokasi">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Lokasi</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-44">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
-                    <div class="ms-wrapper relative" id="statusFilter" data-state-key="status" data-placeholder="Semua Status">
-                        <button type="button" class="ms-btn flex items-center justify-between gap-2 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 min-w-[150px]">
-                            <span class="ms-btn-text text-slate-700 truncate">Semua Status</span>
-                            <i class="fas fa-chevron-down text-slate-400 text-[10px]"></i>
-                        </button>
-                        <div class="ms-menu hidden absolute z-40 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[200px]">
-                            <label class="ms-option-all flex items-center gap-2 px-3 py-1.5 text-sm font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0">
-                                <span class="ms-check w-4 h-4 border-2 border-slate-300 rounded flex items-center justify-center text-[10px] text-white"></span>
-                                <span class="text-slate-700">Pilih Semua</span>
-                            </label>
-                            <div class="ms-list max-h-60 overflow-y-auto py-1"></div>
+                    <!-- Status multi -->
+                    <div class="ms-wrap" id="statusFilter" data-state-key="status" data-ph="Semua Status">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[140px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Status</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <i class="fas fa-info-circle"></i>
-                <span id="activePeriodText"></span>
-                <span id="selectedDateBadge" class="hidden ml-1 inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                    <i class="fas fa-calendar-check"></i><span id="selectedDateText"></span>
-                    <button onclick="clearSelectedDate()" class="ml-1 hover:text-blue-900"><i class="fas fa-times"></i></button>
-                </span>
-                <span id="activeFilters" class="flex flex-wrap items-center gap-1.5"></span>
-            </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Laporan</p>
-                        <p class="text-3xl font-bold text-slate-800 mt-1" id="statTotal">0</p>
-                        <p class="text-xs text-slate-500 mt-1"><i class="fas fa-clipboard-list text-blue-500 mr-1"></i>Laporan kerusakan</p>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-file-alt text-blue-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Lokasi Terdampak</p>
-                        <p class="text-3xl font-bold text-danger-600 mt-1" id="statUnits">0</p>
-                        <p class="text-xs text-slate-500 mt-1"><i class="fas fa-map-marker-alt text-danger-500 mr-1"></i>Lokasi/Unit unik</p>
-                    </div>
-                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-map-pin text-red-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">PR Aktif (Proses)</p>
-                        <p class="text-3xl font-bold text-warning-600 mt-1" id="statProses">0</p>
-                        <p class="text-xs text-slate-500 mt-1"><i class="fas fa-file-invoice text-warning-500 mr-1"></i>Sparepart dalam pengadaan</p>
-                    </div>
-                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-file-invoice-dollar text-amber-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="stat-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Belum Ditangani</p>
-                        <p class="text-3xl font-bold text-slate-700 mt-1" id="statPending">0</p>
-                        <p class="text-xs text-slate-500 mt-1"><i class="fas fa-exclamation-circle text-slate-400 mr-1"></i>Menunggu tindak lanjut</p>
-                    </div>
-                    <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-hourglass-half text-slate-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Row 1 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 lg:col-span-2 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-chart-line text-blue-600 mr-2"></i>Tren Laporan Kerusakan</h3>
-                        <p class="text-xs text-slate-500">Jumlah laporan per periode</p>
-                    </div>
-                </div>
-                <div class="h-72"><canvas id="trendChart"></canvas></div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-tasks text-amber-500 mr-2"></i>Status Penanganan</h3>
-                        <p class="text-xs text-slate-500">Berdasarkan Nomor PR</p>
-                    </div>
-                </div>
-                <div class="h-72 flex items-center justify-center"><canvas id="statusChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Calendar + Side Panel -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 lg:col-span-2 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-calendar-alt text-blue-600 mr-2"></i>Kalender Inspeksi</h3>
-                        <p class="text-xs text-slate-500">Klik tanggal untuk melihat laporan di hari tersebut</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="changeCalMonth(-1)" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition"><i class="fas fa-chevron-left text-xs"></i></button>
-                        <span id="calMonthYear" class="text-sm font-semibold text-slate-700 w-32 text-center"></span>
-                        <button onclick="changeCalMonth(1)" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 transition"><i class="fas fa-chevron-right text-xs"></i></button>
-                        <button onclick="goToday()" class="ml-2 text-xs font-medium text-blue-600 hover:text-blue-800 px-2 py-1 rounded">Hari ini</button>
-                    </div>
-                </div>
-                <!-- Calendar Legend -->
-                <div class="flex flex-wrap gap-4 mb-3 text-xs text-slate-500">
-                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-50 border border-blue-200"></span>Ada laporan</span>
-                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-50 border border-red-200"></span>Laporan ≥ 3</span>
-                    <span class="flex items-center gap-1.5"><span class="w-6 h-6 rounded-lg border-2 border-blue-600 flex items-center justify-center text-[9px]">18</span>Hari ini</span>
-                    <span class="flex items-center gap-1.5"><span class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold">15</span>Terpilih</span>
-                </div>
-                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between mb-3">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-list-check text-blue-600 mr-2"></i>Laporan Tanggal Terpilih</h3>
-                        <p class="text-xs text-slate-500" id="calDateLabel">—</p>
-                    </div>
-                </div>
-                <div id="calDayDetail" class="space-y-2 max-h-96 overflow-y-auto pr-1">
-                    <div class="text-center py-12 text-slate-400 text-sm">
-                        <i class="fas fa-hand-pointer text-3xl mb-2 text-slate-300"></i>
-                        <p>Klik tanggal di kalender<br>untuk melihat detail laporan</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Row 2 -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-map-marker-alt text-red-500 mr-2"></i>Top Lokasi dengan Kerusakan</h3>
-                        <p class="text-xs text-slate-500">Frekuensi kerusakan per lokasi</p>
-                    </div>
-                </div>
-                <div class="h-64"><canvas id="lokasiChart"></canvas></div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-boxes text-amber-500 mr-2"></i>Spareparts yang Dibutuhkan</h3>
-                        <p class="text-xs text-slate-500">Ringkasan kebutuhan sparepart</p>
-                    </div>
-                </div>
-                <div class="h-64"><canvas id="sparepartChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Charts Row 3 -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 lg:col-span-2 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-spray-can text-blue-600 mr-2"></i>Jenis Kerusakan per Komponen</h3>
-                        <p class="text-xs text-slate-500">Frekuensi kerusakan berdasarkan jenis komponen</p>
-                    </div>
-                </div>
-                <div class="h-64"><canvas id="jenisChart"></canvas></div>
-            </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 fade-in">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-bold text-slate-800"><i class="fas fa-building text-slate-600 mr-2"></i>Per Divisi</h3>
-                        <p class="text-xs text-slate-500">Sebaran laporan per divisi</p>
-                    </div>
-                </div>
-                <div class="h-64 flex items-center justify-center"><canvas id="divisiChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Data Table -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in">
-            <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h3 class="font-bold text-slate-800"><i class="fas fa-table text-blue-600 mr-2"></i>Detail Laporan Kerusakan</h3>
-                    <p class="text-xs text-slate-500">Data lengkap sesuai kolom pada spreadsheet Form Responses</p>
-                </div>
-                <div class="flex items-center gap-2">
                     <div class="relative">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="text" id="searchInput" placeholder="Cari lokasi, sparepart, PR..." class="pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm w-full sm:w-72 focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
+                        <input type="text" id="searchInput" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    <button onclick="exportCSV()" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition">
-                        <i class="fas fa-download"></i><span class="hidden sm:inline">Export CSV</span>
-                    </button>
                 </div>
+            </div>
+            <!-- Active chips -->
+            <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span class="text-slate-400"><i class="fas fa-info-circle mr-1"></i></span>
+                <span id="activePeriodText" class="text-slate-600 font-medium"></span>
+                <span id="selectedDateBadge" class="hidden chip bg-blue-50 text-blue-700">
+                    <i class="far fa-calendar-check"></i><span id="selectedDateText"></span>
+                    <button onclick="clearSelectedDate()" class="hover:text-blue-900 ml-0.5"><i class="fas fa-times text-[9px]"></i></button>
+                </span>
+                <span id="activeFilters" class="flex flex-wrap items-center gap-1"></span>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-blue-50/30">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-alt text-blue-500"></i>Total</div>
+                        <div class="stat-number text-3xl text-slate-900 mt-1" id="statTotal">0</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Laporan kerusakan</div>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><i class="fas fa-clipboard-list"></i></div>
+                </div>
+            </div>
+            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-red-50/30">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-map-marker-alt text-red-500"></i>Lokasi</div>
+                        <div class="stat-number text-3xl text-red-600 mt-1" id="statUnits">0</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Area terdampak</div>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm"><i class="fas fa-map-pin"></i></div>
+                </div>
+            </div>
+            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-amber-50/40">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-invoice text-amber-500"></i>Proses</div>
+                        <div class="stat-number text-3xl text-amber-600 mt-1" id="statProses">0</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">PR Aktif</div>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-cogs"></i></div>
+                </div>
+            </div>
+            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-slate-100">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-hourglass-half text-slate-500"></i>Belum</div>
+                        <div class="stat-number text-3xl text-slate-700 mt-1" id="statPending">0</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Menunggu tindak lanjut</div>
+                    </div>
+                    <div class="w-9 h-9 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-sm"><i class="fas fa-exclamation"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 1: Trend + Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+            <div class="card p-4 lg:col-span-2 fade-in">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-blue-600"><i class="fas fa-chart-line text-[11px]"></i></span>Tren Laporan</h3>
+                        <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Jumlah laporan per periode</p>
+                    </div>
+                </div>
+                <div class="chart-wrap h-[220px]"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="card p-4 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-amber-500"><i class="fas fa-tasks text-[11px]"></i></span>Status</h3>
+                </div>
+                <div class="chart-wrap h-[200px] flex items-center justify-center"><canvas id="statusChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+            <div class="card p-4 lg:col-span-2 fade-in">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-indigo-600"><i class="fas fa-calendar-alt text-[11px]"></i></span>Kalender Inspeksi</h3>
+                        <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Klik tanggal untuk melihat detail</p>
+                    </div>
+                    <div class="flex items-center gap-0.5">
+                        <button onclick="changeCalMonth(-1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                        <span id="calMonthYear" class="text-xs font-bold text-slate-700 w-28 text-center"></span>
+                        <button onclick="changeCalMonth(1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                        <button onclick="goToday()" class="ml-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded bg-blue-50">Hari ini</button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3 mb-2 text-[10px] text-slate-500">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></i>Ada laporan</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>≥ 3 laporan</span>
+                    <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md border-2 border-blue-600 flex items-center justify-center text-[8px] font-bold">18</span>Hari ini</span>
+                    <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold">15</span>Terpilih</span>
+                </div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+            </div>
+            <div class="card p-4 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-emerald-600"><i class="fas fa-list-check text-[11px]"></i></span>Detail Tanggal</h3>
+                    <p class="text-[11px] text-slate-500" id="calDateLabel">—</p>
+                </div>
+                <div id="calDayDetail" class="space-y-2 max-h-[330px] overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <!-- Row 3: Lokasi + Sparepart -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+            <div class="card p-4 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-red-500"><i class="fas fa-map-marker-alt text-[11px]"></i></span>Top Lokasi Kerusakan</h3>
+                </div>
+                <div class="chart-wrap h-[230px]"><canvas id="lokasiChart"></canvas></div>
+            </div>
+            <div class="card p-4 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-amber-500"><i class="fas fa-boxes text-[11px]"></i></span>Kebutuhan Sparepart</h3>
+                </div>
+                <div class="chart-wrap h-[230px]"><canvas id="sparepartChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Row 4: Jenis + Divisi -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+            <div class="card p-4 lg:col-span-2 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-purple-600"><i class="fas fa-spray-can text-[11px]"></i></span>Jenis Kerusakan</h3>
+                </div>
+                <div class="chart-wrap h-[220px]"><canvas id="jenisChart"></canvas></div>
+            </div>
+            <div class="card p-4 fade-in">
+                <div class="mb-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-cyan-600"><i class="fas fa-building text-[11px]"></i></span>Per Divisi</h3>
+                </div>
+                <div class="chart-wrap h-[200px] flex items-center justify-center"><canvas id="divisiChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card overflow-hidden fade-in mb-6">
+            <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fas fa-table text-blue-600"></i>Detail Laporan</h3>
+                    <p class="text-[11px] text-slate-500">Data dari spreadsheet Form Responses · Sheet Response</p>
+                </div>
+                <button onclick="exportCSV()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition self-start">
+                    <i class="fas fa-download text-[10px]"></i>Export CSV
+                </button>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+                <table class="w-full text-[12px]">
                     <thead>
-                        <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
-                            <th class="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('timestamp')">Tgl Inspeksi <i class="fas fa-sort ml-1 opacity-50"></i></th>
-                            <th class="px-4 py-3 text-left font-semibold cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('lokasi')">Lokasi <i class="fas fa-sort ml-1 opacity-50"></i></th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Divisi</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Engine</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Irrigator</th>
-                            <th class="px-4 py-3 text-left font-semibold">Jenis Kerusakan</th>
-                            <th class="px-4 py-3 text-left font-semibold">Keterangan</th>
-                            <th class="px-4 py-3 text-left font-semibold">Spareparts</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Nomor PR</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Status</th>
+                        <tr class="bg-slate-50 text-slate-600 text-[10px] uppercase tracking-wider">
+                            <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('timestamp')">Tgl <i class="fas fa-sort opacity-40 ml-0.5"></i></th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100" onclick="sortTable('lokasi')">Lokasi</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Divisi</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Engine</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Irrigator</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Kerusakan</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Keterangan</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Sparepart</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">No PR</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Status</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
                 </table>
             </div>
-            <div id="emptyState" class="hidden p-12 text-center">
-                <i class="fas fa-inbox text-slate-300 text-5xl mb-3"></i>
-                <p class="text-slate-500 font-medium">Tidak ada data yang sesuai filter</p>
-                <p class="text-slate-400 text-xs mt-1">Coba ubah periode filter atau kata kunci pencarian</p>
+            <div id="emptyState" class="hidden p-10 text-center">
+                <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                <p class="text-slate-500 text-sm font-medium">Tidak ada data</p>
+                <p class="text-slate-400 text-xs mt-1">Coba ubah filter</p>
             </div>
-            <div id="loadingState" class="p-12 text-center">
-                <i class="fas fa-spinner fa-spin text-blue-600 text-3xl mb-3"></i>
-                <p class="text-slate-500 font-medium">Memuat data...</p>
+            <div id="loadingState" class="p-10 text-center">
+                <i class="fas fa-spinner spin text-blue-600 text-2xl mb-2"></i>
+                <p class="text-slate-500 text-sm">Memuat data…</p>
             </div>
-            <div class="px-5 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-                <span id="tableCount">Menampilkan 0 data</span>
-                <div class="flex items-center gap-2">
-                    <button onclick="prevPage()" id="prevBtn" class="px-2 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
-                    <span id="pageInfo">Halaman 1</span>
-                    <button onclick="nextPage()" id="nextBtn" class="px-2 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-right"></i></button>
+            <div class="px-4 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <span id="tableCount">—</span>
+                <div class="flex items-center gap-1">
+                    <button onclick="prevPage()" id="prevBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                    <span id="pageInfo" class="px-1">—</span>
+                    <button onclick="nextPage()" id="nextBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-right text-[10px]"></i></button>
                 </div>
             </div>
         </div>
 
-        <div class="mt-8 text-center text-xs text-slate-400 pb-4">
-            <p>© 2026 PG2 Irrigation Monitoring System — Data otomatis tersinkronisasi dari Google Sheets via GitHub Actions (tiap 15 menit)</p>
-            <p class="mt-1">
-                <i class="fab fa-github mr-1"></i><a href="https://github.com/wahyudp76/Update-Spareparts-FS" class="hover:text-blue-500" target="_blank">wahyudp76/Update-Spareparts-FS</a>
-                &nbsp;|&nbsp; Sheet: <code class="bg-slate-100 px-1.5 py-0.5 rounded">Response</code>
-            </p>
+        <div class="text-center text-[11px] text-slate-400 pb-4">
+            <p>© 2026 PG2 Irrigation Monitor · Sync otomatis via GitHub Actions (15 menit) · <a href="https://github.com/wahyudp76/Update-Spareparts-FS" target="_blank" class="hover:text-blue-600"><i class="fab fa-github mr-0.5"></i>wahyudp76/Update-Spareparts-FS</a></p>
         </div>
     </main>
 
     <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+        }
+    </script>
 </body>
 </html>

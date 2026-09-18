@@ -171,7 +171,7 @@ async function fetchLiveCSV() {
 
 async function refreshData(forceLive=false) {
     const icon=document.getElementById('refreshIcon');
-    icon.classList.add('fa-spin');
+    icon.classList.add('spin');
     document.getElementById('loadingState').classList.remove('hidden');
     document.getElementById('tableBody').innerHTML='';
     document.getElementById('emptyState').classList.add('hidden');
@@ -215,7 +215,7 @@ async function refreshData(forceLive=false) {
     document.getElementById('dataSource').textContent = `${srcLabel} · ${data.length} record`;
     const dot=document.getElementById('dataSourceDot');
     dot.className = 'w-2 h-2 rounded-full pulse-dot '+(source==='live-sheet'?'bg-green-500':source==='github-cache'?'bg-blue-500':'bg-amber-500');
-    icon.classList.remove('fa-spin');
+    icon.classList.remove('spin');
 
     // Populate ulang opsi filter TANPA mereset pilihan user yang masih valid
     populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
@@ -244,25 +244,27 @@ function fmtDate(d){return new Date(d).toLocaleDateString('id-ID',{day:'2-digit'
 // ---------- Multi-select Dropdown ----------
 function populateMultiSelect(id, options, selected) {
     const wrap = document.getElementById(id);
-    // selected disesuaikan dengan options yang tersedia
+    if(!wrap)return;
     const validSelected = selected.filter(s => options.includes(s));
+    const ph = wrap.dataset.ph || 'Semua';
     const selectedText = validSelected.length === 0
-        ? wrap.dataset.placeholder
-        : (validSelected.length === options.length ? `Semua (${options.length})` :
+        ? ph
+        : (validSelected.length === options.length && options.length>0 ? `Semua (${options.length})` :
            validSelected.length <= 2 ? validSelected.join(', ') : `${validSelected.length} terpilih`);
     wrap.querySelector('.ms-btn-text').textContent = selectedText;
 
     const menu = wrap.querySelector('.ms-menu');
-    // Select All
     const allChecked = validSelected.length === options.length && options.length > 0;
-    menu.querySelector('.ms-option-all .ms-check').innerHTML = allChecked ? '<i class="fas fa-check"></i>' : '';
-    menu.querySelector('.ms-option-all').dataset.checked = allChecked ? '1' : '0';
+    const allCheck = menu.querySelector('.ms-opt-all .ms-check');
+    allCheck.innerHTML = allChecked ? '<i class="fas fa-check"></i>' : '';
+    allCheck.classList.toggle('on', allChecked);
+    menu.querySelector('.ms-opt-all').dataset.checked = allChecked ? '1' : '0';
 
     const list = menu.querySelector('.ms-list');
     list.innerHTML = options.map(opt => {
         const checked = validSelected.includes(opt);
-        return `<label class="ms-option flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-blue-50 rounded" data-value="${opt}">
-            <span class="ms-check w-4 h-4 border-2 border-slate-300 rounded flex items-center justify-center text-[10px] text-white ${checked?'bg-blue-600 border-blue-600':''}">${checked?'<i class="fas fa-check"></i>':''}</span>
+        return `<label class="ms-opt flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer rounded" data-value="${opt}">
+            <span class="ms-check ${checked?'on':''}">${checked?'<i class="fas fa-check"></i>':''}</span>
             <span class="text-slate-700">${opt}</span>
         </label>`;
     }).join('');
@@ -277,8 +279,8 @@ function toggleMultiSelect(id) {
 }
 
 function msToggleAll(btn) {
-    const wrap = btn.closest('.ms-wrapper');
-    const options = [...wrap.querySelectorAll('.ms-list .ms-option')].map(o => o.dataset.value);
+    const wrap = btn.closest('.ms-wrap');
+    const options = [...wrap.querySelectorAll('.ms-list .ms-opt')].map(o => o.dataset.value);
     const isAll = btn.dataset.checked === '1';
     const stateKey = wrap.dataset.stateKey;
     state[stateKey] = isAll ? [] : [...options];
@@ -288,22 +290,21 @@ function msToggleAll(btn) {
 }
 
 function msToggleOption(label) {
-    const wrap = label.closest('.ms-wrapper');
+    const wrap = label.closest('.ms-wrap');
     const val = label.dataset.value;
     const stateKey = wrap.dataset.stateKey;
     const idx = state[stateKey].indexOf(val);
     if (idx >= 0) state[stateKey].splice(idx,1);
     else state[stateKey].push(val);
-    // Refresh tampilan (baca options dari DOM)
-    const options = [...wrap.querySelectorAll('.ms-list .ms-option')].map(o => o.dataset.value);
+    const options = [...wrap.querySelectorAll('.ms-list .ms-opt')].map(o => o.dataset.value);
     populateMultiSelect(wrap.id, options, state[stateKey]);
     state.page = 1;
     applyFilters();
 }
 
 document.addEventListener('click', (e) => {
-    if (!e.target.closest('.ms-wrapper')) {
-        document.querySelectorAll('.ms-wrapper').forEach(w => w.classList.remove('open'));
+    if (!e.target.closest('.ms-wrap')) {
+        document.querySelectorAll('.ms-wrap').forEach(w => w.classList.remove('open'));
     }
 });
 
@@ -420,9 +421,6 @@ function renderActiveChips() {
     window.__chipAction = i => { window.__chipActions[i](); applyFilters(); };
 }
 function repop(id,key){
-    const wrap=document.getElementById(id);
-    const options=[...wrap.querySelectorAll('.ms-list .ms-option')].map(o=>o.dataset.value);
-    // untuk divisi/lokasi, ambil dari rawData (lebih aman)
     const allOpts = key==='divisi' ? [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort()
                    : key==='lokasi' ? [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort()
                    : ['Belum Ditangani','Proses'];
@@ -486,25 +484,52 @@ function animateNumber(id,tgt) {
     },25);
 }
 
-// ---------- Charts ----------
-const CC=['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
+// ---------- Charts (minimalist modern style) ----------
+const CC=['#2563eb','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
+const GRID_COLOR='rgba(148,163,184,0.12)';
+const TICK_COLOR='#64748b';
 function dk(k){if(charts[k]){charts[k].destroy();charts[k]=null;}}
-function makeOpts(indexAxisY=false, extra={}) {
-    const scales = indexAxisY ? {
-        x:{grid:{display:false},ticks:{font:{size:10}},beginAtZero:true},
-        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10}}}
-    } : {
-        x:{grid:{display:false},ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12}},
-        y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},precision:0},beginAtZero:true}
-    };
-    return {
-        responsive:true, maintainAspectRatio:false,
+Chart.defaults.font.family="Inter,system-ui,sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color=TICK_COLOR;
+Chart.defaults.plugins.legend.labels.boxWidth=8;
+Chart.defaults.plugins.legend.labels.boxHeight=8;
+Chart.defaults.plugins.legend.labels.padding=10;
+Chart.defaults.plugins.legend.labels.usePointStyle=true;
+Chart.defaults.plugins.legend.labels.pointStyle='circle';
+Chart.defaults.elements.bar.borderWidth=0;
+Chart.defaults.elements.line.borderWidth=2;
+function mkOpts(h=false,extra={}){
+    return{
+        responsive:true,maintainAspectRatio:false,
         plugins:{
-            legend:{display:true,labels:{font:{size:11}}},
-            tooltip:{backgroundColor:'#1e293b',padding:12,cornerRadius:8,titleFont:{size:12,weight:'bold'},bodyFont:{size:11}}
+            legend:{display:false},
+            tooltip:{
+                backgroundColor:'#0f172a',padding:10,cornerRadius:8,
+                titleFont:{size:11,weight:'600',family:'Inter'},
+                bodyFont:{size:11,family:'Inter'},
+                displayColors:true,boxPadding:4,
+                borderColor:'rgba(255,255,255,0.1)',borderWidth:1
+            }
         },
-        scales,
+        scales: h ? {
+            x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false},beginAtZero:true},
+            y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false}}
+        } : {
+            x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12},border:{display:false}},
+            y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true}
+        },
+        layout:{padding:{top:4,right:4,bottom:0,left:0}},
         ...extra
+    };
+}
+function mkDoughnutOpts(){
+    return{
+        responsive:true,maintainAspectRatio:false,cutout:'72%',
+        plugins:{
+            legend:{position:'bottom',labels:{boxWidth:8,boxHeight:8,padding:12,usePointStyle:true,pointStyle:'circle',font:{size:10}}},
+            tooltip:{backgroundColor:'#0f172a',padding:10,cornerRadius:8,titleFont:{size:11,weight:'600'},bodyFont:{size:11}}
+        }
     };
 }
 function renderCharts() {
@@ -802,12 +827,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(b.dataset.filter==='all'){b.classList.add('active');b.classList.remove('text-slate-600');}
         else{b.classList.remove('active');b.classList.add('text-slate-600');}
     });
-    // Setup multi-select click handlers via event delegation
-    document.querySelectorAll('.ms-wrapper').forEach(w => {
-        w.querySelector('.ms-btn').addEventListener('click', e => { e.stopPropagation(); toggleMultiSelect(w.id); });
-        w.querySelector('.ms-option-all').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); msToggleAll(e.currentTarget); });
+    // Setup multi-select click handlers
+    document.querySelectorAll('.ms-wrap').forEach(w => {
+        w.querySelector('.ms-btn').addEventListener('click', e => { e.stopPropagation(); w.classList.toggle('open'); });
+        w.querySelector('.ms-opt-all').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); msToggleAll(e.currentTarget); });
         w.querySelector('.ms-list').addEventListener('click', e => {
-            const lbl = e.target.closest('.ms-option');
+            const lbl = e.target.closest('.ms-opt');
             if (!lbl) return;
             e.preventDefault(); e.stopPropagation();
             msToggleOption(lbl);
