@@ -49,6 +49,14 @@
         .card-hover{transition:all .25s ease}
         .stat-number{font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.03em}
         .filter-btn.active{background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;box-shadow:0 4px 10px rgba(37,99,235,.25);border-color:transparent}
+        .tab-btn{position:relative;padding:10px 16px;font-size:13px;font-weight:600;color:#64748b;transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap}
+        .tab-btn:hover{color:#1e40af;background:#f8fafc}
+        .tab-btn.active{color:#1d4ed8;border-bottom-color:#2563eb;background:linear-gradient(180deg,rgba(37,99,235,.05),transparent)}
+        .tab-btn .tab-icon{display:inline-block;width:20px;text-align:center;margin-right:6px;font-size:11px}
+        .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 6px;border-radius:9px;background:#e2e8f0;color:#475569;font-size:10px;font-weight:700;margin-left:6px}
+        .tab-btn.active .tab-badge{background:#dbeafe;color:#1d4ed8}
+        .tab-pane{display:none;animation:fi .35s ease both}
+        .tab-pane.active{display:block}
         .chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px}
         .status-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px}
         .dot{width:6px;height:6px;border-radius:999px;display:inline-block}
@@ -81,16 +89,29 @@
         .ms-check.on{background:#2563eb;border-color:#2563eb}
         .table-row:hover{background:#f8fafc}
         .table-row td{padding:10px 14px!important}
-        /* Minimalist chart canvas container */
         .chart-wrap{position:relative}
         .chart-wrap canvas{width:100%!important}
-        /* Spinner */
         @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
-        /* Section heading accent */
         .h-accent{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;color:#fff;font-size:12px;margin-right:8px}
-        /* Responsive tighten */
+        /* Top list items */
+        .top-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;transition:background .15s}
+        .top-item:hover{background:#f8fafc}
+        .top-bar{flex:1;height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;position:relative}
+        .top-bar > span{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+        .top-rank{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+        /* Division card header colors */
+        .div-card.pg2{background:linear-gradient(135deg,#2563eb,#1e40af)}
+        .div-card.fm4{background:linear-gradient(135deg,#f59e0b,#b45309)}
+        .div-card.op2{background:linear-gradient(135deg,#10b981,#047857)}
+        /* Progress bar */
+        .pbar{height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+        .pbar > span{display:block;height:100%;border-radius:99px;transition:width .8s ease}
+        /* Severity indicator */
+        .sev-dot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
         @media (max-width: 640px){
             .stat-number{font-size:1.5rem!important}
+            .tab-btn{padding:10px 10px;font-size:12px}
+            .tab-btn .tab-icon{margin-right:3px}
         }
     </style>
 </head>
@@ -127,7 +148,7 @@
     </header>
 
     <main class="max-w-[1400px] mx-auto px-4 lg:px-6 py-5">
-        <!-- Filter -->
+        <!-- Global Filter -->
         <div class="card p-4 mb-4 fade-in">
             <div class="flex flex-col xl:flex-row xl:items-center gap-3">
                 <div class="flex flex-wrap gap-2 items-center">
@@ -146,7 +167,6 @@
                 </div>
                 <div class="flex-1"></div>
                 <div class="flex flex-wrap gap-2 items-center">
-                    <!-- Divisi multi -->
                     <div class="ms-wrap" id="divisiFilter" data-state-key="divisi" data-ph="Semua Divisi">
                         <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Divisi</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
                         <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-44">
@@ -154,7 +174,6 @@
                             <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
-                    <!-- Lokasi multi -->
                     <div class="ms-wrap" id="lokasiFilter" data-state-key="lokasi" data-ph="Semua Lokasi">
                         <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Lokasi</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
                         <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-44">
@@ -162,7 +181,6 @@
                             <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
-                    <!-- Status multi -->
                     <div class="ms-wrap" id="statusFilter" data-state-key="status" data-ph="Semua Status">
                         <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[140px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Status</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
                         <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48">
@@ -176,7 +194,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Active chips -->
             <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
                 <span class="text-slate-400"><i class="fas fa-info-circle mr-1"></i></span>
                 <span id="activePeriodText" class="text-slate-600 font-medium"></span>
@@ -188,183 +205,268 @@
             </div>
         </div>
 
-        <!-- Stat Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-blue-50/30">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-alt text-blue-500"></i>Total</div>
-                        <div class="stat-number text-3xl text-slate-900 mt-1" id="statTotal">0</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">Laporan kerusakan</div>
+        <!-- Tab Navigation -->
+        <div class="card mb-4 overflow-hidden fade-in">
+            <div class="flex border-b border-slate-200 overflow-x-auto" id="tabNav">
+                <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+                    <span class="tab-icon"><i class="fas fa-gauge-high"></i></span>Ikhtisar
+                </button>
+                <button class="tab-btn" data-tab="damage" onclick="switchTab('damage')">
+                    <span class="tab-icon"><i class="fas fa-triangle-exclamation"></i></span>Jenis Kerusakan<span class="tab-badge" id="badgeDamage">0</span>
+                </button>
+                <button class="tab-btn" data-tab="divisi" onclick="switchTab('divisi')">
+                    <span class="tab-icon"><i class="fas fa-sitemap"></i></span>Per Divisi<span class="tab-badge" id="badgeDivisi">0</span>
+                </button>
+                <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">
+                    <span class="tab-icon"><i class="fas fa-calendar-alt"></i></span>Kalender
+                </button>
+                <button class="tab-btn" data-tab="data" onclick="switchTab('data')">
+                    <span class="tab-icon"><i class="fas fa-table-list"></i></span>Data Lengkap
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: OVERVIEW ==================== -->
+        <div class="tab-pane active" id="tab-overview">
+            <!-- KPI Row -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <div class="card card-hover p-4 bg-gradient-to-br from-white to-blue-50/30">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-alt text-blue-500"></i>Total Laporan</div>
+                            <div class="stat-number text-3xl text-slate-900 mt-1" id="statTotal">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statTotalSub">—</div>
+                        </div>
+                        <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><i class="fas fa-clipboard-list"></i></div>
                     </div>
-                    <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><i class="fas fa-clipboard-list"></i></div>
+                </div>
+                <div class="card card-hover p-4 bg-gradient-to-br from-white to-red-50/30">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-location-dot text-red-500"></i>Lokasi Terdampak</div>
+                            <div class="stat-number text-3xl text-red-600 mt-1" id="statUnits">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statUnitsSub">Area irigasi</div>
+                        </div>
+                        <div class="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm"><i class="fas fa-map-pin"></i></div>
+                    </div>
+                </div>
+                <div class="card card-hover p-4 bg-gradient-to-br from-white to-amber-50/40">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-invoice text-amber-500"></i>Dalam Proses</div>
+                            <div class="stat-number text-3xl text-amber-600 mt-1" id="statProses">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statProsesSub">PR aktif</div>
+                        </div>
+                        <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-cogs"></i></div>
+                    </div>
+                </div>
+                <div class="card card-hover p-4 bg-gradient-to-br from-white to-slate-100">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-hourglass-half text-slate-500"></i>Belum Ditangani</div>
+                            <div class="stat-number text-3xl text-slate-700 mt-1" id="statPending">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statPendingSub">Perlu tindak lanjut</div>
+                        </div>
+                        <div class="w-9 h-9 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-sm"><i class="fas fa-exclamation"></i></div>
+                    </div>
                 </div>
             </div>
-            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-red-50/30">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-map-marker-alt text-red-500"></i>Lokasi</div>
-                        <div class="stat-number text-3xl text-red-600 mt-1" id="statUnits">0</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">Area terdampak</div>
+
+            <!-- Trend + Status + Divisi donut -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4">
+                <div class="card p-4 lg:col-span-7">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-blue-600"><i class="fas fa-chart-line text-[11px]"></i></span>Tren Laporan Kerusakan</h3>
+                            <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]" id="trendSub">Frekuensi laporan per periode</p>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium"><i class="fas fa-circle text-blue-500 mr-1 text-[6px]"></i>Laporan</span>
                     </div>
-                    <div class="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm"><i class="fas fa-map-pin"></i></div>
+                    <div class="chart-wrap h-[240px]"><canvas id="trendChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-3">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-amber-500 w-7 h-7 text-[11px]"><i class="fas fa-tasks"></i></span>Status Penanganan</h3>
+                    <div class="chart-wrap h-[180px]"><canvas id="statusChart"></canvas></div>
+                    <div id="statusInsight" class="mt-2 text-[11px] text-slate-500 text-center"></div>
+                </div>
+                <div class="card p-4 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-cyan-600 w-7 h-7 text-[11px]"><i class="fas fa-building"></i></span>Per Divisi</h3>
+                    <div class="chart-wrap h-[180px]"><canvas id="divisiChart"></canvas></div>
                 </div>
             </div>
-            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-amber-50/40">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-invoice text-amber-500"></i>Proses</div>
-                        <div class="stat-number text-3xl text-amber-600 mt-1" id="statProses">0</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">PR Aktif</div>
+
+            <!-- Top lists: Lokasi, Sparepart, Kerusakan -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+                <div class="card p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-fire text-red-500 mr-1.5 text-xs"></i>Top Lokasi Rawan</h3>
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Hotspot</span>
                     </div>
-                    <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-cogs"></i></div>
+                    <div id="topLokasi" class="space-y-1"></div>
+                </div>
+                <div class="card p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-boxes text-amber-500 mr-1.5 text-xs"></i>Sparepart Paling Dibutuhkan</h3>
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Kebutuhan</span>
+                    </div>
+                    <div id="topSparepart" class="space-y-1"></div>
+                </div>
+                <div class="card p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-triangle-exclamation text-purple-500 mr-1.5 text-xs"></i>Jenis Kerusakan Dominan</h3>
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Frekuensi</span>
+                    </div>
+                    <div id="topJenis" class="space-y-1"></div>
                 </div>
             </div>
-            <div class="card card-hover p-4 fade-in bg-gradient-to-br from-white to-slate-100">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-hourglass-half text-slate-500"></i>Belum</div>
-                        <div class="stat-number text-3xl text-slate-700 mt-1" id="statPending">0</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">Menunggu tindak lanjut</div>
+
+            <!-- Ringkasan divisi + Aktivitas terbaru -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4">
+                <div class="card p-4 lg:col-span-5">
+                    <h3 class="font-bold text-slate-800 text-sm mb-3"><i class="fas fa-layer-group text-indigo-500 mr-1.5 text-xs"></i>Ringkasan Cepat</h3>
+                    <div id="quickInsights" class="space-y-2"></div>
+                </div>
+                <div class="card p-4 lg:col-span-7">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-clock-rotate-left text-emerald-500 mr-1.5 text-xs"></i>Laporan Terbaru</h3>
+                        <button onclick="switchTab('data')" class="text-[10px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded bg-blue-50">Lihat semua →</button>
                     </div>
-                    <div class="w-9 h-9 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-sm"><i class="fas fa-exclamation"></i></div>
+                    <div id="recentList" class="divide-y divide-slate-100"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Row 1: Trend + Status -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-            <div class="card p-4 lg:col-span-2 fade-in">
-                <div class="flex items-center justify-between mb-2">
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-blue-600"><i class="fas fa-chart-line text-[11px]"></i></span>Tren Laporan</h3>
-                        <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Jumlah laporan per periode</p>
-                    </div>
-                </div>
-                <div class="chart-wrap h-[220px]"><canvas id="trendChart"></canvas></div>
-            </div>
-            <div class="card p-4 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-amber-500"><i class="fas fa-tasks text-[11px]"></i></span>Status</h3>
-                </div>
-                <div class="chart-wrap h-[200px] flex items-center justify-center"><canvas id="statusChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Calendar -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-            <div class="card p-4 lg:col-span-2 fade-in">
-                <div class="flex items-center justify-between mb-2">
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-indigo-600"><i class="fas fa-calendar-alt text-[11px]"></i></span>Kalender Inspeksi</h3>
-                        <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Klik tanggal untuk melihat detail</p>
-                    </div>
-                    <div class="flex items-center gap-0.5">
-                        <button onclick="changeCalMonth(-1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-left text-[10px]"></i></button>
-                        <span id="calMonthYear" class="text-xs font-bold text-slate-700 w-28 text-center"></span>
-                        <button onclick="changeCalMonth(1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-right text-[10px]"></i></button>
-                        <button onclick="goToday()" class="ml-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded bg-blue-50">Hari ini</button>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-3 mb-2 text-[10px] text-slate-500">
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></i>Ada laporan</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>≥ 3 laporan</span>
-                    <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md border-2 border-blue-600 flex items-center justify-center text-[8px] font-bold">18</span>Hari ini</span>
-                    <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold">15</span>Terpilih</span>
-                </div>
-                <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
-            </div>
-            <div class="card p-4 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-emerald-600"><i class="fas fa-list-check text-[11px]"></i></span>Detail Tanggal</h3>
-                    <p class="text-[11px] text-slate-500" id="calDateLabel">—</p>
-                </div>
-                <div id="calDayDetail" class="space-y-2 max-h-[330px] overflow-y-auto pr-1"></div>
-            </div>
-        </div>
-
-        <!-- Row 3: Lokasi + Sparepart -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-            <div class="card p-4 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-red-500"><i class="fas fa-map-marker-alt text-[11px]"></i></span>Top Lokasi Kerusakan</h3>
-                </div>
-                <div class="chart-wrap h-[230px]"><canvas id="lokasiChart"></canvas></div>
-            </div>
-            <div class="card p-4 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-amber-500"><i class="fas fa-boxes text-[11px]"></i></span>Kebutuhan Sparepart</h3>
-                </div>
-                <div class="chart-wrap h-[230px]"><canvas id="sparepartChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Row 4: Jenis + Divisi -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-            <div class="card p-4 lg:col-span-2 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-purple-600"><i class="fas fa-spray-can text-[11px]"></i></span>Jenis Kerusakan</h3>
-                </div>
-                <div class="chart-wrap h-[220px]"><canvas id="jenisChart"></canvas></div>
-            </div>
-            <div class="card p-4 fade-in">
-                <div class="mb-2">
-                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-cyan-600"><i class="fas fa-building text-[11px]"></i></span>Per Divisi</h3>
-                </div>
-                <div class="chart-wrap h-[200px] flex items-center justify-center"><canvas id="divisiChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Table -->
-        <div class="card overflow-hidden fade-in mb-6">
-            <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <!-- ==================== TAB: JENIS KERUSAKAN ==================== -->
+        <div class="tab-pane" id="tab-damage">
+            <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fas fa-table text-blue-600"></i>Detail Laporan</h3>
-                    <p class="text-[11px] text-slate-500">Data dari spreadsheet Form Responses · Sheet Response</p>
+                    <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-triangle-exclamation text-amber-500 mr-2"></i>Analisis Jenis Kerusakan</h2>
+                    <p class="text-xs text-slate-500 ml-6">Detail frekuensi, lokasi terdampak, sparepart yang dibutuhkan, dan status penanganan untuk setiap jenis kerusakan.</p>
                 </div>
-                <button onclick="exportCSV()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition self-start">
+                <div class="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200"><span id="dmgTotalTypes">0</span> jenis kerusakan · <span id="dmgTotalReports">0</span> laporan</div>
+            </div>
+
+            <!-- Chart besar -->
+            <div class="card p-4 mb-3">
+                <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-purple-600"><i class="fas fa-chart-column text-[11px]"></i></span>Frekuensi Kerusakan per Jenis</h3>
+                <div class="chart-wrap h-[280px]"><canvas id="jenisChart"></canvas></div>
+            </div>
+
+            <!-- Detail per jenis -->
+            <div id="damageDetailGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- ==================== TAB: PER DIVISI ==================== -->
+        <div class="tab-pane" id="tab-divisi">
+            <div class="mb-3">
+                <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-sitemap text-cyan-500 mr-2"></i>Fokus Perbaikan per Divisi</h2>
+                <p class="text-xs text-slate-500 ml-6">Breakdown lengkap per area: total laporan, status penanganan, hotspot lokasi, kerusakan dominan, dan sparepart yang dibutuhkan.</p>
+            </div>
+
+            <!-- Divisi summary cards -->
+            <div id="divisiCards" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4"></div>
+
+            <!-- Comparative chart + per-divisi deep dive -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
+                <div class="card p-4 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-cyan-600"><i class="fas fa-chart-pie text-[11px]"></i></span>Distribusi Laporan per Divisi</h3>
+                    <div class="chart-wrap h-[260px]"><canvas id="lokasiChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-3">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-blue-600"><i class="fas fa-chart-bar text-[11px]"></i></span>Status Penanganan per Divisi</h3>
+                    <div class="chart-wrap h-[260px]"><canvas id="divisiStackedChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Per-divisi detail blocks -->
+            <div id="divisiDetailGrid" class="space-y-3"></div>
+        </div>
+
+        <!-- ==================== TAB: KALENDER ==================== -->
+        <div class="tab-pane" id="tab-calendar">
+            <div class="mb-3">
+                <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-calendar-alt text-indigo-500 mr-2"></i>Kalender Inspeksi</h2>
+                <p class="text-xs text-slate-500 ml-6">Klik tanggal untuk memfilter detail laporan hari itu.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div class="card p-4 lg:col-span-2">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-800 text-sm"></h3>
+                        <div class="flex items-center gap-0.5">
+                            <button onclick="changeCalMonth(-1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                            <span id="calMonthYear" class="text-xs font-bold text-slate-700 w-36 text-center"></span>
+                            <button onclick="changeCalMonth(1)" class="w-7 h-7 rounded-md hover:bg-slate-100 text-slate-600"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                            <button onclick="goToday()" class="ml-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded bg-blue-50">Hari ini</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3 mb-2 text-[10px] text-slate-500">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></span>Ada laporan</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>≥ 3 laporan</span>
+                        <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md border-2 border-blue-600 flex items-center justify-center text-[8px] font-bold">18</span>Hari ini</span>
+                        <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold">15</span>Terpilih</span>
+                    </div>
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"></h3>
+                    <p class="text-[11px] text-slate-500 -mt-2 mb-2" id="calDateLabel">—</p>
+                    <div id="calDayDetail" class="space-y-2 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: DATA ==================== -->
+        <div class="tab-pane" id="tab-data">
+            <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-table-list text-blue-500 mr-2"></i>Data Laporan Lengkap</h2>
+                    <p class="text-xs text-slate-500 ml-6">Data dari spreadsheet Form Responses · Sheet Response · <span id="dataTableCount">0</span> baris.</p>
+                </div>
+                <button onclick="exportCSV()" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
                     <i class="fas fa-download text-[10px]"></i>Export CSV
                 </button>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-[12px]">
-                    <thead>
-                        <tr class="bg-slate-50 text-slate-600 text-[10px] uppercase tracking-wider">
-                            <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('timestamp')">Tgl <i class="fas fa-sort opacity-40 ml-0.5"></i></th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100" onclick="sortTable('lokasi')">Lokasi</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Divisi</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Engine</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Irrigator</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Kerusakan</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Keterangan</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Sparepart</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">No PR</th>
-                            <th class="px-3.5 py-2.5 text-left font-semibold">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
-            <div id="emptyState" class="hidden p-10 text-center">
-                <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
-                <p class="text-slate-500 text-sm font-medium">Tidak ada data</p>
-                <p class="text-slate-400 text-xs mt-1">Coba ubah filter</p>
-            </div>
-            <div id="loadingState" class="p-10 text-center">
-                <i class="fas fa-spinner spin text-blue-600 text-2xl mb-2"></i>
-                <p class="text-slate-500 text-sm">Memuat data…</p>
-            </div>
-            <div class="px-4 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <span id="tableCount">—</span>
-                <div class="flex items-center gap-1">
-                    <button onclick="prevPage()" id="prevBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-left text-[10px]"></i></button>
-                    <span id="pageInfo" class="px-1">—</span>
-                    <button onclick="nextPage()" id="nextBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-right text-[10px]"></i></button>
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[12px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-[10px] uppercase tracking-wider">
+                                <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100 whitespace-nowrap" onclick="sortTable('timestamp')">Tgl <i class="fas fa-sort opacity-40 ml-0.5"></i></th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold cursor-pointer hover:bg-slate-100" onclick="sortTable('lokasi')">Lokasi</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Divisi</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Engine</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Irrigator</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Kerusakan</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Keterangan</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Sparepart</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">No PR</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden p-10 text-center">
+                    <i class="fas fa-search text-slate-300 text-4xl mb-2"></i>
+                    <p class="text-slate-500 text-sm font-medium">Tidak ada data</p>
+                    <p class="text-slate-400 text-xs mt-1">Coba ubah filter</p>
+                </div>
+                <div id="loadingState" class="p-10 text-center">
+                    <i class="fas fa-spinner spin text-blue-600 text-2xl mb-2"></i>
+                    <p class="text-slate-500 text-sm">Memuat data…</p>
+                </div>
+                <div class="px-4 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span id="tableCount">—</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="prevPage()" id="prevBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                        <span id="pageInfo" class="px-1">—</span>
+                        <button onclick="nextPage()" id="nextBtn" class="px-1.5 py-1 rounded hover:bg-slate-100 disabled:opacity-30"><i class="fas fa-chevron-right text-[10px]"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="text-center text-[11px] text-slate-400 pb-4">
+        <div class="text-center text-[11px] text-slate-400 pb-4 mt-4">
             <p>© 2026 PG2 Irrigation Monitor · Sync otomatis via GitHub Actions (15 menit) · <a href="https://github.com/wahyudp76/Update-Spareparts-FS" target="_blank" class="hover:text-blue-600"><i class="fab fa-github mr-0.5"></i>wahyudp76/Update-Spareparts-FS</a></p>
         </div>
     </main>
