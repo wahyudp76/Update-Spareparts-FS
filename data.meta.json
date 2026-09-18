@@ -1,0 +1,22 @@
+{
+  "sheetId": "1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk",
+  "sheetName": "Response",
+  "lastFetchSuccess": true,
+  "lastFetchAttempt": "2026-09-18T15:21:17.999Z",
+  "lastFetchError": null,
+  "recordCount": 16,
+  "headers": [
+    "Timestamp",
+    "Tanggal Inspeksi",
+    "Lokasi",
+    "DIvisi",
+    "Jenis Engine",
+    "Kode Engine",
+    "Jenis Irrigator",
+    "Kode Irrigator",
+    "Jenis Kerusakan",
+    "Keterangan Kerusakan",
+    "Spareparts Yang Dibutuhkan",
+    "Nomor PR / Notifikasi"
+  ]
+}

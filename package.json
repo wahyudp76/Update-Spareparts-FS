@@ -1,0 +1,10 @@
+{
+  "name": "pg2-irrigation-dashboard",
+  "version": "1.0.0",
+  "description": "Fetch data from Google Sheets for PG2 Irrigation Dashboard",
+  "private": true,
+  "main": "scripts/fetch-data.js",
+  "scripts": {
+    "fetch": "node scripts/fetch-data.js"
+  }
+}
