@@ -69,26 +69,56 @@ function parseCSV(text) {
 function parseDate(s) {
     if (!s) return null;
     s = String(s).trim(); if (!s) return null;
-    // ISO yyyy-mm-dd (data.json cache hasil fetch-data.js)
-    let d = new Date(s); if (!isNaN(d.getTime())) return d;
-    // Format dengan jam → MM/DD/YYYY HH:MM (Google Sheets timestamp)
-    // Format tanpa jam → DD/MM/YYYY (Form Indonesia)
-    const hasTime = /\d{1,2}:\d{2}/.test(s);
-    const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+
+    // Spreadsheet ini locale ID → SEMUA format slash adalah DD/MM/YYYY
+    // (dengan jam opsional). Jangan tebak MM/DD dari ada/tidaknya jam —
+    // itu salah untuk locale ID dan bikin tanggal seperti 19/09 loncat ke 2027.
+    function tryDMY(dd,mm,yyyy,hh,mi,ss){
+        dd=+dd; mm=+mm;
+        if(mm<1||mm>12||dd<1||dd>31) return null;
+        const d=new Date(yyyy, mm-1, dd, +(hh||0), +(mi||0), +(ss||0));
+        if(d.getFullYear()!==+yyyy||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
+        return d;
+    }
+    function tryMDY(mm,dd,yyyy,hh,mi,ss){
+        mm=+mm; dd=+dd;
+        if(mm<1||mm>12||dd<1||dd>31) return null;
+        const d=new Date(yyyy, mm-1, dd, +(hh||0), +(mi||0), +(ss||0));
+        if(d.getFullYear()!==+yyyy||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
+        return d;
+    }
+
+    // dd/mm/yyyy dengan jam opsional
+    let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
     if (m) {
-        let mo, dy;
-        if (hasTime) { mo=+m[1]-1; dy=+m[2]; }
-        else { dy=+m[1]; mo=+m[2]-1; }
-        d = new Date(+m[3], mo, dy, +(m[4]||0), +(m[5]||0), +(m[6]||0));
-        if (!isNaN(d.getTime())) return d;
+        const a=+m[1], b=+m[2];
+        let d = null;
+        if (a > 12)      d = tryDMY(m[1],m[2],m[3],m[4],m[5],m[6]);
+        else if (b > 12) d = tryMDY(m[1],m[2],m[3],m[4],m[5],m[6]);
+        else             d = tryDMY(m[1],m[2],m[3],m[4],m[5],m[6]); // ambigu → DD/MM (locale ID)
+        if (d) return d;
+    }
+    // ISO yyyy-mm-dd (data.json cache) — set jam ke 12:00 lokal agar tidak
+    // bergeser akibat konversi UTC (mis. 00:00 WIB = 17:00 UTC hari sebelumnya).
+    let d = new Date(s);
+    if (!isNaN(d.getTime())) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{4}-\d{2}-\d{2}T/.test(s)) {
+            // sudah memiliki tanggal yang valid; biarkan tapi pastikan tidak off-by-one
+            return d;
+        }
     }
     // dd-mm-yyyy
-    const m2 = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+    const m2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?$/);
     if (m2) {
-        d = new Date(+m2[3], +m2[2]-1, +m2[1], +(m2[4]||0), +(m2[5]||0));
-        if (!isNaN(d.getTime())) return d;
+        d = tryDMY(m2[1],m2[2],m2[3],m2[4],m2[5]);
+        if (d) return d;
     }
     return null;
+}
+// Format tanggal ke ISO tanpa terpengaruh timezone (pakai komponen lokal)
+function localIsoDate(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
 }
 function normalizeFromCSV(rows) {
     if (!rows.length) return [];
@@ -113,7 +143,10 @@ function normalizeFromCSV(rows) {
     for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
         const get = f => hi[f] >= 0 ? String(r[hi[f]]||'').trim() : '';
-        const tgl = parseDate(get('tglInsp')) || parseDate(get('ts')) || new Date();
+        // Tgl inspeksi lebih dulu (yang dipilih user); fallback ke Timestamp submit.
+        // Jangan pernah new Date() — nanti bikin record "hari ini" palsu.
+        const tgl = parseDate(get('tglInsp')) || parseDate(get('ts'));
+        if (!tgl) continue;
         const lok = get('lok'), et = get('eT'), ec = get('eC'), it = get('iT'), ic = get('iC'), div = get('div');
         const dt = get('dT'), dn = get('dN'), sp = get('sp'), pr = get('pr');
         const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
@@ -122,9 +155,17 @@ function normalizeFromCSV(rows) {
         const spNorm = sp ? sp.replace(/[\r\n]+/g,'; ').replace(/\s*;\s*/g,'; ') : '-';
         const status = pr ? 'Proses' : 'Belum Ditangani';
         if (!lok && !ic && !dt && spNorm === '-') continue;
+        // Normalisasi timestamp: gunakan komponen TANGGAL dari tgl (hasil parseDate)
+        // tapi jam dari Timestamp asli jika tersedia, untuk sorting yang akurat.
+        // tanggalInspeksi pakai localIsoDate agar tidak off-by-one akibat UTC.
+        const tsDate = parseDate(get('ts'));
+        const outTs = new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate(),
+                               tsDate ? tsDate.getHours()   : 12,
+                               tsDate ? tsDate.getMinutes() : 0,
+                               tsDate ? tsDate.getSeconds() : 0);
         out.push({
-            timestamp: tgl.toISOString(),
-            tanggalInspeksi: tgl.toISOString().slice(0,10),
+            timestamp: outTs.toISOString(),
+            tanggalInspeksi: localIsoDate(tgl),
             lokasi: lok || '-', divisi: div || '-',
             engineType: et || '-', engineCode: ec || '-', engine: engine || '-',
             irrType: it || '-', irrCode: ic || '-', irrigator,
@@ -151,7 +192,7 @@ function generateDemo() {
         const dc = dmg[Math.floor(Math.random()*dmg.length)];
         const note = dc[1][Math.floor(Math.random()*dc[1].length)];
         data.push({
-            timestamp:d.toISOString(),tanggalInspeksi:d.toISOString().slice(0,10),
+            timestamp:d.toISOString(),tanggalInspeksi:localIsoDate(d),
             lokasi:lok[Math.floor(Math.random()*lok.length)],divisi:divs[Math.floor(Math.random()*divs.length)],
             engineType:ets[Math.floor(Math.random()*ets.length)],engineCode:String(Math.floor(Math.random()*200)+100).padStart(4,'0'),
             engine:'',irrType:its[Math.floor(Math.random()*its.length)],irrCode:String(Math.floor(Math.random()*200)+1).padStart(4,'0'),
@@ -203,8 +244,12 @@ async function refreshData(forceLive=false) {
                         const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
                         const sp = (r.sparepart||'-');
                         const pr = r.prNumber||null;
-                        const tgl = r.tanggalInspeksi || (r.timestamp?r.timestamp.slice(0,10):new Date().toISOString().slice(0,10));
-                        const tglObj = parseDate(tgl) || parseDate(r.timestamp) || new Date();
+                        const tglObj = parseDate(r.tanggalInspeksi) || parseDate(r.timestamp);
+                        if(!tglObj) return null; // skip record rusak
+                        const tgl = localIsoDate(tglObj);
+                        const tsObj = parseDate(r.timestamp) || tglObj;
+                        const mergedTs = new Date(tglObj.getFullYear(), tglObj.getMonth(), tglObj.getDate(),
+                                                  tsObj.getHours(), tsObj.getMinutes(), tsObj.getSeconds());
                         return {
                             ...r,
                             lokasi: r.lokasi || r.unit || '-',
@@ -219,11 +264,11 @@ async function refreshData(forceLive=false) {
                             prNumber: pr,
                             status: pr?'Proses':'Belum Ditangani',
                             unit: r.lokasi || r.unit || '-',
-                            timestamp: tglObj.toISOString(),
+                            timestamp: mergedTs.toISOString(),
                             tanggalInspeksi: tgl,
                             __row: typeof r.__row==='number'?r.__row:(i+2)
                         };
-                    });
+                    }).filter(Boolean);
                     source='github-cache';
                 }
             }
@@ -266,7 +311,7 @@ async function refreshData(forceLive=false) {
 function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
 function startOfWeek(d){const x=startOfDay(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 function startOfMonth(d){return new Date(d.getFullYear(),d.getMonth(),1);}
-function isoDate(d){const x=new Date(d);x.setHours(0,0,0,0);return x.toISOString().slice(0,10);}
+function isoDate(d){const x=new Date(d);x.setHours(0,0,0,0);return localIsoDate(x);}
 function fmtDate(d){return new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric',weekday:'long'});}
 function fmtDateShort(d){return new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}
 function dateRangeDays() {
@@ -1869,7 +1914,8 @@ async function submitEdit(){
             sparepart:payload.sparepart, prNumber:payload.prNumber,
         });
         if(payload.tanggalInspeksi){
-            const t=new Date(payload.tanggalInspeksi+'T12:00:00');
+            const [y,m,day]=payload.tanggalInspeksi.split('-').map(Number);
+            const t=new Date(y, m-1, day, 12, 0, 0);
             upd.tanggalInspeksi=payload.tanggalInspeksi;
             upd.timestamp=t.toISOString();
         }

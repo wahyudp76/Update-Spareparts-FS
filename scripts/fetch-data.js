@@ -67,26 +67,58 @@ function parseDateFlexible(s) {
   if (!s) return null;
   s = String(s).trim();
   if (!s) return null;
-  // Timestamp Google Sheets selalu format AS: MM/DD/YYYY HH:MM:SS (ada jam).
-  // Tanggal Inspeksi dari Form (locale ID) selalu: DD/MM/YYYY (tanpa jam).
-  // Deteksi dari ada/tidaknya ':' untuk membedakan keduanya secara andal.
-  const hasTime = /\d{1,2}:\d{2}/.test(s);
-  const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (m) {
-    let mo, dy;
-    if (hasTime) { mo = parseInt(m[1],10)-1; dy = parseInt(m[2],10); }
-    else         { dy = parseInt(m[1],10);   mo = parseInt(m[2],10)-1; }
-    const d = new Date(parseInt(m[3],10), mo, dy, parseInt(m[4]||'0',10), parseInt(m[5]||'0',10), parseInt(m[6]||'0',10));
-    if (!isNaN(d.getTime())) return d;
+
+  // Spreadsheet ini pakai locale ID (Indonesia), jadi SEMUA tanggal yang keluar
+  // dari Google Sheets — baik kolom Timestamp otomatis maupun Tanggal Inspeksi
+  // dari Form — menggunakan format DD/MM/YYYY (dengan HH:MM:SS opsional).
+  // Kita TIDAK menebak dd/mm vs mm/dd dari ada/tidaknya jam, karena itu
+  // salah (Google bisa kirim timestamp dengan jam tapi dalam locale ID).
+  // Heuristik: jika field pertama > 12 → itu pasti hari → DD/MM.
+  // Jika tidak jelas (keduanya ≤ 12), kita pilih DD/MM sesuai locale sheet
+  // agar konsisten dengan data yang selama ini benar (tgl 1-12).
+  function tryDMY(dd, mm, yyyy, hh, mi, ss) {
+    dd = parseInt(dd,10); mm = parseInt(mm,10);
+    if (mm < 1 || mm > 12) return null;
+    if (dd < 1 || dd > 31) return null;
+    const d = new Date(yyyy, mm-1, dd, parseInt(hh||'0',10), parseInt(mi||'0',10), parseInt(ss||'0',10));
+    // Validasi: tanggal yang di-set harus cocok (Date overflow protection)
+    if (d.getFullYear() !== +yyyy || d.getMonth() !== mm-1 || d.getDate() !== dd) return null;
+    return d;
   }
-  // Fallback ISO
+  function tryMDY(mm, dd, yyyy, hh, mi, ss) {
+    mm = parseInt(mm,10); dd = parseInt(dd,10);
+    if (mm < 1 || mm > 12) return null;
+    if (dd < 1 || dd > 31) return null;
+    const d = new Date(yyyy, mm-1, dd, parseInt(hh||'0',10), parseInt(mi||'0',10), parseInt(ss||'0',10));
+    if (d.getFullYear() !== +yyyy || d.getMonth() !== mm-1 || d.getDate() !== dd) return null;
+    return d;
+  }
+
+  // dd/mm/yyyy dengan jam opsional
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
+  if (m) {
+    const a = parseInt(m[1],10), b = parseInt(m[2],10);
+    let d = null;
+    if (a > 12) {
+      // a pasti hari → DD/MM
+      d = tryDMY(m[1], m[2], m[3], m[4], m[5], m[6]);
+    } else if (b > 12) {
+      // b pasti hari → MM/DD
+      d = tryMDY(m[1], m[2], m[3], m[4], m[5], m[6]);
+    } else {
+      // Ambigu (keduanya 1-12): locale sheet Indonesia → DD/MM
+      d = tryDMY(m[1], m[2], m[3], m[4], m[5], m[6]);
+    }
+    if (d) return d;
+  }
+  // ISO
   let d = new Date(s);
   if (!isNaN(d.getTime())) return d;
-  // Fallback dd-mm-yyyy
-  const m2 = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
+  // dd-mm-yyyy
+  const m2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?$/);
   if (m2) {
-    d = new Date(parseInt(m2[3],10), parseInt(m2[2],10)-1, parseInt(m2[1],10), parseInt(m2[4]||'0',10), parseInt(m2[5]||'0',10));
-    if (!isNaN(d.getTime())) return d;
+    d = tryDMY(m2[1], m2[2], m2[3], m2[4], m2[5]);
+    if (d) return d;
   }
   return null;
 }
@@ -126,7 +158,19 @@ function mapRows(rows) {
 
     const tglInsp = parseDateFlexible(get('tanggalInspeksi'));
     const tsRaw = parseDateFlexible(get('timestamp'));
-    const ts = tglInsp || tsRaw || new Date();
+    // Tanggal "resmi" untuk laporan: Tanggal Inspeksi (yang dipilih user) jika
+    // ada; jika kosong (user lupa isi), pakai tanggal dari Timestamp submit.
+    // Jam untuk pengurutan: selalu pakai jam Timestamp jika tersedia, agar
+    // laporan pada hari yang sama terurut sesuai waktu kirim.
+    const tgl = tglInsp || tsRaw;
+    if (!tgl) {
+      console.warn(`[warn] Baris ${i+2}: tanggal tidak valid (timestamp="${get('timestamp')}", tglInsp="${get('tanggalInspeksi')}") — dilewati.`);
+      continue;
+    }
+    const tsForTime = tsRaw || tgl;
+    const mergedTs = new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate(),
+                              tsForTime.getHours(), tsForTime.getMinutes(), tsForTime.getSeconds());
+    const isoDate = `${tgl.getFullYear()}-${String(tgl.getMonth()+1).padStart(2,'0')}-${String(tgl.getDate()).padStart(2,'0')}`;
 
     const lokasi = get('lokasi');
     const et = get('engineType');
@@ -140,7 +184,6 @@ function mapRows(rows) {
     const pr = get('prNumber');
 
     const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
-    const unit = lokasi || ec || 'Tidak tercatat';
     const engine = [et, ec].filter(Boolean).join(' – ');
     const damage = dn ? `${dt}${dt && dn ? ' — ' : ''}${dn}` : (dt || '-');
     sp = sp ? sp.replace(/[\r\n]+/g, '; ').replace(/\s*;\s*/g, '; ') : '-';
@@ -152,8 +195,8 @@ function mapRows(rows) {
     if (!lokasi && !ic && !dt && sp === '-') continue;
 
     out.push({
-      timestamp: ts.toISOString(),
-      tanggalInspeksi: ts.toISOString().slice(0,10),
+      timestamp: mergedTs.toISOString(),
+      tanggalInspeksi: isoDate,
       lokasi: lokasi || '-',
       divisi: divisi || '-',
       engineType: et || '-',

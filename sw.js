@@ -1,5 +1,5 @@
-// PG2 Dashboard service worker — network-first with cache-busting support
-const CACHE = 'pg2-dashboard-v3';
+// PG2 Dashboard service worker — network-first with robust cache-busting
+const CACHE = 'pg2-dashboard-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,10 @@ const ASSETS = [
   './assets/icon-maskable.svg'
 ];
 // data.json TIDAK di-precache: selalu diambil fresh dari jaringan.
-// Cache hanya dipakai sebagai fallback offline.
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -36,10 +39,9 @@ self.addEventListener('fetch', e => {
   // Jangan intercept request ke Google Sheets (export CSV)
   if (url.hostname === 'docs.google.com') return;
 
-  // Request dengan ?t=<timestamp> (cache-bust refresh) → selalu fetch fresh,
-  // JANGAN kembalikan cache dulu. Hanya gunakan cache sebagai fallback saat offline.
-  const hasCacheBust = url.searchParams.has('t');
-  if (hasCacheBust) {
+  // Request dengan ?t=<timestamp> (cache-bust refresh / auto refresh) →
+  // selalu fetch fresh, JANGAN kembalikan cache dulu.
+  if (url.searchParams.has('t')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' }).then(res => {
         if (res.ok) {
@@ -52,7 +54,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Strategi network-first untuk request lain
+  // Strategi network-first untuk request lain (stale cache hanya sebagai fallback).
   e.respondWith(
     fetch(e.request).then(res => {
       if (res.ok) {

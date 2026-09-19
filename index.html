@@ -651,9 +651,44 @@
 
     <script src="app.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
-        }
+        // Bersihkan cache HTTP browser lama + service worker lama agar
+        // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
+        (function(){
+            // Flag sessionStorage agar tidak reload berulang (maks 1× per load)
+            const SW_RELOADED_KEY = '__pg2_sw_reloaded';
+            const alreadyReloaded = sessionStorage.getItem(SW_RELOADED_KEY) === '1';
+            // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
+            if ('caches' in window) {
+                caches.keys().then(keys => Promise.all(
+                    keys.filter(k => !k.startsWith('pg2-dashboard-v4')).map(k => caches.delete(k))
+                )).catch(()=>{});
+            }
+            if (!('serviceWorker' in navigator)) return;
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    // Jika ada SW baru yang terinstall, paksa activate lalu reload 1×
+                    if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+                    reg.addEventListener('updatefound', () => {
+                        const nw = reg.installing;
+                        if (!nw) return;
+                        nw.addEventListener('statechange', () => {
+                            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                                nw.postMessage({type:'SKIP_WAITING'});
+                            }
+                        });
+                    });
+                }).catch(()=>{});
+                // Reload sekali otomatis setelah SW baru mengambil alih
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!alreadyReloaded) {
+                        sessionStorage.setItem(SW_RELOADED_KEY, '1');
+                        window.location.reload();
+                    }
+                });
+                // Cek update sw.js setiap kali halaman dimuat
+                navigator.serviceWorker.ready.then(reg => reg.update()).catch(()=>{});
+            });
+        })();
     </script>
 </body>
 </html>
