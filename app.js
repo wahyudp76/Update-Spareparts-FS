@@ -128,7 +128,8 @@ function normalizeFromCSV(rows) {
             engineType: et || '-', engineCode: ec || '-', engine: engine || '-',
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
-            sparepart: spNorm, prNumber: pr || null, status, unit: lok || '-'
+            sparepart: spNorm, prNumber: pr || null, status, unit: lok || '-',
+            __row: i+2 // baris spreadsheet (header=1, data mulai 2)
         });
     }
     return out.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -194,7 +195,7 @@ async function refreshData(forceLive=false) {
             if(res.ok) {
                 const json=await res.json();
                 if(Array.isArray(json)&&json.length) {
-                    data = json.map(r => ({
+                    data = json.map((r,i) => ({
                         ...r,
                         lokasi: r.lokasi || r.unit || '-',
                         divisi: r.divisi || '-',
@@ -207,7 +208,8 @@ async function refreshData(forceLive=false) {
                         damageType: r.damageType || '-',
                         keterangan: r.keterangan || r.notes || '',
                         tanggalInspeksi: r.tanggalInspeksi || (r.timestamp?r.timestamp.slice(0,10):new Date().toISOString().slice(0,10)),
-                        prNumber: r.prNumber || null
+                        prNumber: r.prNumber || null,
+                        __row: r.__row || (i+2)
                     }));
                     source='github-cache';
                 }
@@ -1582,6 +1584,12 @@ function renderTable(){
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
             <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
+            <td class="px-3 py-3">
+                <div class="row-actions">
+                    <button class="act-btn edit" title="Edit laporan" onclick="openEditModal(${filteredData.indexOf(d) + start})"><i class="fas fa-pen"></i></button>
+                    <button class="act-btn del" title="Hapus laporan" onclick="openDeleteModal(${filteredData.indexOf(d) + start})"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
         </tr>`;
     }).join('');
 
@@ -1646,6 +1654,234 @@ function showToast(msg,type='info'){
     setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},4000);
 }
 
+// ======================================================
+// WRITE ENDPOINT (Edit/Delete via Apps Script proxy)
+// ======================================================
+const WRITE_ENDPOINT_KEY = 'pg2_write_url';
+function getWriteUrl(){ return localStorage.getItem(WRITE_ENDPOINT_KEY) || ''; }
+function setWriteUrl(u){ localStorage.setItem(WRITE_ENDPOINT_KEY, u.trim()); }
+
+function initWriteSetup(){
+    const dismissed = localStorage.getItem('pg2_dismissSetup') === '1';
+    const banner = document.getElementById('writeSetupBanner');
+    if(!banner) return;
+    if(!getWriteUrl() && !dismissed){
+        banner.classList.remove('hidden');
+    }
+}
+
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){
+    document.getElementById(id).classList.remove('show');
+    const m=document.getElementById(id);
+    // Reset messages
+    m.querySelectorAll('[id$="Msg"]').forEach(x=>x.innerHTML='');
+}
+// Close modal on backdrop click
+document.addEventListener('click',(e)=>{
+    if(e.target.classList && e.target.classList.contains('modal-backdrop')){
+        e.target.classList.remove('show');
+    }
+});
+// Close modal on ESC
+document.addEventListener('keydown',(e)=>{
+    if(e.key==='Escape'){
+        document.querySelectorAll('.modal-backdrop.show').forEach(m=>m.classList.remove('show'));
+    }
+});
+
+function openSetupModal(){
+    document.getElementById('setupUrl').value = getWriteUrl();
+    document.getElementById('setupTestResult').innerHTML='';
+    openModal('setupModal');
+}
+async function testWriteEndpoint(){
+    const url=document.getElementById('setupUrl').value.trim();
+    const res=document.getElementById('setupTestResult');
+    if(!url){ res.innerHTML='<span class="text-red-600">URL belum diisi</span>'; return; }
+    res.innerHTML='<span class="text-slate-500"><i class="fas fa-spinner spin mr-1"></i>Testing…</span>';
+    try{
+        const r = await fetch(url+'?action=ping', {method:'GET'});
+        const t = await r.text();
+        if(r.ok && (t.includes('ok') || t.includes('pong') || t.length<200)){
+            res.innerHTML='<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Koneksi berhasil! Klik Simpan.</span>';
+        } else {
+            res.innerHTML=`<span class="text-red-600">Respons tidak valid (${r.status}). Pastikan deploy sebagai "Anyone, even anonymous".</span>`;
+        }
+    }catch(e){
+        res.innerHTML=`<span class="text-red-600">Gagal konek: ${e.message}. Coba cek URL / deploy ulang.</span>`;
+    }
+}
+function saveSetup(){
+    const url=document.getElementById('setupUrl').value.trim();
+    if(url && !/^https:\/\/script\.google\.com\//.test(url)){
+        document.getElementById('setupTestResult').innerHTML='<span class="text-red-600">URL harus mulai dengan https://script.google.com/</span>';
+        return;
+    }
+    setWriteUrl(url);
+    closeModal('setupModal');
+    document.getElementById('writeSetupBanner').classList.add('hidden');
+    if(url) showToast('Endpoint Apps Script tersimpan. Edit/hapus sekarang aktif.','success');
+    else showToast('Endpoint dihapus. Fitur edit/hapus dinonaktifkan.','warning');
+}
+
+function requireWriteEndpoint(){
+    const url=getWriteUrl();
+    if(!url){
+        showToast('Setup URL Apps Script dulu untuk bisa edit/hapus.','warning');
+        document.getElementById('writeSetupBanner').classList.remove('hidden');
+        openSetupModal();
+        return false;
+    }
+    return true;
+}
+
+function openEditModal(globalIdx){
+    if(!requireWriteEndpoint()) return;
+    // globalIdx adalah indeks di filteredData
+    const d = filteredData[globalIdx];
+    if(!d) return;
+    const rawi = rawData.indexOf(d);
+    document.getElementById('editRowIdx').value = rawi;
+    document.getElementById('editSheetRow').value = d.__row || '';
+    document.getElementById('editRowLabel').textContent = `· ${d.lokasi} · ${d.damageType||'-'} · ${fmtDateShort(d.timestamp)}`;
+    // Isi form
+    document.getElementById('f_tanggal').value = d.tanggalInspeksi;
+    document.getElementById('f_lokasi').value = d.lokasi==='-'?'':d.lokasi;
+    document.getElementById('f_divisi').value = d.divisi==='-'?'PG2':d.divisi;
+    document.getElementById('f_status').value = d.status;
+    document.getElementById('f_engineType').value = d.engineType==='-'?'':d.engineType;
+    document.getElementById('f_engineCode').value = d.engineCode==='-'?'':d.engineCode;
+    document.getElementById('f_irrType').value = d.irrType==='-'?'':d.irrType;
+    document.getElementById('f_irrCode').value = d.irrCode==='-'?'':d.irrCode;
+    document.getElementById('f_damageType').value = d.damageType==='-'?'':d.damageType;
+    document.getElementById('f_keterangan').value = d.keterangan || '';
+    document.getElementById('f_sparepart').value = d.sparepart==='-'?'':d.sparepart;
+    document.getElementById('f_prNumber').value = d.prNumber || '';
+    document.getElementById('editMsg').innerHTML='';
+    document.getElementById('editSaveBtn').disabled=false;
+    openModal('editModal');
+}
+
+async function submitEdit(){
+    const rawi = parseInt(document.getElementById('editRowIdx').value);
+    const sheetRow = document.getElementById('editSheetRow').value;
+    const d = rawData[rawi];
+    if(!d) return;
+    const payload = {
+        sheetRow: sheetRow ? parseInt(sheetRow) : null,
+        // Identitas untuk mencari baris bila sheetRow tidak akurat
+        matchTs: d.timestamp,
+        matchLokasi: d.lokasi,
+        matchDamage: d.damageType,
+        // Field-field baru
+        tanggalInspeksi: document.getElementById('f_tanggal').value,
+        lokasi: document.getElementById('f_lokasi').value.trim() || '-',
+        divisi: document.getElementById('f_divisi').value,
+        status: document.getElementById('f_status').value,
+        engineType: document.getElementById('f_engineType').value.trim() || '-',
+        engineCode: document.getElementById('f_engineCode').value.trim() || '-',
+        irrType: document.getElementById('f_irrType').value.trim() || '-',
+        irrCode: document.getElementById('f_irrCode').value.trim() || '-',
+        damageType: document.getElementById('f_damageType').value.trim() || '-',
+        keterangan: document.getElementById('f_keterangan').value.trim(),
+        sparepart: document.getElementById('f_sparepart').value.trim() || '-',
+        prNumber: document.getElementById('f_prNumber').value.trim() || null
+    };
+    const msg=document.getElementById('editMsg');
+    const btn=document.getElementById('editSaveBtn');
+    msg.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>Menyimpan ke spreadsheet…</span>';
+    btn.disabled=true;
+    try{
+        const r = await fetch(getWriteUrl(),{
+            method:'POST',
+            body: JSON.stringify({action:'update', ...payload})
+        });
+        const txt = await r.text();
+        let ok = r.ok && (txt.includes('ok') || txt.includes('updated'));
+        if(!ok){
+            msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Gagal: ${txt.slice(0,200)}</span>`;
+            btn.disabled=false;
+            return;
+        }
+        // Update local cache (optimistic)
+        const upd = {...d};
+        Object.assign(upd,{
+            lokasi:payload.lokasi, divisi:payload.divisi, status:payload.status,
+            engineType:payload.engineType, engineCode:payload.engineCode,
+            irrType:payload.irrType, irrCode:payload.irrCode,
+            damageType:payload.damageType, keterangan:payload.keterangan,
+            sparepart:payload.sparepart, prNumber:payload.prNumber,
+        });
+        if(payload.tanggalInspeksi){
+            const t=new Date(payload.tanggalInspeksi+'T12:00:00');
+            upd.tanggalInspeksi=payload.tanggalInspeksi;
+            upd.timestamp=t.toISOString();
+        }
+        upd.engine = [upd.engineType,upd.engineCode].filter(x=>x&&x!=='-').join(' – ') || '-';
+        upd.irrigator = (upd.irrType&&upd.irrCode&&upd.irrType!==upd.irrCode)?`${upd.irrType} – ${upd.irrCode}`:(upd.irrCode||upd.irrType||'-');
+        upd.damage = upd.keterangan ? (upd.damageType?`${upd.damageType} — ${upd.keterangan}`:upd.keterangan) : (upd.damageType||'-');
+        rawData[rawi] = upd;
+        closeModal('editModal');
+        showToast('Perubahan tersimpan di spreadsheet. Data akan refresh…','success');
+        // Force live refresh agar sinkron
+        setTimeout(()=>refreshData(true),800);
+    }catch(e){
+        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
+        btn.disabled=false;
+    }
+}
+
+function openDeleteModal(globalIdx){
+    if(!requireWriteEndpoint()) return;
+    const d = filteredData[globalIdx];
+    if(!d) return;
+    const rawi = rawData.indexOf(d);
+    document.getElementById('delRowIdx').value = rawi;
+    document.getElementById('delSheetRow').value = d.__row || '';
+    document.getElementById('deleteRowLabel').textContent = `${d.lokasi} · ${d.divisi} · ${d.damageType||'-'} · ${fmtDateShort(d.timestamp)}`;
+    document.getElementById('delMsg').innerHTML='';
+    document.getElementById('delConfirmBtn').disabled=false;
+    openModal('deleteModal');
+}
+
+async function submitDelete(){
+    const rawi = parseInt(document.getElementById('delRowIdx').value);
+    const sheetRow = document.getElementById('delSheetRow').value;
+    const d = rawData[rawi];
+    if(!d) return;
+    const msg=document.getElementById('delMsg');
+    const btn=document.getElementById('delConfirmBtn');
+    msg.innerHTML='<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>Menghapus…</span>';
+    btn.disabled=true;
+    try{
+        const r = await fetch(getWriteUrl(),{
+            method:'POST',
+            body: JSON.stringify({
+                action:'delete',
+                sheetRow: sheetRow?parseInt(sheetRow):null,
+                matchTs: d.timestamp,
+                matchLokasi: d.lokasi,
+                matchDamage: d.damageType
+            })
+        });
+        const txt = await r.text();
+        let ok = r.ok && (txt.includes('ok') || txt.includes('deleted'));
+        if(!ok){
+            msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Gagal: ${txt.slice(0,200)}</span>`;
+            btn.disabled=false;
+            return;
+        }
+        closeModal('deleteModal');
+        showToast('Baris dihapus dari spreadsheet. Refresh…','success');
+        rawData.splice(rawi,1);
+        setTimeout(()=>refreshData(true),800);
+    }catch(e){
+        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
+        btn.disabled=false;
+    }
+}
+
 // ---------- Utils ----------
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -1673,4 +1909,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(si) si.addEventListener('input', e => onSearchInput(e.target.value));
     refreshData(false);
     setInterval(()=>refreshData(false),5*60*1000);
+
+    // Setup banner edit/hapus
+    initWriteSetup();
 });
