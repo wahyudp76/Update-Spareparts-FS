@@ -16,5 +16,5 @@
 // ============================================================
 window.PG2_CONFIG = {
     // URL Web App Apps Script untuk write-proxy edit/hapus.
-    WRITE_URL: ''
+    WRITE_URL: 'https://script.google.com/macros/s/AKfycby1aCk4Zrf5Wd8JExtgq5uo14rlZWjI5XDsNWSiFlvJRsqUG_BAVja59LutW6KpQzIe9Q/exec'
 };
