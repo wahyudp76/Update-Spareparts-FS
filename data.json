@@ -17,26 +17,6 @@
     "prNumber": null,
     "status": "Belum Ditangani",
     "unit": "138B",
-    "__row": 19
-  },
-  {
-    "timestamp": "2026-09-19T08:55:59+07:00",
-    "tanggalInspeksi": "2026-09-19",
-    "lokasi": "120K",
-    "divisi": "PG2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": "-",
-    "irrType": "ITI",
-    "irrCode": "237",
-    "irrigator": "ITI – 237",
-    "damageType": "Gun",
-    "keterangan": "Sambungan PE Gun lepas",
-    "damage": "Gun — Sambungan PE Gun lepas",
-    "sparepart": "Klem PE",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "unit": "120K",
     "__row": 18
   },
   {
@@ -53,7 +33,7 @@
     "damageType": "Gun",
     "keterangan": "Sambungan PE Gun lepas",
     "damage": "Gun — Sambungan PE Gun lepas",
-    "sparepart": "-",
+    "sparepart": "Klem PE",
     "prNumber": null,
     "status": "Belum Ditangani",
     "unit": "120K",
@@ -297,7 +277,7 @@
     "prNumber": "12098417",
     "status": "Proses",
     "unit": "164B",
-    "__row": 23
+    "__row": 22
   },
   {
     "timestamp": "2026-09-15T16:51:33+07:00",
@@ -317,7 +297,7 @@
     "prNumber": "11098416",
     "status": "Proses",
     "unit": "163B",
-    "__row": 22
+    "__row": 21
   },
   {
     "timestamp": "2026-09-15T08:25:06+07:00",
@@ -357,7 +337,7 @@
     "prNumber": "11098297",
     "status": "Proses",
     "unit": "143G",
-    "__row": 25
+    "__row": 24
   },
   {
     "timestamp": "2026-09-11T16:52:33+07:00",
@@ -377,7 +357,7 @@
     "prNumber": "11097172",
     "status": "Proses",
     "unit": "144D1",
-    "__row": 24
+    "__row": 23
   },
   {
     "timestamp": "2026-09-11T16:49:50+07:00",
@@ -397,7 +377,7 @@
     "prNumber": "11097177",
     "status": "Proses",
     "unit": "104I",
-    "__row": 20
+    "__row": 19
   },
   {
     "timestamp": "2026-09-11T08:31:18+07:00",
@@ -437,7 +417,7 @@
     "prNumber": "11096301",
     "status": "Proses",
     "unit": "169B",
-    "__row": 21
+    "__row": 20
   },
   {
     "timestamp": "2026-09-07T08:24:39+07:00",
