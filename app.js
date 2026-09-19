@@ -69,22 +69,23 @@ function parseCSV(text) {
 function parseDate(s) {
     if (!s) return null;
     s = String(s).trim(); if (!s) return null;
+    // ISO yyyy-mm-dd (data.json cache hasil fetch-data.js)
     let d = new Date(s); if (!isNaN(d.getTime())) return d;
+    // Format dengan jam → MM/DD/YYYY HH:MM (Google Sheets timestamp)
+    // Format tanpa jam → DD/MM/YYYY (Form Indonesia)
+    const hasTime = /\d{1,2}:\d{2}/.test(s);
     const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
     if (m) {
-        const a=+m[1], b=+m[2];
-        const mo = a > 12 ? b-1 : a-1, dy = a > 12 ? a : b;
+        let mo, dy;
+        if (hasTime) { mo=+m[1]-1; dy=+m[2]; }
+        else { dy=+m[1]; mo=+m[2]-1; }
         d = new Date(+m[3], mo, dy, +(m[4]||0), +(m[5]||0), +(m[6]||0));
         if (!isNaN(d.getTime())) return d;
     }
+    // dd-mm-yyyy
     const m2 = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
     if (m2) {
-        const a=+m2[1], b=+m2[2];
-        let dy, mo;
-        if (a > 12) { dy = a; mo = b-1; }
-        else if (b > 12) { dy = b; mo = a-1; }
-        else { dy = b; mo = a-1; }
-        d = new Date(+m2[3], mo, dy, +(m2[4]||0), +(m2[5]||0));
+        d = new Date(+m2[3], +m2[2]-1, +m2[1], +(m2[4]||0), +(m2[5]||0));
         if (!isNaN(d.getTime())) return d;
     }
     return null;
@@ -229,16 +230,23 @@ async function refreshData(forceLive=false) {
         } catch(e) {}
     }
     if(!data||!data.length) {
-        data=generateDemo(); source='demo';
-        showToast('Menggunakan data demo. Pastikan spreadsheet dishare "Anyone with link – Viewer".','warning');
+        // Demo data HANYA muncul jika ?demo=1 di URL (untuk testing/showcase).
+        // Di production, jika cache kosong → empty state, jangan buat data palsu.
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('demo') === '1') {
+            data = generateDemo(); source = 'demo';
+            showToast('Mode demo aktif — menampilkan data contoh.','warning');
+        } else {
+            data = []; source = 'empty';
+        }
     }
 
     rawData = data;
     document.getElementById('syncTime').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const srcLabel = {'live-sheet':'Live (Sheets)','github-cache':'Sync GitHub','demo':'Data Demo'}[source];
+    const srcLabel = {'live-sheet':'Live (Sheets)','github-cache':'Sync GitHub','demo':'Data Demo','empty':'Tidak ada data'}[source];
     document.getElementById('dataSource').textContent = `${srcLabel} · ${data.length} record`;
     const dot=document.getElementById('dataSourceDot');
-    dot.className = 'w-2 h-2 rounded-full pulse-dot '+(source==='live-sheet'?'bg-green-500':source==='github-cache'?'bg-blue-500':'bg-amber-500');
+    dot.className = 'w-2 h-2 rounded-full pulse-dot '+(source==='live-sheet'?'bg-green-500':source==='github-cache'?'bg-blue-500':source==='demo'?'bg-amber-500':'bg-slate-400');
     icon.classList.remove('spin');
 
     populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);

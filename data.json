@@ -1,24 +1,5 @@
 [
   {
-    "timestamp": "2026-11-09T00:00:00.000Z",
-    "tanggalInspeksi": "2026-11-09",
-    "lokasi": "185B",
-    "divisi": "OP2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": null,
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Patah as sumur",
-    "damage": "Pompa Sumur Bor — Patah as sumur",
-    "sparepart": "-",
-    "prNumber": "11097122",
-    "status": "Proses",
-    "unit": "185B"
-  },
-  {
     "timestamp": "2026-09-19T00:00:00.000Z",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "152D",
@@ -35,7 +16,8 @@
     "sparepart": "RPM meter",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "152D"
+    "unit": "152D",
+    "__row": 13
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -54,7 +36,8 @@
     "sparepart": "Dinamo start",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "173A"
+    "unit": "173A",
+    "__row": 14
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -63,7 +46,7 @@
     "divisi": "FM4",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "BTI",
     "irrCode": "0031",
     "irrigator": "BTI – 0031",
@@ -73,7 +56,8 @@
     "sparepart": "Rantai housedrum",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "123L"
+    "unit": "123L",
+    "__row": 15
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -92,7 +76,8 @@
     "sparepart": "-",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "303C"
+    "unit": "303C",
+    "__row": 16
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -101,7 +86,7 @@
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "ITI",
     "irrCode": "0237",
     "irrigator": "ITI – 0237",
@@ -111,7 +96,8 @@
     "sparepart": "-",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "120K"
+    "unit": "120K",
+    "__row": 17
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -130,7 +116,8 @@
     "sparepart": "Bearing impeler",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "132F"
+    "unit": "132F",
+    "__row": 18
   },
   {
     "timestamp": "2026-09-19T00:00:00.000Z",
@@ -139,7 +126,7 @@
     "divisi": "FM4",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "-",
     "irrCode": "-",
     "irrigator": "-",
@@ -149,7 +136,8 @@
     "sparepart": "Seal gland packing",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "138B"
+    "unit": "138B",
+    "__row": 19
   },
   {
     "timestamp": "2026-09-18T00:00:00.000Z",
@@ -168,7 +156,8 @@
     "sparepart": "Selang Oli",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "118F"
+    "unit": "118F",
+    "__row": 10
   },
   {
     "timestamp": "2026-09-18T00:00:00.000Z",
@@ -177,7 +166,7 @@
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "BTI",
     "irrCode": "0032",
     "irrigator": "BTI – 0032",
@@ -187,7 +176,8 @@
     "sparepart": "Seal turbin",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "102C"
+    "unit": "102C",
+    "__row": 11
   },
   {
     "timestamp": "2026-09-18T00:00:00.000Z",
@@ -206,45 +196,8 @@
     "sparepart": "Kopling Prodo",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "137A"
-  },
-  {
-    "timestamp": "2026-09-17T08:27:38.000Z",
-    "tanggalInspeksi": "2026-09-17",
-    "lokasi": "152D",
-    "divisi": "OP2",
-    "engineType": "SPC",
-    "engineCode": "244",
-    "engine": "SPC – 244",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "RPM",
-    "keterangan": "RPM mati",
-    "damage": "RPM — RPM mati",
-    "sparepart": "RPM meter",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "unit": "152D"
-  },
-  {
-    "timestamp": "2026-09-17T08:25:30.000Z",
-    "tanggalInspeksi": "2026-09-17",
-    "lokasi": "152D",
-    "divisi": "OP2",
-    "engineType": "SPC",
-    "engineCode": "244",
-    "engine": "SPC – 244",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "RPM",
-    "keterangan": "RPM mati",
-    "damage": "RPM — RPM mati",
-    "sparepart": "RPM meter",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "unit": "152D"
+    "unit": "137A",
+    "__row": 12
   },
   {
     "timestamp": "2026-09-17T00:00:00.000Z",
@@ -263,7 +216,8 @@
     "sparepart": "Seal crankshaft depan",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "118H"
+    "unit": "118H",
+    "__row": 6
   },
   {
     "timestamp": "2026-09-17T00:00:00.000Z",
@@ -272,7 +226,7 @@
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "BTI",
     "irrCode": "0032",
     "irrigator": "BTI – 0032",
@@ -282,7 +236,8 @@
     "sparepart": "-",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "102G"
+    "unit": "102G",
+    "__row": 7
   },
   {
     "timestamp": "2026-09-16T00:00:00.000Z",
@@ -301,7 +256,8 @@
     "sparepart": "Seal asbes",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "169A"
+    "unit": "169A",
+    "__row": 8
   },
   {
     "timestamp": "2026-09-16T00:00:00.000Z",
@@ -320,7 +276,8 @@
     "sparepart": "Belt ebara",
     "prNumber": null,
     "status": "Belum Ditangani",
-    "unit": "172F"
+    "unit": "172F",
+    "__row": 9
   },
   {
     "timestamp": "2026-09-15T00:00:00.000Z",
@@ -329,7 +286,7 @@
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "-",
     "irrCode": "-",
     "irrigator": "-",
@@ -339,16 +296,17 @@
     "sparepart": "-",
     "prNumber": "11099053",
     "status": "Proses",
-    "unit": "103E"
+    "unit": "103E",
+    "__row": 4
   },
   {
-    "timestamp": "2026-09-15T00:00:00.000Z",
-    "tanggalInspeksi": "2026-09-15",
-    "lokasi": "163B",
+    "timestamp": "2026-09-11T00:00:00.000Z",
+    "tanggalInspeksi": "2026-09-11",
+    "lokasi": "185B",
     "divisi": "OP2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "-",
     "irrCode": "-",
     "irrigator": "-",
@@ -356,75 +314,19 @@
     "keterangan": "Patah as sumur",
     "damage": "Pompa Sumur Bor — Patah as sumur",
     "sparepart": "-",
-    "prNumber": "11098416",
+    "prNumber": "11097122",
     "status": "Proses",
-    "unit": "163B"
+    "unit": "185B",
+    "__row": 5
   },
   {
-    "timestamp": "2026-09-15T00:00:00.000Z",
-    "tanggalInspeksi": "2026-09-15",
-    "lokasi": "164B",
-    "divisi": "OP2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": null,
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Air tidak normal",
-    "damage": "Pompa Sumur Bor — Air tidak normal",
-    "sparepart": "-",
-    "prNumber": "12098417",
-    "status": "Proses",
-    "unit": "164B"
-  },
-  {
-    "timestamp": "2026-09-13T00:00:00.000Z",
-    "tanggalInspeksi": "2026-09-13",
-    "lokasi": "143G",
-    "divisi": "FM4",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": null,
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Baut dudukan gland packing dol",
-    "damage": "Pompa Sumur Bor — Baut dudukan gland packing dol",
-    "sparepart": "-",
-    "prNumber": "11098297",
-    "status": "Proses",
-    "unit": "143G"
-  },
-  {
-    "timestamp": "2026-09-09T00:00:00.000Z",
-    "tanggalInspeksi": "2026-09-09",
-    "lokasi": "169B",
-    "divisi": "OP2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": null,
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Pompa sumur tekor (top bowl) -> ke engineering",
-    "damage": "Pompa Sumur Bor — Pompa sumur tekor (top bowl) -> ke engineering",
-    "sparepart": "-",
-    "prNumber": "11096301",
-    "status": "Proses",
-    "unit": "169B"
-  },
-  {
-    "timestamp": "2026-07-09T00:00:00.000Z",
-    "tanggalInspeksi": "2026-07-09",
+    "timestamp": "2026-09-07T00:00:00.000Z",
+    "tanggalInspeksi": "2026-09-07",
     "lokasi": "109G",
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
-    "engine": null,
+    "engine": "-",
     "irrType": "-",
     "irrCode": "-",
     "irrigator": "-",
@@ -434,6 +336,7 @@
     "sparepart": "-",
     "prNumber": "11095745",
     "status": "Proses",
-    "unit": "109G"
+    "unit": "109G",
+    "__row": 3
   }
 ]

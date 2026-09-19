@@ -67,23 +67,25 @@ function parseDateFlexible(s) {
   if (!s) return null;
   s = String(s).trim();
   if (!s) return null;
-  let d = new Date(s);
-  if (!isNaN(d.getTime())) return d;
+  // Timestamp Google Sheets selalu format AS: MM/DD/YYYY HH:MM:SS (ada jam).
+  // Tanggal Inspeksi dari Form (locale ID) selalu: DD/MM/YYYY (tanpa jam).
+  // Deteksi dari ada/tidaknya ':' untuk membedakan keduanya secara andal.
+  const hasTime = /\d{1,2}:\d{2}/.test(s);
   const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
   if (m) {
-    const a = parseInt(m[1],10), b = parseInt(m[2],10);
-    const mo = a > 12 ? b-1 : a-1, dy = a > 12 ? a : b;
-    d = new Date(parseInt(m[3],10), mo, dy, parseInt(m[4]||'0',10), parseInt(m[5]||'0',10), parseInt(m[6]||'0',10));
+    let mo, dy;
+    if (hasTime) { mo = parseInt(m[1],10)-1; dy = parseInt(m[2],10); }
+    else         { dy = parseInt(m[1],10);   mo = parseInt(m[2],10)-1; }
+    const d = new Date(parseInt(m[3],10), mo, dy, parseInt(m[4]||'0',10), parseInt(m[5]||'0',10), parseInt(m[6]||'0',10));
     if (!isNaN(d.getTime())) return d;
   }
+  // Fallback ISO
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+  // Fallback dd-mm-yyyy
   const m2 = s.match(/(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/);
   if (m2) {
-    const a = parseInt(m2[1],10), b = parseInt(m2[2],10);
-    let dy, mo;
-    if (a > 12) { dy = a; mo = b-1; }
-    else if (b > 12) { dy = b; mo = a-1; }
-    else { dy = b; mo = a-1; }
-    d = new Date(parseInt(m2[3],10), mo, dy, parseInt(m2[4]||'0',10), parseInt(m2[5]||'0',10));
+    d = new Date(parseInt(m2[3],10), parseInt(m2[2],10)-1, parseInt(m2[1],10), parseInt(m2[4]||'0',10), parseInt(m2[5]||'0',10));
     if (!isNaN(d.getTime())) return d;
   }
   return null;
@@ -156,7 +158,7 @@ function mapRows(rows) {
       divisi: divisi || '-',
       engineType: et || '-',
       engineCode: ec || '-',
-      engine: engine || null,
+      engine: engine || '-',
       irrType: it || '-',
       irrCode: ic || '-',
       irrigator,
@@ -166,7 +168,8 @@ function mapRows(rows) {
       sparepart: sp,
       prNumber: pr || null,
       status,
-      unit // alias untuk backward compatibility
+      unit: lokasi || '-',
+      __row: i + 2 // baris spreadsheet (header=1, data mulai baris 2)
     });
   }
   return out.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
