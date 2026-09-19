@@ -385,8 +385,12 @@ function applyFilters() {
         if (state.lokasi.length && !state.lokasi.includes(d.lokasi)) return false;
         if (state.status.length && !state.status.includes(d.status)) return false;
         if (q) {
-            const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.irrigator} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status}`.toLowerCase();
-            if (!blob.includes(q)) return false;
+            // Blob utama (untuk pencarian dengan spasi & tanda baca)
+            const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status}`.toLowerCase();
+            // Blob "padat" (tanpa spasi/tanda baca) agar "BTI0032", "BTI 0032", "BTI-0032", "SPC 0127", "DEC 0033" semuanya ketemu
+            const blobFlat = blob.replace(/[^a-z0-9]/g,'');
+            const qFlat = q.replace(/[^a-z0-9]/g,'');
+            if (!blob.includes(q) && !(qFlat && blobFlat.includes(qFlat))) return false;
         }
         return true;
     });
