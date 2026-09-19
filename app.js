@@ -1658,24 +1658,50 @@ function showToast(msg,type='info'){
 // WRITE ENDPOINT (Edit/Delete via Apps Script proxy)
 // ======================================================
 const WRITE_ENDPOINT_KEY = 'pg2_write_url';
-function getWriteUrl(){ return localStorage.getItem(WRITE_ENDPOINT_KEY) || ''; }
-function setWriteUrl(u){ localStorage.setItem(WRITE_ENDPOINT_KEY, u.trim()); }
+const DISMISS_KEY = 'pg2_dismissSetup';
+function getGlobalWriteUrl(){
+    return (window.PG2_CONFIG && window.PG2_CONFIG.WRITE_URL) ? String(window.PG2_CONFIG.WRITE_URL).trim() : '';
+}
+function getUserWriteUrl(){ return localStorage.getItem(WRITE_ENDPOINT_KEY) || ''; }
+function setUserWriteUrl(u){
+    if(u) localStorage.setItem(WRITE_ENDPOINT_KEY, u.trim());
+    else localStorage.removeItem(WRITE_ENDPOINT_KEY);
+}
+function getWriteUrl(){
+    // User override (per-device) lebih diutamakan; kalau tidak ada, pakai global dari config.js
+    return getUserWriteUrl() || getGlobalWriteUrl();
+}
 
 function initWriteSetup(){
-    const dismissed = localStorage.getItem('pg2_dismissSetup') === '1';
     const banner = document.getElementById('writeSetupBanner');
+    const settingsBtn = document.getElementById('settingsBtn');
     if(!banner) return;
-    if(!getWriteUrl() && !dismissed){
-        banner.classList.remove('hidden');
+    const globalUrl = getGlobalWriteUrl();
+    const userUrl = getUserWriteUrl();
+    const dismissed = localStorage.getItem(DISMISS_KEY) === '1';
+    // Tampilkan tombol gear di header jika fitur sudah/sedang bisa diset
+    if(settingsBtn){
+        // Tampilkan selalu jika global URL diset (supaya user bisa override per-device) atau jika belum pernah dismiss
+        if(globalUrl || !dismissed) settingsBtn.classList.remove('hidden');
+        if(globalUrl){
+            settingsBtn.title = (userUrl?'Endpoint per-device':'Endpoint global aktif')+' · klik untuk ubah';
+        }
     }
+    if(globalUrl){
+        banner.classList.add('hidden');
+        return;
+    }
+    if(userUrl || dismissed){
+        banner.classList.add('hidden');
+        return;
+    }
+    banner.classList.remove('hidden');
 }
 
 function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){
     document.getElementById(id).classList.remove('show');
-    const m=document.getElementById(id);
-    // Reset messages
-    m.querySelectorAll('[id$="Msg"]').forEach(x=>x.innerHTML='');
+    document.querySelectorAll('#'+id+' [id$="Msg"]').forEach(x=>x.innerHTML='');
 }
 // Close modal on backdrop click
 document.addEventListener('click',(e)=>{
@@ -1691,8 +1717,19 @@ document.addEventListener('keydown',(e)=>{
 });
 
 function openSetupModal(){
-    document.getElementById('setupUrl').value = getWriteUrl();
+    const urlInput = document.getElementById('setupUrl');
+    urlInput.value = getUserWriteUrl() || getGlobalWriteUrl();
     document.getElementById('setupTestResult').innerHTML='';
+    // Update isi keterangan modal
+    const globalUrl = getGlobalWriteUrl();
+    const infoBox = document.getElementById('setupInfoText');
+    if(infoBox){
+        if(globalUrl){
+            infoBox.innerHTML = '<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4 text-xs text-emerald-900"><p class="font-bold mb-1"><i class="fas fa-circle-check mr-1"></i>Endpoint global sudah diaktifkan oleh admin.</p><p class="mb-2">Edit &amp; hapus sudah aktif untuk SEMUA pengguna di semua perangkat. Anda bisa mengosongkan URL di bawah hanya untuk menonaktifkan di perangkat ini saja.</p><p class="font-mono text-[10px] bg-white px-2 py-1 rounded border break-all" id="setupGlobalUrlDisplay">'+escapeHtml(globalUrl)+'</p></div>';
+        } else {
+            infoBox.innerHTML = '<div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-900"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i>Opsi konfigurasi</p><ol class="list-decimal list-inside space-y-0.5 text-blue-800"><li><b>(Direkomendasikan)</b> Edit file <code class="bg-white px-1 rounded">config.js</code> di repo, isi <code>WRITE_URL</code> lalu push — berlaku untuk SEMUA user/device otomatis.</li><li>Atau paste URL Web App di bawah untuk mengaktifkan hanya di perangkat/browser ini.</li></ol><p class="mt-2">Lihat <code class="bg-white px-1 rounded">SETUP-EDIT.md</code> untuk panduan lengkap.</p></div>';
+        }
+    }
     openModal('setupModal');
 }
 async function testWriteEndpoint(){
@@ -1703,7 +1740,7 @@ async function testWriteEndpoint(){
     try{
         const r = await fetch(url+'?action=ping', {method:'GET'});
         const t = await r.text();
-        if(r.ok && (t.includes('ok') || t.includes('pong') || t.length<200)){
+        if(r.ok && (t.includes('ok') || t.includes('pong'))){
             res.innerHTML='<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Koneksi berhasil! Klik Simpan.</span>';
         } else {
             res.innerHTML=`<span class="text-red-600">Respons tidak valid (${r.status}). Pastikan deploy sebagai "Anyone, even anonymous".</span>`;
@@ -1718,22 +1755,20 @@ function saveSetup(){
         document.getElementById('setupTestResult').innerHTML='<span class="text-red-600">URL harus mulai dengan https://script.google.com/</span>';
         return;
     }
-    setWriteUrl(url);
+    // Jika url == global URL (atau kosong padahal ada global) → hapus override per-user
+    if(url === getGlobalWriteUrl()) setUserWriteUrl('');
+    else setUserWriteUrl(url);
     closeModal('setupModal');
     document.getElementById('writeSetupBanner').classList.add('hidden');
-    if(url) showToast('Endpoint Apps Script tersimpan. Edit/hapus sekarang aktif.','success');
-    else showToast('Endpoint dihapus. Fitur edit/hapus dinonaktifkan.','warning');
+    if(getWriteUrl()) showToast(url ? 'Endpoint tersimpan. Edit/hapus sekarang aktif di perangkat ini.' : 'Kembali ke endpoint global.','success');
+    else showToast('Endpoint dihapus. Fitur edit/hapus dinonaktifkan di perangkat ini.','warning');
 }
 
 function requireWriteEndpoint(){
-    const url=getWriteUrl();
-    if(!url){
-        showToast('Setup URL Apps Script dulu untuk bisa edit/hapus.','warning');
-        document.getElementById('writeSetupBanner').classList.remove('hidden');
-        openSetupModal();
-        return false;
-    }
-    return true;
+    if(getWriteUrl()) return true;
+    showToast('Belum ada endpoint write. Silakan konfigurasi lewat Setup.','warning');
+    openSetupModal();
+    return false;
 }
 
 function openEditModal(globalIdx){

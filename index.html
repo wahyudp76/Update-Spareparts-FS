@@ -13,6 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
+    <script src="config.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -153,6 +155,7 @@
                         <i class="far fa-clock"></i>
                         <span id="syncTime">--:--</span>
                     </div>
+                    <button onclick="openSetupModal()" id="settingsBtn" title="Pengaturan Write Endpoint" class="hidden w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500"><i class="fas fa-plug text-xs"></i></button>
                     <button onclick="refreshData(true)" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
                         <i class="fas fa-sync-alt text-[11px]" id="refreshIcon"></i>
                         <span class="hidden sm:inline">Refresh</span>
@@ -575,15 +578,7 @@
                 <h3 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-plug text-blue-600 mr-2"></i>Konfigurasi Edit/Hapus</h3>
                 <button onclick="closeModal('setupModal')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500"><i class="fas fa-times"></i></button>
             </div>
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-900">
-                <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> Cara mendapatkan URL Apps Script:</p>
-                <ol class="list-decimal list-inside space-y-0.5 text-blue-800">
-                    <li>Buka <a href="https://script.google.com" target="_blank" class="underline font-semibold">script.google.com</a>, buat project baru</li>
-                    <li>Paste kode dari <span class="font-mono bg-white px-1 rounded">scripts/write-proxy.gs</span> di repo ini</li>
-                    <li>Klik Deploy → New deployment → Web app → Execute as: <b>Me</b>, Who has access: <b>Anyone</b></li>
-                    <li>Copy URL deployment ke kolom di bawah</li>
-                </ol>
-            </div>
+            <div id="setupInfoText"></div>
             <label class="form-label">URL Web App Apps Script</label>
             <input type="text" id="setupUrl" class="form-input mb-4" placeholder="https://script.google.com/macros/s/..../exec">
             <div class="flex items-center justify-between gap-2">
