@@ -195,22 +195,34 @@ async function refreshData(forceLive=false) {
             if(res.ok) {
                 const json=await res.json();
                 if(Array.isArray(json)&&json.length) {
-                    data = json.map((r,i) => ({
-                        ...r,
-                        lokasi: r.lokasi || r.unit || '-',
-                        divisi: r.divisi || '-',
-                        engineType: r.engineType || '-',
-                        engineCode: r.engineCode || '-',
-                        engine: r.engine || '-',
-                        irrType: r.irrType || '-',
-                        irrCode: r.irrCode || '-',
-                        irrigator: r.irrigator || '-',
-                        damageType: r.damageType || '-',
-                        keterangan: r.keterangan || r.notes || '',
-                        tanggalInspeksi: r.tanggalInspeksi || (r.timestamp?r.timestamp.slice(0,10):new Date().toISOString().slice(0,10)),
-                        prNumber: r.prNumber || null,
-                        __row: r.__row || (i+2)
-                    }));
+                    // Bangun ulang derived fields (engine/irrigator/damage/status unit) agar konsisten
+                    data = json.map((r,i) => {
+                        const et = r.engineType||'-', ec = r.engineCode||'-';
+                        const it = r.irrType||'-', ic = r.irrCode||'-';
+                        const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
+                        const sp = (r.sparepart||'-');
+                        const pr = r.prNumber||null;
+                        const tgl = r.tanggalInspeksi || (r.timestamp?r.timestamp.slice(0,10):new Date().toISOString().slice(0,10));
+                        const tglObj = parseDate(tgl) || parseDate(r.timestamp) || new Date();
+                        return {
+                            ...r,
+                            lokasi: r.lokasi || r.unit || '-',
+                            divisi: r.divisi || '-',
+                            engineType:et, engineCode:ec,
+                            engine: (et&&et!=='-'&&ec&&ec!=='-')?`${et} – ${ec}`:(r.engine||'-'),
+                            irrType:it, irrCode:ic,
+                            irrigator: (it&&it!=='-'&&ic&&ic!=='-'&&it!==ic)?`${it} – ${ic}`:(r.irrigator||'-'),
+                            damageType:dt, keterangan:dn,
+                            damage: dn?(dt?`${dt} — ${dn}`:dn):(dt||'-'),
+                            sparepart: sp,
+                            prNumber: pr,
+                            status: pr?'Proses':'Belum Ditangani',
+                            unit: r.lokasi || r.unit || '-',
+                            timestamp: tglObj.toISOString(),
+                            tanggalInspeksi: tgl,
+                            __row: typeof r.__row==='number'?r.__row:(i+2)
+                        };
+                    });
                     source='github-cache';
                 }
             }
@@ -1858,9 +1870,12 @@ async function submitEdit(){
         upd.damage = upd.keterangan ? (upd.damageType?`${upd.damageType} — ${upd.keterangan}`:upd.keterangan) : (upd.damageType||'-');
         rawData[rawi] = upd;
         closeModal('editModal');
-        showToast('Perubahan tersimpan di spreadsheet. Data akan refresh…','success');
-        // Force live refresh agar sinkron
-        setTimeout(()=>refreshData(true),800);
+        showToast('Perubahan tersimpan di spreadsheet.','success');
+        // Jangan panggil refreshData(true) di sini — itu akan re-fetch data.json cache (bisa lebih
+        // tua dari perubahan baru) dan menimpa update optimis. Data lokal sudah di-update di atas;
+        // biarkan sync GitHub 15 menit berikutnya yang menyelaraskan cache, atau user klik Refresh.
+        // Re-run pipeline render agar semua tab/kartu/chart mencerminkan perubahan lokal.
+        applyFilters();
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
@@ -1908,9 +1923,9 @@ async function submitDelete(){
             return;
         }
         closeModal('deleteModal');
-        showToast('Baris dihapus dari spreadsheet. Refresh…','success');
+        showToast('Baris dihapus dari spreadsheet.','success');
         rawData.splice(rawi,1);
-        setTimeout(()=>refreshData(true),800);
+        applyFilters();
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
@@ -1922,6 +1937,8 @@ function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':
 
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded',()=>{
+    // Expose internal refs for debugging/testing
+    window.__app = { get rawData(){return rawData;}, get filteredData(){return filteredData;}, state, refreshData, applyFilters };
     const dt=document.getElementById('dateTo'); if(dt) dt.max=isoDate(new Date());
     document.querySelectorAll('.filter-btn').forEach(b=>{
         if(b.dataset.filter==='all'){b.classList.add('active');b.classList.remove('text-slate-600');}
@@ -1947,4 +1964,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     // Setup banner edit/hapus
     initWriteSetup();
+
+    // Re-render charts saat window resize (throttled) agar tidak terpotong
+    let resizeT;
+    window.addEventListener('resize',()=>{
+        clearTimeout(resizeT);
+        resizeT=setTimeout(()=>renderCharts(),150);
+    });
 });
