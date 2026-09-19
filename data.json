@@ -1,6 +1,6 @@
 [
   {
-    "timestamp": "2026-09-19T08:57:33.000Z",
+    "timestamp": "2026-09-19T08:57:33+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "138B",
     "divisi": "FM4",
@@ -20,7 +20,7 @@
     "__row": 19
   },
   {
-    "timestamp": "2026-09-19T08:55:59.000Z",
+    "timestamp": "2026-09-19T08:55:59+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "120K",
     "divisi": "PG2",
@@ -40,7 +40,7 @@
     "__row": 18
   },
   {
-    "timestamp": "2026-09-19T08:43:05.000Z",
+    "timestamp": "2026-09-19T08:43:05+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "120K",
     "divisi": "PG2",
@@ -60,7 +60,7 @@
     "__row": 17
   },
   {
-    "timestamp": "2026-09-19T08:42:16.000Z",
+    "timestamp": "2026-09-19T08:42:16+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "303C",
     "divisi": "PG2",
@@ -80,7 +80,7 @@
     "__row": 16
   },
   {
-    "timestamp": "2026-09-19T08:37:37.000Z",
+    "timestamp": "2026-09-19T08:37:37+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "123L",
     "divisi": "FM4",
@@ -100,7 +100,7 @@
     "__row": 15
   },
   {
-    "timestamp": "2026-09-19T08:30:30.000Z",
+    "timestamp": "2026-09-19T08:30:30+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "173A",
     "divisi": "PG2",
@@ -114,13 +114,13 @@
     "keterangan": "Dinamo start rusak",
     "damage": "Dinamo — Dinamo start rusak",
     "sparepart": "Dinamo start",
-    "prNumber": null,
-    "status": "Belum Ditangani",
+    "prNumber": "1101",
+    "status": "Proses",
     "unit": "173A",
     "__row": 14
   },
   {
-    "timestamp": "2026-09-19T08:29:33.000Z",
+    "timestamp": "2026-09-19T08:29:33+07:00",
     "tanggalInspeksi": "2026-09-19",
     "lokasi": "152D",
     "divisi": "OP2",
@@ -140,7 +140,7 @@
     "__row": 13
   },
   {
-    "timestamp": "2026-09-18T09:22:28.000Z",
+    "timestamp": "2026-09-18T09:22:28+07:00",
     "tanggalInspeksi": "2026-09-18",
     "lokasi": "137A",
     "divisi": "FM4",
@@ -160,7 +160,7 @@
     "__row": 12
   },
   {
-    "timestamp": "2026-09-18T09:21:12.000Z",
+    "timestamp": "2026-09-18T09:21:12+07:00",
     "tanggalInspeksi": "2026-09-18",
     "lokasi": "102C",
     "divisi": "PG2",
@@ -180,7 +180,7 @@
     "__row": 11
   },
   {
-    "timestamp": "2026-09-18T09:19:28.000Z",
+    "timestamp": "2026-09-18T09:19:28+07:00",
     "tanggalInspeksi": "2026-09-18",
     "lokasi": "118F",
     "divisi": "PG2",
@@ -200,7 +200,7 @@
     "__row": 10
   },
   {
-    "timestamp": "2026-09-17T23:13:40.000Z",
+    "timestamp": "2026-09-17T23:13:40+07:00",
     "tanggalInspeksi": "2026-09-17",
     "lokasi": "102G",
     "divisi": "PG2",
@@ -220,7 +220,7 @@
     "__row": 7
   },
   {
-    "timestamp": "2026-09-17T23:03:36.000Z",
+    "timestamp": "2026-09-17T23:03:36+07:00",
     "tanggalInspeksi": "2026-09-17",
     "lokasi": "118H",
     "divisi": "PG2",
@@ -240,7 +240,7 @@
     "__row": 6
   },
   {
-    "timestamp": "2026-09-16T23:19:19.000Z",
+    "timestamp": "2026-09-16T23:19:19+07:00",
     "tanggalInspeksi": "2026-09-16",
     "lokasi": "172F",
     "divisi": "OP2",
@@ -260,7 +260,7 @@
     "__row": 9
   },
   {
-    "timestamp": "2026-09-16T23:18:20.000Z",
+    "timestamp": "2026-09-16T23:18:20+07:00",
     "tanggalInspeksi": "2026-09-16",
     "lokasi": "169A",
     "divisi": "OP2",
@@ -280,7 +280,47 @@
     "__row": 8
   },
   {
-    "timestamp": "2026-09-15T08:25:06.000Z",
+    "timestamp": "2026-09-15T16:52:07+07:00",
+    "tanggalInspeksi": "2026-09-15",
+    "lokasi": "164B",
+    "divisi": "OP2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Patah as gearbox",
+    "damage": "Pompa Sumur Bor — Patah as gearbox",
+    "sparepart": "-",
+    "prNumber": "12098417",
+    "status": "Proses",
+    "unit": "164B",
+    "__row": 23
+  },
+  {
+    "timestamp": "2026-09-15T16:51:33+07:00",
+    "tanggalInspeksi": "2026-09-15",
+    "lokasi": "163B",
+    "divisi": "OP2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Pompa kotor",
+    "damage": "Pompa Sumur Bor — Pompa kotor",
+    "sparepart": "-",
+    "prNumber": "11098416",
+    "status": "Proses",
+    "unit": "163B",
+    "__row": 22
+  },
+  {
+    "timestamp": "2026-09-15T08:25:06+07:00",
     "tanggalInspeksi": "2026-09-15",
     "lokasi": "103E",
     "divisi": "PG2",
@@ -300,7 +340,67 @@
     "__row": 4
   },
   {
-    "timestamp": "2026-09-11T08:31:18.000Z",
+    "timestamp": "2026-09-13T16:53:49+07:00",
+    "tanggalInspeksi": "2026-09-13",
+    "lokasi": "143G",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Patah gland packing",
+    "damage": "Pompa Sumur Bor — Patah gland packing",
+    "sparepart": "-",
+    "prNumber": "11098297",
+    "status": "Proses",
+    "unit": "143G",
+    "__row": 25
+  },
+  {
+    "timestamp": "2026-09-11T16:52:33+07:00",
+    "tanggalInspeksi": "2026-09-11",
+    "lokasi": "144D1",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Pompa kemasukan karung",
+    "damage": "Pompa Sumur Bor — Pompa kemasukan karung",
+    "sparepart": "-",
+    "prNumber": "11097172",
+    "status": "Proses",
+    "unit": "144D1",
+    "__row": 24
+  },
+  {
+    "timestamp": "2026-09-11T16:49:50+07:00",
+    "tanggalInspeksi": "2026-09-11",
+    "lokasi": "104I",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Debit air kecil",
+    "damage": "Pompa Sumur Bor — Debit air kecil",
+    "sparepart": "-",
+    "prNumber": "11097177",
+    "status": "Proses",
+    "unit": "104I",
+    "__row": 20
+  },
+  {
+    "timestamp": "2026-09-11T08:31:18+07:00",
     "tanggalInspeksi": "2026-09-11",
     "lokasi": "185B",
     "divisi": "OP2",
@@ -320,7 +420,27 @@
     "__row": 5
   },
   {
-    "timestamp": "2026-09-07T08:24:39.000Z",
+    "timestamp": "2026-09-09T16:50:41+07:00",
+    "tanggalInspeksi": "2026-09-09",
+    "lokasi": "169B",
+    "divisi": "OP2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Pompa rusak",
+    "damage": "Pompa Sumur Bor — Pompa rusak",
+    "sparepart": "-",
+    "prNumber": "11096301",
+    "status": "Proses",
+    "unit": "169B",
+    "__row": 21
+  },
+  {
+    "timestamp": "2026-09-07T08:24:39+07:00",
     "tanggalInspeksi": "2026-09-07",
     "lokasi": "109G",
     "divisi": "PG2",

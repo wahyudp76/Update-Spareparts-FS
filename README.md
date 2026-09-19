@@ -197,3 +197,18 @@ python3 -m http.server 8080  # buka http://localhost:8080
 ---
 
 &copy; 2026 PG2 Irrigation Monitoring System
+
+
+## Alur sinkronisasi data (diperbarui 2026-09-19)
+
+Setiap kali halaman dibuka, di-reload, ditekan tombol **Refresh**, auto-refresh 5 menit,
+tab kembali aktif, atau koneksi pulih — urutan sumber data SELALU sama:
+
+1. **Google Sheets langsung** (CSV publik) → label hijau `Live (Sheets)`.
+2. **`data.json`** hasil sync GitHub Actions → label biru `Sync GitHub (cadangan)`,
+   hanya dipakai bila Sheets tidak bisa diakses.
+3. Jika keduanya gagal → data terakhir yang berhasil dimuat **tetap ditampilkan**
+   (label merah `Offline`), tidak dikosongkan.
+
+Catatan: `data.json` sekarang menyimpan timestamp dengan offset `+07:00` (WIB), bukan
+`Z`/UTC, sehingga jam & tanggal konsisten dengan jalur live di semua zona waktu.

@@ -39,6 +39,8 @@ jobs:
         env:
           SHEET_ID: ${{ vars.SHEET_ID || '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk' }}
           SHEET_NAME: ${{ vars.SHEET_NAME || 'Response' }}
+          SHEET_TZ_OFFSET: '+07:00'
+          TZ: Asia/Jakarta
         run: |
           node scripts/fetch-data.js
           echo "=== data.meta.json ==="
@@ -53,6 +55,8 @@ jobs:
             echo "Tidak ada perubahan data, skip commit."
           else
             git commit -m "chore(sync): update data.json from Google Sheets - $(date -u +'%Y-%m-%d %H:%M UTC')"
+            # Hindari gagal push bila ada commit baru masuk saat workflow berjalan
+            git pull --rebase origin main || true
             git push
           fi
 

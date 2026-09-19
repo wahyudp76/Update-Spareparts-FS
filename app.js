@@ -98,15 +98,17 @@ function parseDate(s) {
         else             d = tryDMY(m[1],m[2],m[3],m[4],m[5],m[6]); // ambigu → DD/MM (locale ID)
         if (d) return d;
     }
-    // ISO yyyy-mm-dd (data.json cache) — set jam ke 12:00 lokal agar tidak
-    // bergeser akibat konversi UTC (mis. 00:00 WIB = 17:00 UTC hari sebelumnya).
-    let d = new Date(s);
-    if (!isNaN(d.getTime())) {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(s) || /^\d{4}-\d{2}-\d{2}T/.test(s)) {
-            // sudah memiliki tanggal yang valid; biarkan tapi pastikan tidak off-by-one
-            return d;
-        }
+    // ISO yyyy-mm-dd tanpa jam (tanggalInspeksi di data.json) → parse sebagai
+    // TANGGAL LOKAL, bukan UTC. new Date('2026-09-19') = 00:00 UTC yang di zona
+    // barat UTC menjadi 18 Sep → off-by-one. Pakai komponen lokal jam 12:00.
+    const mIso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (mIso) {
+        const d0 = new Date(+mIso[1], +mIso[2]-1, +mIso[3], 12, 0, 0);
+        return isNaN(d0.getTime()) ? null : d0;
     }
+    // ISO lengkap dengan jam/zona (timestamp di data.json) → instan absolut, aman.
+    let d = new Date(s);
+    if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(s)) return d;
     // dd-mm-yyyy
     const m2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?$/);
     if (m2) {
@@ -222,89 +224,163 @@ async function fetchLiveCSV() {
     } catch(e) { return null; }
 }
 
-async function refreshData(forceLive=false) {
-    const icon=document.getElementById('refreshIcon');
-    icon.classList.add('spin');
-    const ls = document.getElementById('loadingState'); if(ls) ls.classList.remove('hidden');
-    const tb = document.getElementById('tableBody'); if(tb) tb.innerHTML='';
-    const es = document.getElementById('emptyState'); if(es) es.classList.add('hidden');
+// Normalisasi record dari data.json (cache GitHub) agar identik dengan hasil
+// normalizeFromCSV (jalur live). Semua derived field dibangun ulang di sini.
+function normalizeFromJson(json) {
+    return json.map((r,i) => {
+        const et = r.engineType||'-', ec = r.engineCode||'-';
+        const it = r.irrType||'-', ic = r.irrCode||'-';
+        const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
+        const sp = (r.sparepart||'-');
+        const pr = r.prNumber||null;
+        const tglObj = parseDate(r.tanggalInspeksi) || parseDate(r.timestamp);
+        if(!tglObj) return null; // skip record rusak
+        const tsObj = parseDate(r.timestamp) || tglObj;
+        const mergedTs = new Date(tglObj.getFullYear(), tglObj.getMonth(), tglObj.getDate(),
+                                  tsObj.getHours(), tsObj.getMinutes(), tsObj.getSeconds());
+        return {
+            ...r,
+            lokasi: r.lokasi || r.unit || '-',
+            divisi: r.divisi || '-',
+            engineType:et, engineCode:ec,
+            engine: (et&&et!=='-'&&ec&&ec!=='-')?`${et} – ${ec}`:(r.engine||'-'),
+            irrType:it, irrCode:ic,
+            irrigator: (it&&it!=='-'&&ic&&ic!=='-'&&it!==ic)?`${it} – ${ic}`:(r.irrigator||'-'),
+            damageType:dt, keterangan:dn,
+            damage: dn?(dt?`${dt} — ${dn}`:dn):(dt||'-'),
+            sparepart: sp,
+            prNumber: pr,
+            status: pr?'Proses':'Belum Ditangani',
+            unit: r.lokasi || r.unit || '-',
+            timestamp: mergedTs.toISOString(),
+            tanggalInspeksi: localIsoDate(tglObj),
+            __row: typeof r.__row==='number'?r.__row:(i+2)
+        };
+    }).filter(Boolean).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
 
-    let data=null, source='cache';
-    if(forceLive) { data=await fetchLiveCSV(); if(data&&data.length) source='live-sheet'; }
-    if(!data) {
-        try {
-            const res=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});
-            if(res.ok) {
-                const json=await res.json();
-                if(Array.isArray(json)&&json.length) {
-                    // Bangun ulang derived fields (engine/irrigator/damage/status unit) agar konsisten
-                    data = json.map((r,i) => {
-                        const et = r.engineType||'-', ec = r.engineCode||'-';
-                        const it = r.irrType||'-', ic = r.irrCode||'-';
-                        const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
-                        const sp = (r.sparepart||'-');
-                        const pr = r.prNumber||null;
-                        const tglObj = parseDate(r.tanggalInspeksi) || parseDate(r.timestamp);
-                        if(!tglObj) return null; // skip record rusak
-                        const tgl = localIsoDate(tglObj);
-                        const tsObj = parseDate(r.timestamp) || tglObj;
-                        const mergedTs = new Date(tglObj.getFullYear(), tglObj.getMonth(), tglObj.getDate(),
-                                                  tsObj.getHours(), tsObj.getMinutes(), tsObj.getSeconds());
-                        return {
-                            ...r,
-                            lokasi: r.lokasi || r.unit || '-',
-                            divisi: r.divisi || '-',
-                            engineType:et, engineCode:ec,
-                            engine: (et&&et!=='-'&&ec&&ec!=='-')?`${et} – ${ec}`:(r.engine||'-'),
-                            irrType:it, irrCode:ic,
-                            irrigator: (it&&it!=='-'&&ic&&ic!=='-'&&it!==ic)?`${it} – ${ic}`:(r.irrigator||'-'),
-                            damageType:dt, keterangan:dn,
-                            damage: dn?(dt?`${dt} — ${dn}`:dn):(dt||'-'),
-                            sparepart: sp,
-                            prNumber: pr,
-                            status: pr?'Proses':'Belum Ditangani',
-                            unit: r.lokasi || r.unit || '-',
-                            timestamp: mergedTs.toISOString(),
-                            tanggalInspeksi: tgl,
-                            __row: typeof r.__row==='number'?r.__row:(i+2)
-                        };
-                    }).filter(Boolean);
-                    source='github-cache';
-                }
-            }
-        } catch(e) {}
+async function fetchGithubCache() {
+    try {
+        const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),15000);
+        const res=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store',signal:ctrl.signal});
+        clearTimeout(tid);
+        if(!res.ok) return null;
+        const json=await res.json();
+        if(!Array.isArray(json)) return null;
+        return normalizeFromJson(json);
+    } catch(e) { return null; }
+}
+
+// Penjaga race-condition: hanya hasil dari request TERAKHIR yang boleh dirender.
+let __refreshSeq = 0;
+let __refreshInFlight = null;
+
+/**
+ * Muat data. Urutan sumber (selalu sama, baik saat load pertama, reload,
+ * auto-refresh, maupun klik tombol Refresh):
+ *   1. Google Sheets langsung (CSV publik) — data paling baru, real-time.
+ *   2. data.json hasil sync GitHub Actions — cadangan jika Sheets tidak bisa
+ *      diakses (offline / diblokir / sharing berubah).
+ *   3. Jika keduanya gagal → PERTAHANKAN data yang sedang tampil (jangan
+ *      dikosongkan), tampilkan peringatan.
+ * Dulu: load/reload hanya baca data.json (bisa tertinggal berjam-jam karena
+ * cron GitHub tidak andal) sementara tombol Refresh baca Sheets → data
+ * "maju-mundur" tiap kali reload. Sekarang keduanya konsisten.
+ */
+async function refreshData(forceLive=false, opts={}) {
+    if (__refreshInFlight && !forceLive) return __refreshInFlight; // sudah ada yang jalan
+    const seq = ++__refreshSeq;
+    const silent = !!opts.silent;
+    const icon=document.getElementById('refreshIcon');
+    if(icon) icon.classList.add('spin');
+    const ls = document.getElementById('loadingState');
+    const es = document.getElementById('emptyState');
+    // Loading skeleton hanya saat belum ada data sama sekali (first load).
+    // Saat refresh berikutnya, data lama tetap tampil sampai data baru siap.
+    if (isFirstLoad) {
+        if(ls) ls.classList.remove('hidden');
+        if(es) es.classList.add('hidden');
     }
-    if(!data||!data.length) {
-        // Demo data HANYA muncul jika ?demo=1 di URL (untuk testing/showcase).
-        // Di production, jika cache kosong → empty state, jangan buat data palsu.
-        const urlParams = new URLSearchParams(window.location.search);
-        if(urlParams.get('demo') === '1') {
-            data = generateDemo(); source = 'demo';
-            showToast('Mode demo aktif — menampilkan data contoh.','warning');
-        } else {
-            data = []; source = 'empty';
+
+    const run = (async () => {
+        let data=null, source='empty', note='';
+        // 1) Live Sheets
+        data = await fetchLiveCSV();
+        if (data && data.length) source='live-sheet';
+        // 2) Cadangan: data.json (cache GitHub)
+        if (!data || !data.length) {
+            const cached = await fetchGithubCache();
+            if (cached && cached.length) { data = cached; source='github-cache'; }
+            else if (cached && !cached.length && data && !data.length) { data = []; source='empty'; }
+        }
+        if (seq !== __refreshSeq) return; // sudah ada request yang lebih baru → abaikan
+
+        if (!data) {
+            // Keduanya gagal total (mis. offline)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('demo') === '1') {
+                data = generateDemo(); source = 'demo';
+                showToast('Mode demo aktif — menampilkan data contoh.','warning');
+            } else if (rawData.length) {
+                // Pertahankan data lama, jangan kosongkan tampilan.
+                source = 'stale'; note = 'gagal sinkron, menampilkan data terakhir';
+                if(!silent) showToast('Tidak bisa mengambil data terbaru (periksa koneksi). Menampilkan data terakhir yang berhasil dimuat.','warning');
+                data = rawData;
+            } else {
+                data = []; source = 'error';
+                showToast('Gagal memuat data dari Google Sheets maupun cache GitHub. Periksa koneksi lalu klik Refresh.','error');
+            }
+        }
+
+        rawData = data;
+        const syncEl=document.getElementById('syncTime');
+        if(syncEl && source!=='stale' && source!=='error')
+            syncEl.textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+        const srcLabel = {
+            'live-sheet':'Live (Sheets)','github-cache':'Sync GitHub (cadangan)',
+            'demo':'Data Demo','empty':'Tidak ada data','stale':'Offline','error':'Gagal memuat'
+        }[source];
+        const dsEl=document.getElementById('dataSource');
+        if(dsEl) dsEl.textContent = `${srcLabel} · ${data.length} record${note?' · '+note:''}`;
+        const dot=document.getElementById('dataSourceDot');
+        if(dot) dot.className = 'w-2 h-2 rounded-full pulse-dot '+(
+            source==='live-sheet'?'bg-green-500':
+            source==='github-cache'?'bg-blue-500':
+            source==='demo'?'bg-amber-500':
+            (source==='stale'||source==='error')?'bg-red-500':'bg-slate-400');
+
+        populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
+        populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
+        populateMultiSelect('statusFilter', ['Belum Ditangani','Proses'], state.status);
+
+        state.divisi = state.divisi.filter(v => rawData.some(d => d.divisi === v));
+        state.lokasi = state.lokasi.filter(v => rawData.some(d => d.lokasi === v));
+        state.status = state.status.filter(v => ['Belum Ditangani','Proses'].includes(v));
+
+        // Jangan reset halaman saat auto-refresh diam-diam (user mungkin sedang di halaman 3)
+        if (!silent) state.page = 1;
+        applyFilters();
+        isFirstLoad = false;
+    })();
+
+    __refreshInFlight = run;
+    try { await run; }
+    catch(e) {
+        console.error('refreshData error:', e);
+        if (seq === __refreshSeq) {
+            const dsEl=document.getElementById('dataSource');
+            if(dsEl) dsEl.textContent = 'Gagal memuat · '+(rawData.length||0)+' record';
+            if (isFirstLoad) { rawData = rawData||[]; applyFilters(); isFirstLoad=false; }
+            showToast('Terjadi kesalahan saat memuat data: '+(e && e.message ? e.message : e),'error');
         }
     }
-
-    rawData = data;
-    document.getElementById('syncTime').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const srcLabel = {'live-sheet':'Live (Sheets)','github-cache':'Sync GitHub','demo':'Data Demo','empty':'Tidak ada data'}[source];
-    document.getElementById('dataSource').textContent = `${srcLabel} · ${data.length} record`;
-    const dot=document.getElementById('dataSourceDot');
-    dot.className = 'w-2 h-2 rounded-full pulse-dot '+(source==='live-sheet'?'bg-green-500':source==='github-cache'?'bg-blue-500':source==='demo'?'bg-amber-500':'bg-slate-400');
-    icon.classList.remove('spin');
-
-    populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
-    populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
-    populateMultiSelect('statusFilter', ['Belum Ditangani','Proses'], state.status);
-
-    state.divisi = state.divisi.filter(v => rawData.some(d => d.divisi === v));
-    state.lokasi = state.lokasi.filter(v => rawData.some(d => d.lokasi === v));
-    state.status = state.status.filter(v => ['Belum Ditangani','Proses'].includes(v));
-
-    state.page = 1;
-    applyFilters();
-    isFirstLoad = false;
+    finally {
+        if (seq === __refreshSeq) {
+            if(icon) icon.classList.remove('spin');
+            if(ls) ls.classList.add('hidden');
+            __refreshInFlight = null;
+        }
+    }
 }
 
 // ---------- Date Utils ----------
@@ -2014,7 +2090,17 @@ document.addEventListener('DOMContentLoaded',()=>{
     const si=document.getElementById('searchInput');
     if(si) si.addEventListener('input', e => onSearchInput(e.target.value));
     refreshData(false);
-    setInterval(()=>refreshData(false),5*60*1000);
+    // Auto-refresh diam-diam tiap 5 menit (tanpa reset halaman / kedip loading)
+    setInterval(()=>refreshData(false,{silent:true}),5*60*1000);
+    // Saat tab/PWA kembali aktif setelah lama di background (timer browser
+    // di-throttle di mobile), langsung sinkron ulang.
+    let lastHidden = 0;
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden){ lastHidden=Date.now(); return; }
+        if(Date.now()-lastHidden > 60*1000) refreshData(false,{silent:true});
+    });
+    // Koneksi pulih → sinkron ulang
+    window.addEventListener('online',()=>refreshData(false,{silent:true}));
 
     // Setup banner edit/hapus
     initWriteSetup();

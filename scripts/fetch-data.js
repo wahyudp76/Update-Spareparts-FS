@@ -17,6 +17,8 @@ const SHEET_ID = process.env.SHEET_ID || '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQ
 const SHEET_NAME = process.env.SHEET_NAME || 'Response';
 const OUTPUT = path.join(__dirname, '..', 'data.json');
 const META = path.join(__dirname, '..', 'data.meta.json');
+// Zona waktu spreadsheet (WIB). Ubah bila sheet dipindah ke zona lain.
+const SHEET_TZ_OFFSET = process.env.SHEET_TZ_OFFSET || '+07:00';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
 function fetchText(url) {
@@ -168,9 +170,15 @@ function mapRows(rows) {
       continue;
     }
     const tsForTime = tsRaw || tgl;
-    const mergedTs = new Date(tgl.getFullYear(), tgl.getMonth(), tgl.getDate(),
-                              tsForTime.getHours(), tsForTime.getMinutes(), tsForTime.getSeconds());
-    const isoDate = `${tgl.getFullYear()}-${String(tgl.getMonth()+1).padStart(2,'0')}-${String(tgl.getDate()).padStart(2,'0')}`;
+    // PENTING: jam di spreadsheet adalah jam WIB (UTC+7). Runner GitHub Actions
+    // berjalan di UTC, jadi JANGAN pakai new Date(...).toISOString() — itu akan
+    // memberi label "Z" (UTC) pada jam WIB sehingga di browser user tampil
+    // bergeser +7 jam (23:03 WIB jadi 06:03 esok hari → masuk hari yang salah
+    // di filter harian & grafik jam). Tulis offset +07:00 secara eksplisit.
+    const p2 = n => String(n).padStart(2,'0');
+    const isoDate = `${tgl.getFullYear()}-${p2(tgl.getMonth()+1)}-${p2(tgl.getDate())}`;
+    const mergedTsIso = `${isoDate}T${p2(tsForTime.getHours())}:${p2(tsForTime.getMinutes())}:${p2(tsForTime.getSeconds())}${SHEET_TZ_OFFSET}`;
+    const mergedTs = new Date(mergedTsIso);
 
     const lokasi = get('lokasi');
     const et = get('engineType');
@@ -195,7 +203,7 @@ function mapRows(rows) {
     if (!lokasi && !ic && !dt && sp === '-') continue;
 
     out.push({
-      timestamp: mergedTs.toISOString(),
+      timestamp: mergedTsIso,
       tanggalInspeksi: isoDate,
       lokasi: lokasi || '-',
       divisi: divisi || '-',
