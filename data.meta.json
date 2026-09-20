@@ -2,9 +2,9 @@
   "sheetId": "1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk",
   "sheetName": "Response",
   "lastFetchSuccess": true,
-  "lastFetchAttempt": "2026-09-20T16:20:41.928Z",
+  "lastFetchAttempt": "2026-09-20T17:10:18.471Z",
   "lastFetchError": null,
-  "recordCount": 28,
+  "recordCount": 34,
   "headers": [
     "Timestamp",
     "Tanggal Inspeksi",
@@ -17,6 +17,7 @@
     "Jenis Kerusakan",
     "Keterangan Kerusakan",
     "Spareparts Yang Dibutuhkan",
-    "Nomor PR / Notifikasi"
+    "Nomor PR / Notifikasi",
+    "Tingkat Kerusakan"
   ]
 }
