@@ -1985,6 +1985,9 @@ function priorityScore(d, recurCount){
 }
 
 let sevLevelFilterState = '';
+let sevPage = 1, sevPageSize = 10;
+function sevSetPageSize(n){ sevPageSize = parseInt(n,10)||10; sevPage = 1; renderSeverityTab(); }
+function sevGoPage(p){ sevPage = p; renderSeverityTab(); const t=document.getElementById('sevTable'); if(t) t.closest('.card').scrollIntoView({behavior:'smooth',block:'start'}); }
 let __sevChartData = null;
 function renderSeverityCharts(){
     dk('severity'); dk('severityAsset');
@@ -2070,21 +2073,38 @@ function renderSeverityTab(){
     // Tabel prioritas
     const tb=document.getElementById('sevTable');
     if(tb){
-        const list = rows.filter(r=>!sevLevelFilterState||r.level===sevLevelFilterState).sort((a,b)=>b.score-a.score||b.age-a.age).slice(0,50);
+        const all = rows.filter(r=>!sevLevelFilterState||r.level===sevLevelFilterState).sort((a,b)=>b.score-a.score||b.age-a.age);
+        const totalPages = Math.max(1, Math.ceil(all.length/sevPageSize));
+        if(sevPage>totalPages) sevPage=totalPages; if(sevPage<1) sevPage=1;
+        const startIdx = (sevPage-1)*sevPageSize;
+        const list = all.slice(startIdx, startIdx+sevPageSize);
         tb.innerHTML = `<thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-2 pr-2">#</th><th class="text-left py-2 pr-2">Prioritas</th><th class="text-left py-2 pr-2">Tingkat</th><th class="text-left py-2 pr-2">Tanggal</th><th class="text-left py-2 pr-2">Umur</th><th class="text-left py-2 pr-2">Lokasi</th><th class="text-left py-2 pr-2">Aset / Unit</th><th class="text-left py-2 pr-2">Kerusakan</th><th class="text-left py-2 pr-2">Sparepart</th><th class="text-left py-2 pr-2">Status</th><th class="text-left py-2">Alasan</th></tr></thead><tbody>${
-            list.length ? list.map((r,i)=>{ const d=r.d, R=SEVERITY_RULES[r.level];
+            list.length ? list.map((r,i0)=>{ const i=startIdx+i0; const d=r.d, R=SEVERITY_RULES[r.level];
                 const unit = d.engineType!=='-'&&d.engineType ? `Engine ${escapeHtml(d.engineType)} ${d.engineCode!=='-'?escapeHtml(d.engineCode):''}` : d.irrType!=='-'&&d.irrType ? `Irigator ${escapeHtml(d.irrType)} ${d.irrCode!=='-'?escapeHtml(d.irrCode):''}` : escapeHtml(r.asset);
                 const sc = r.score>=70?'#dc2626':r.score>=45?'#f59e0b':'#10b981';
                 return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${d.status==='Proses'?`<span class="status-badge bg-amber-100 text-amber-700">Proses${d.prNumber?` · ${escapeHtml(d.prNumber)}`:''}</span>`:'<span class="status-badge bg-slate-100 text-slate-700">Belum</span>'}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
             }).join('') : '<tr><td colspan="11" class="py-6 text-center text-slate-400 italic">Tidak ada laporan pada tingkat ini</td></tr>'
         }</tbody>`;
+        // Pagination
+        const pg=document.getElementById('sevPager');
+        if(pg){
+            const from = all.length? startIdx+1 : 0, to = Math.min(all.length, startIdx+sevPageSize);
+            let pages=[]; for(let p=1;p<=totalPages;p++){ if(p===1||p===totalPages||Math.abs(p-sevPage)<=1) pages.push(p); else if(pages[pages.length-1]!=='…') pages.push('…'); }
+            pg.innerHTML = `<div class="text-[11px] text-slate-500">Menampilkan <b>${from}–${to}</b> dari <b>${all.length}</b> laporan</div>
+                <div class="flex items-center gap-1">
+                    <button onclick="sevGoPage(${sevPage-1})" ${sevPage<=1?'disabled':''} class="px-2 py-1 rounded border border-slate-200 text-xs disabled:opacity-40 hover:bg-slate-50"><i class="fas fa-chevron-left"></i></button>
+                    ${pages.map(p=>p==='…'?'<span class="px-1 text-slate-400 text-xs">…</span>':`<button onclick="sevGoPage(${p})" class="min-w-[28px] px-2 py-1 rounded text-xs font-semibold ${p===sevPage?'bg-slate-900 text-white':'border border-slate-200 hover:bg-slate-50 text-slate-700'}">${p}</button>`).join('')}
+                    <button onclick="sevGoPage(${sevPage+1})" ${sevPage>=totalPages?'disabled':''} class="px-2 py-1 rounded border border-slate-200 text-xs disabled:opacity-40 hover:bg-slate-50"><i class="fas fa-chevron-right"></i></button>
+                </div>`;
+        }
+        const ps=document.getElementById('sevPageSize'); if(ps && +ps.value!==sevPageSize) ps.value=String(sevPageSize);
     }
     const sub=document.getElementById('sevDonutSub'); if(sub) sub.textContent = `${total} laporan pada filter aktif`;
     // filter tombol
     const lf=document.getElementById('sevLevelFilter');
     if(lf && !lf.dataset.bound){
         lf.dataset.bound='1';
-        lf.addEventListener('click',e=>{ const b=e.target.closest('button[data-lv]'); if(!b) return; sevLevelFilterState=b.dataset.lv; lf.querySelectorAll('button').forEach(x=>x.classList.toggle('ring-2',x===b)); renderSeverityTab(); });
+        lf.addEventListener('click',e=>{ const b=e.target.closest('button[data-lv]'); if(!b) return; sevLevelFilterState=b.dataset.lv; sevPage=1; lf.querySelectorAll('button').forEach(x=>x.classList.toggle('ring-2',x===b)); renderSeverityTab(); });
     }
 }
 
