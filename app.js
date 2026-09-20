@@ -1459,7 +1459,8 @@ function renderUnitTypeCards(cardsContainerId, data, typeField, colorMap, defaul
         });
         const topDmg = Object.entries(dmg).sort((a,b)=>b[1]-a[1])[0];
         const topSp = Object.entries(sp).sort((a,b)=>b[1]-a[1])[0];
-        return `<div class="card overflow-hidden card-hover">
+        const kind = typeField==='engineType' ? 'engine' : 'irr';
+        return `<div class="card overflow-hidden card-hover cursor-pointer" role="button" tabindex="0" title="Klik untuk detail ${escapeHtml(t.type)}" onclick="openTypeDetail('${kind}','${escapeHtml(t.type).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
             <div class="p-4 text-white" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -1485,9 +1486,128 @@ function renderUnitTypeCards(cardsContainerId, data, typeField, colorMap, defaul
                     ${topDmg?`<div><i class="fas fa-triangle-exclamation text-red-400 mr-1"></i>Kerusakan: <b>${escapeHtml(topDmg[0])}</b> (${topDmg[1]}×)</div>`:''}
                     ${topSp?`<div><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart: <b>${escapeHtml(topSp[0])}</b></div>`:''}
                 </div>
+                <div class="mt-2 pt-2 border-t border-slate-100 text-[10px] font-semibold flex items-center justify-between" style="color:${color}"><span><i class="fas fa-circle-info mr-1"></i>Lihat detail lokasi &amp; kerusakan</span><i class="fas fa-arrow-right"></i></div>
             </div>
         </div>`;
     }).join('');
+}
+
+// ======================================================
+// DETAIL JENIS ENGINE / IRIGATOR (modal) — semua angka dari data spreadsheet
+// yang sedang aktif (mengikuti filter periode/divisi/lokasi/pencarian).
+// ======================================================
+function openTypeDetail(kind, type){
+    const isEng = kind==='engine';
+    const tf = isEng?'engineType':'irrType', cf = isEng?'engineCode':'irrCode';
+    const items = filteredData.filter(d=>d[tf]===type);
+    const color = (isEng?ENG_COLORS:IRR_COLORS)[type] || (isEng?'#f97316':'#ec4899');
+    const label = isEng?'Engine':'Irigator';
+    const modal = document.getElementById('typeDetailModal');
+    if(!modal) return;
+    const cnt = (arr, fn) => { const m={}; arr.forEach(x=>{ const k=fn(x); if(k&&k!=='-') m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+    const total = items.length;
+    const pending = items.filter(x=>x.status==='Belum Ditangani').length;
+    const byLok = cnt(items, x=>x.lokasi);
+    const byDmg = cnt(items, x=>x.damageType);
+    const byDiv = cnt(items, x=>x.divisi);
+    const byUnit = cnt(items, x=>x[cf]&&x[cf]!=='-'?`${type} ${x[cf]}`:null);
+    const spm={}; items.forEach(x=>{ if(x.sparepart&&x.sparepart!=='-') x.sparepart.split(/;\s*/).forEach(v=>{v=v.trim(); if(v) spm[v]=(spm[v]||0)+1;}); });
+    const bySp = Object.entries(spm).sort((a,b)=>b[1]-a[1]);
+    const dates = items.map(x=>new Date(x.timestamp)).filter(d=>!isNaN(d)).sort((a,b)=>a-b);
+    // Lokasi ↔ kerusakan (matriks ringkas: tiap lokasi, kerusakan apa saja)
+    const lokDmg = {}; items.forEach(x=>{ const l=x.lokasi||'-'; (lokDmg[l]=lokDmg[l]||{}); const k=x.damageType||'-'; lokDmg[l][k]=(lokDmg[l][k]||0)+1; });
+
+    const bar = (rows, colr, maxShow=8) => {
+        if(!rows.length) return '<div class="text-xs text-slate-400 italic">Tidak ada data</div>';
+        const max = rows[0][1];
+        return rows.slice(0,maxShow).map(([k,v])=>`
+            <div class="flex items-center gap-2 text-xs">
+                <div class="w-28 truncate font-medium text-slate-700" title="${escapeHtml(k)}">${escapeHtml(k)}</div>
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(6,v/max*100)}%;background:${colr}"></div></div>
+                <div class="w-8 text-right font-bold text-slate-700">${v}</div>
+            </div>`).join('') + (rows.length>maxShow?`<div class="text-[10px] text-slate-400 mt-1">+${rows.length-maxShow} lainnya</div>`:'');
+    };
+    const chips = (rows, cls) => rows.length ? rows.map(([k,v])=>`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}">${escapeHtml(k)}<span class="opacity-70">×${v}</span></span>`).join(' ') : '<span class="text-xs text-slate-400 italic">—</span>';
+
+    // Ringkasan naratif
+    let summary = '';
+    if(!total){
+        summary = `Tidak ada laporan kerusakan untuk ${label} <b>${escapeHtml(type)}</b> pada filter yang sedang aktif.`;
+    } else {
+        const topDmg = byDmg[0], topLok = byLok[0];
+        summary = `Terdapat <b>${total} laporan</b> kerusakan pada ${label} <b>${escapeHtml(type)}</b>`
+            + (byUnit.length?` yang melibatkan <b>${byUnit.length} unit</b>`:'')
+            + ` di <b>${byLok.length} lokasi</b>`
+            + (byDiv.length?` (${byDiv.map(([k,v])=>`${escapeHtml(k)} ${v}`).join(', ')})`:'')
+            + `. `
+            + (topDmg?`Kerusakan paling sering: <b>${escapeHtml(topDmg[0])}</b> (${topDmg[1]}×${total>1?`, ${Math.round(topDmg[1]/total*100)}%`:''})`:'')
+            + (topLok?`; lokasi paling sering: <b>${escapeHtml(topLok[0])}</b> (${topLok[1]}×)`:'') + `. `
+            + `<b>${pending}</b> laporan belum ditangani, <b>${total-pending}</b> dalam proses (sudah ada nomor PR)`
+            + (bySp.length?`. Sparepart yang paling dibutuhkan: <b>${escapeHtml(bySp[0][0])}</b>`:'') + `.`
+            + (dates.length?` Rentang laporan: ${fmtDateShort(dates[0])}${dates.length>1?` – ${fmtDateShort(dates[dates.length-1])}`:''}.`:'');
+    }
+
+    const rowsHtml = [...items].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(d=>`
+        <tr class="border-b border-slate-100 last:border-0">
+            <td class="py-1.5 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td>
+            <td class="py-1.5 pr-2 font-semibold text-blue-700">${escapeHtml(d.lokasi)}</td>
+            <td class="py-1.5 pr-2 text-slate-600">${escapeHtml(d.divisi)}</td>
+            <td class="py-1.5 pr-2 font-mono text-slate-700">${d[cf]&&d[cf]!=='-'?escapeHtml(d[cf]):'—'}</td>
+            <td class="py-1.5 pr-2 text-slate-800">${escapeHtml(d.damageType||'-')}${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td>
+            <td class="py-1.5 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td>
+            <td class="py-1.5 whitespace-nowrap">${d.status==='Proses'?`<span class="status-badge bg-amber-100 text-amber-700">Proses${d.prNumber?` · ${escapeHtml(d.prNumber)}`:''}</span>`:'<span class="status-badge bg-slate-100 text-slate-700">Belum</span>'}</td>
+        </tr>`).join('');
+
+    const lokDmgHtml = Object.entries(lokDmg).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).map(([l,m])=>`
+        <div class="flex items-start gap-2 text-xs py-1 border-b border-slate-100 last:border-0">
+            <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold whitespace-nowrap"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(l)}</span>
+            <div class="flex flex-wrap gap-1">${Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-semibold">${escapeHtml(k)}${v>1?` ×${v}`:''}</span>`).join('')}</div>
+        </div>`).join('');
+
+    modal.querySelector('.modal').innerHTML = `
+        <div class="p-5 text-white sticky top-0 z-10" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl"><i class="fas ${isEng?'fa-oil-can':'fa-spray-can'}"></i></div>
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest font-semibold opacity-80">Detail Jenis ${label}</div>
+                        <h3 class="display-font font-bold text-2xl leading-tight">${escapeHtml(type)}</h3>
+                        <div class="text-[11px] opacity-80 mt-0.5">Berdasarkan data spreadsheet · filter aktif: ${escapeHtml(document.getElementById('activePeriodText')?document.getElementById('activePeriodText').textContent:'Semua data')}</div>
+                    </div>
+                </div>
+                <button onclick="closeModal('typeDetailModal')" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mt-4">
+                ${[['Laporan',total],['Unit',byUnit.length],['Lokasi',byLok.length],['Belum ditangani',pending]].map(([k,v])=>`<div class="bg-white/15 rounded-lg p-2 text-center"><div class="stat-number text-xl">${v}</div><div class="text-[9px] uppercase font-semibold opacity-80">${k}</div></div>`).join('')}
+            </div>
+        </div>
+        <div class="p-5 space-y-5">
+            <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed"><i class="fas fa-circle-info mr-1" style="color:${color}"></i>${summary}</div>
+            ${total?`
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>Lokasi kerusakan</h4>${bar(byLok,'#2563eb')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i>Jenis kerusakan</h4>${bar(byDmg,'#ef4444')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-hashtag mr-1" style="color:${color}"></i>Unit terdampak</h4>${bar(byUnit,color)}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart dibutuhkan</h4>${bar(bySp,'#f59e0b')}</div>
+            </div>
+            <div class="card p-4">
+                <h4 class="text-xs font-bold text-slate-800 mb-2"><i class="fas fa-sitemap text-slate-500 mr-1"></i>Kerusakan per lokasi</h4>
+                ${lokDmgHtml}
+            </div>
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-xs font-bold text-slate-800"><i class="fas fa-list text-slate-500 mr-1"></i>Daftar laporan (${total})</h4>
+                    <div class="flex gap-1 flex-wrap">${chips(byDiv,'bg-slate-100 text-slate-700')}</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5 pr-2">Tanggal</th><th class="text-left py-1.5 pr-2">Lokasi</th><th class="text-left py-1.5 pr-2">Divisi</th><th class="text-left py-1.5 pr-2">Kode</th><th class="text-left py-1.5 pr-2">Kerusakan</th><th class="text-left py-1.5 pr-2">Sparepart</th><th class="text-left py-1.5">Status</th></tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>
+            </div>`:''}
+        </div>`;
+    openModal('typeDetailModal');
 }
 function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel){
     const g = document.getElementById(gridId);
