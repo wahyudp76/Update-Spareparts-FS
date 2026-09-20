@@ -65,7 +65,13 @@
         .pulse{animation:pulse 2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         .fade-in{animation:fi .4s ease both}
-        @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+        /* Panel filter harus berada DI ATAS kartu tab & konten di bawahnya agar
+           dropdown (Divisi/Lokasi/Status) tidak tertutup. Beri stacking context
+           eksplisit dengan z-index tinggi; kartu tab tetap z-index rendah. */
+        #filterPanel{position:relative;z-index:40}
+        #filterPanel .ms-menu{z-index:60}
+        #tabCard{position:relative;z-index:1}
         /* Calendar */
         .cal-day{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:12.5px;border-radius:10px;position:relative;cursor:pointer;transition:all .15s;user-select:none;font-weight:500}
         .cal-day:hover:not(.other-month){background:#eff6ff}
@@ -167,7 +173,7 @@
 
     <main class="max-w-[1400px] mx-auto px-4 lg:px-6 py-5">
         <!-- Global Filter -->
-        <div class="card p-4 mb-4 fade-in">
+        <div id="filterPanel" class="card p-4 mb-4 fade-in">
             <div class="flex flex-col xl:flex-row xl:items-center gap-3">
                 <div class="flex flex-wrap gap-2 items-center">
                     <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1"><i class="fas fa-filter text-blue-600 mr-1"></i>Filter</span>
@@ -224,7 +230,7 @@
         </div>
 
         <!-- Tab Navigation -->
-        <div class="card mb-4 overflow-hidden fade-in">
+        <div id="tabCard" class="card mb-4 overflow-hidden fade-in">
             <div class="flex border-b border-slate-200 overflow-x-auto" id="tabNav">
                 <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
                     <span class="tab-icon"><i class="fas fa-gauge-high"></i></span>Ikhtisar
