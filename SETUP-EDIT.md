@@ -1,5 +1,17 @@
 # Panduan Mengaktifkan Fitur Edit/Hapus untuk SEMUA User
 
+> ## ⚠️ Edit/Hapus error "Sorry, unable to open the file" / "Page Not Found"?
+> Artinya Web App Apps Script **belum diotorisasi mengakses Spreadsheet** atau masih memakai
+> **versi kode lama**. Perbaiki dalam 4 langkah (±2 menit):
+> 1. Buka https://script.google.com → project proxy → ganti seluruh kode dengan isi terbaru
+>    [`scripts/write-proxy.gs`](./scripts/write-proxy.gs) → **Save**.
+> 2. Di dropdown fungsi (toolbar) pilih **`authorize`** → **Run** → izinkan akses ke Spreadsheet.
+> 3. **Deploy → Manage deployments → ✏️ (Edit) → Version: *New version* → Deploy.**
+>    (Bukan *New deployment* — supaya URL di `config.js` tetap sama.)
+> 4. Cek: buka `…/exec?action=check` di browser → harus tampil `ok: sheet Response, N baris, v2`.
+>    Di dashboard: ikon 🔌 → **Test Koneksi** juga harus hijau.
+
+
 Ada **dua cara** mengaktifkan fitur edit/hapus:
 
 ## 🚀 Cara termudah (satu kali setup, berlaku SEMUA device) — REKOMENDASI

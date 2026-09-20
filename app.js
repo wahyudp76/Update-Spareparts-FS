@@ -1770,8 +1770,8 @@ function renderTable(){
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
             <td class="px-3 py-3">
                 <div class="row-actions">
-                    <button class="act-btn edit" title="Edit laporan" onclick="openEditModal(${filteredData.indexOf(d) + start})"><i class="fas fa-pen"></i></button>
-                    <button class="act-btn del" title="Hapus laporan" onclick="openDeleteModal(${filteredData.indexOf(d) + start})"><i class="fas fa-trash"></i></button>
+                    <button class="act-btn edit" title="Edit laporan" onclick="openEditModal(${filteredData.indexOf(d)})"><i class="fas fa-pen"></i></button>
+                    <button class="act-btn del" title="Hapus laporan" onclick="openDeleteModal(${filteredData.indexOf(d)})"><i class="fas fa-trash"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -1922,10 +1922,14 @@ async function testWriteEndpoint(){
     if(!url){ res.innerHTML='<span class="text-red-600">URL belum diisi</span>'; return; }
     res.innerHTML='<span class="text-slate-500"><i class="fas fa-spinner spin mr-1"></i>Testing…</span>';
     try{
-        const r = await fetch(url+'?action=ping', {method:'GET'});
-        const t = await r.text();
-        if(r.ok && (t.includes('ok') || t.includes('pong'))){
-            res.innerHTML='<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Koneksi berhasil! Klik Simpan.</span>';
+        const r = await fetch(url+'?action=check', {method:'GET', redirect:'follow'});
+        const t = (await r.text()).trim();
+        if(/^<!doctype|^<html/i.test(t)){
+            res.innerHTML='<span class="text-red-600">Apps Script tidak bisa mengakses spreadsheet (belum diotorisasi / versi lama). Jalankan fungsi <b>authorize</b> di editor Apps Script lalu deploy sebagai <b>New version</b>.</span>';
+        } else if(r.ok && /^ok:/i.test(t)){
+            res.innerHTML='<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Koneksi & akses spreadsheet OK ('+escapeHtml(t.slice(0,80))+'). Klik Simpan.</span>';
+        } else if(r.ok && t==='pong'){
+            res.innerHTML='<span class="text-amber-600">Endpoint hidup tapi memakai kode proxy versi LAMA. Update kode dari scripts/write-proxy.gs lalu deploy New version.</span>';
         } else {
             res.innerHTML=`<span class="text-red-600">Respons tidak valid (${r.status}). Pastikan deploy sebagai "Anyone, even anonymous".</span>`;
         }
@@ -1982,6 +1986,39 @@ function openEditModal(globalIdx){
     openModal('editModal');
 }
 
+// Kirim perintah ke Apps Script write-proxy dan terjemahkan responsnya.
+// Apps Script menjawab 302 → googleusercontent; browser mengikuti otomatis.
+// Jika deployment belum diotorisasi / versi lama, Google mengirim HALAMAN HTML
+// ("Sorry, unable to open the file") alih-alih teks "ok: ..." → deteksi & jelaskan.
+async function callWriteProxy(payload){
+    const url = getWriteUrl();
+    if(!url) throw new Error('Endpoint write belum dikonfigurasi.');
+    const ctrl = new AbortController(); const tid=setTimeout(()=>ctrl.abort(), 30000);
+    let r, txt;
+    try{
+        r = await fetch(url,{ method:'POST', body: JSON.stringify(payload), redirect:'follow', signal: ctrl.signal,
+            // text/plain → "simple request", tidak memicu preflight CORS yang tidak didukung Apps Script
+            headers:{'Content-Type':'text/plain;charset=utf-8'} });
+        txt = await r.text();
+    } catch(e){
+        clearTimeout(tid);
+        if(e.name==='AbortError') throw new Error('Timeout 30 detik — Apps Script tidak merespons.');
+        throw new Error('Tidak bisa menghubungi Apps Script ('+e.message+'). Pastikan deployment "Who has access: Anyone".');
+    }
+    clearTimeout(tid);
+    const t = (txt||'').trim();
+    if(/^<!doctype|^<html/i.test(t)){
+        if(/unable to open the file|Page Not Found/i.test(t))
+            throw new Error('Apps Script menolak menulis ke spreadsheet: deployment belum diotorisasi untuk akses Spreadsheet atau memakai versi kode lama. Buka editor Apps Script → jalankan fungsi "authorize" sekali → Deploy → Manage deployments → Edit → Version: New version → Deploy.');
+        if(/accounts\.google\.com|Sign in/i.test(t))
+            throw new Error('Apps Script meminta login. Deploy ulang dengan "Who has access: Anyone" (bukan "Anyone with Google account").');
+        throw new Error('Respons tidak dikenal dari Apps Script (HTML). Deploy ulang web app sebagai versi baru.');
+    }
+    if(!r.ok) throw new Error('HTTP '+r.status+': '+t.slice(0,200));
+    if(!/^ok\b/i.test(t)) throw new Error(t.slice(0,300) || 'Respons kosong dari Apps Script');
+    return t;
+}
+
 async function submitEdit(){
     const rawi = parseInt(document.getElementById('editRowIdx').value);
     const sheetRow = document.getElementById('editSheetRow').value;
@@ -2012,17 +2049,7 @@ async function submitEdit(){
     msg.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>Menyimpan ke spreadsheet…</span>';
     btn.disabled=true;
     try{
-        const r = await fetch(getWriteUrl(),{
-            method:'POST',
-            body: JSON.stringify({action:'update', ...payload})
-        });
-        const txt = await r.text();
-        let ok = r.ok && (txt.includes('ok') || txt.includes('updated'));
-        if(!ok){
-            msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Gagal: ${txt.slice(0,200)}</span>`;
-            btn.disabled=false;
-            return;
-        }
+        await callWriteProxy({action:'update', ...payload});
         // Update local cache (optimistic)
         const upd = {...d};
         Object.assign(upd,{
@@ -2044,11 +2071,10 @@ async function submitEdit(){
         rawData[rawi] = upd;
         closeModal('editModal');
         showToast('Perubahan tersimpan di spreadsheet.','success');
-        // Jangan panggil refreshData(true) di sini — itu akan re-fetch data.json cache (bisa lebih
-        // tua dari perubahan baru) dan menimpa update optimis. Data lokal sudah di-update di atas;
-        // biarkan sync GitHub 15 menit berikutnya yang menyelaraskan cache, atau user klik Refresh.
-        // Re-run pipeline render agar semua tab/kartu/chart mencerminkan perubahan lokal.
         applyFilters();
+        // refreshData kini SELALU membaca Sheets langsung (bukan cache) → aman untuk
+        // menyelaraskan ulang dari sumber kebenaran, termasuk nomor baris (__row).
+        setTimeout(()=>refreshData(true,{silent:true}), 1500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
@@ -2078,27 +2104,22 @@ async function submitDelete(){
     msg.innerHTML='<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>Menghapus…</span>';
     btn.disabled=true;
     try{
-        const r = await fetch(getWriteUrl(),{
-            method:'POST',
-            body: JSON.stringify({
-                action:'delete',
-                sheetRow: sheetRow?parseInt(sheetRow):null,
-                matchTs: d.timestamp,
-                matchLokasi: d.lokasi,
-                matchDamage: d.damageType
-            })
+        await callWriteProxy({
+            action:'delete',
+            sheetRow: sheetRow?parseInt(sheetRow):null,
+            matchTs: d.timestamp,
+            matchLokasi: d.lokasi,
+            matchDamage: d.damageType
         });
-        const txt = await r.text();
-        let ok = r.ok && (txt.includes('ok') || txt.includes('deleted'));
-        if(!ok){
-            msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Gagal: ${txt.slice(0,200)}</span>`;
-            btn.disabled=false;
-            return;
-        }
         closeModal('deleteModal');
         showToast('Baris dihapus dari spreadsheet.','success');
+        const deletedRow = d.__row;
         rawData.splice(rawi,1);
+        // Baris di bawah yang dihapus bergeser naik 1 di spreadsheet → koreksi __row lokal
+        // agar edit/hapus berikutnya (sebelum refresh) tetap mengenai baris yang benar.
+        if(typeof deletedRow==='number') rawData.forEach(x=>{ if(typeof x.__row==='number' && x.__row>deletedRow) x.__row--; });
         applyFilters();
+        setTimeout(()=>refreshData(true,{silent:true}), 1500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
