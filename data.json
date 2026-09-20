@@ -1,25 +1,5 @@
 [
   {
-    "timestamp": "2026-09-20T22:38:50+07:00",
-    "tanggalInspeksi": "2026-09-20",
-    "lokasi": "312D",
-    "divisi": "PG2",
-    "engineType": "SPC",
-    "engineCode": "1021",
-    "engine": "SPC – 1021",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Dinamo",
-    "keterangan": "Rusak Charge",
-    "damage": "Dinamo — Rusak Charge",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "unit": "312D",
-    "__row": 31
-  },
-  {
     "timestamp": "2026-09-20T13:36:18+07:00",
     "tanggalInspeksi": "2026-09-20",
     "lokasi": "303K",
@@ -54,7 +34,7 @@
     "keterangan": "Seal mekanik rusak",
     "damage": "Turbin — Seal mekanik rusak",
     "sparepart": "Seal Mekanik",
-    "prNumber": "110",
+    "prNumber": "110110",
     "status": "Proses",
     "unit": "185A",
     "__row": 29
