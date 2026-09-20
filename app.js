@@ -1565,7 +1565,7 @@ function openTypeDetail(kind, type){
         </div>`).join('');
 
     modal.querySelector('.modal').innerHTML = `
-        <div class="p-5 text-white sticky top-0 z-10" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
+        <div class="p-5 text-white" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl"><i class="fas ${isEng?'fa-oil-can':'fa-spray-can'}"></i></div>
