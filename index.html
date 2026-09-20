@@ -247,6 +247,9 @@
                 <button class="tab-btn" data-tab="irrigator" onclick="switchTab('irrigator')">
                     <span class="tab-icon"><i class="fas fa-spray-can"></i></span>Irigator<span class="tab-badge" id="badgeIrr">0</span>
                 </button>
+                <button class="tab-btn" data-tab="severity" onclick="switchTab('severity')">
+                    <span class="tab-icon"><i class="fas fa-gauge"></i></span>Tingkat Kerusakan<span class="tab-badge" id="badgeSeverity">0</span>
+                </button>
                 <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">
                     <span class="tab-icon"><i class="fas fa-calendar-alt"></i></span>Kalender
                 </button>
@@ -475,6 +478,62 @@
         </div>
 
         <!-- ==================== TAB: KALENDER ==================== -->
+        <!-- ==================== TAB: TINGKAT KERUSAKAN ==================== -->
+        <div class="tab-pane" id="tab-severity">
+            <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-gauge text-red-600 mr-2"></i>Analisa Tingkat Kerusakan &amp; Keparahan</h2>
+                    <p class="text-xs text-slate-500 ml-6">Setiap laporan dari spreadsheet diklasifikasikan <b>Berat / Sedang / Ringan</b> berdasarkan jenis &amp; keterangan kerusakan, lalu diberi <b>skor prioritas</b> dengan mempertimbangkan umur laporan yang belum ditangani dan kerusakan berulang pada unit/lokasi yang sama.</p>
+                </div>
+                <button onclick="toggleSeverityInfo()" class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-circle-question mr-1"></i>Kriteria penilaian</button>
+            </div>
+            <div id="severityInfo" class="hidden card p-4 mb-3 text-xs text-slate-700 space-y-2"></div>
+
+            <div id="sevKpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
+                <div class="card p-4 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-red-600"><i class="fas fa-chart-pie text-[11px]"></i></span>Komposisi Tingkat Kerusakan</h3>
+                    <p class="text-[11px] text-slate-500 mb-2" id="sevDonutSub">Semua laporan pada filter aktif</p>
+                    <div class="chart-wrap h-[240px]"><canvas id="severityChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-3">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-orange-500"><i class="fas fa-layer-group text-[11px]"></i></span>Tingkat Kerusakan per Kategori Aset</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Engine (diesel) · Irigator · Pompa sumur / lainnya</p>
+                    <div class="chart-wrap h-[240px]"><canvas id="severityAssetChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-slate-700"><i class="fas fa-table-cells text-[11px]"></i></span>Jenis Kerusakan × Tingkat Keparahan</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Jumlah laporan per jenis kerusakan menurut tingkat</p>
+                    <div id="sevMatrix" class="overflow-x-auto"></div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-purple-600"><i class="fas fa-rotate text-[11px]"></i></span>Kerusakan Berulang</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Unit / lokasi dengan ≥2 laporan — indikasi masalah kronis</p>
+                    <div id="sevRecurring" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-red-600"><i class="fas fa-list-ol text-[11px]"></i></span>Daftar Prioritas Penanganan</h3>
+                        <p class="text-[11px] text-slate-500">Diurutkan dari skor prioritas tertinggi (tingkat × umur laporan × pengulangan). Laporan yang sudah punya PR diberi bobot lebih rendah.</p>
+                    </div>
+                    <div class="flex gap-1 text-[10px]" id="sevLevelFilter">
+                        <button data-lv="" class="px-2.5 py-1 rounded-full bg-slate-900 text-white font-semibold">Semua</button>
+                        <button data-lv="Berat" class="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-semibold">Berat</button>
+                        <button data-lv="Sedang" class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">Sedang</button>
+                        <button data-lv="Ringan" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Ringan</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto"><table class="w-full text-xs" id="sevTable"></table></div>
+            </div>
+        </div>
+
         <div class="tab-pane" id="tab-calendar">
             <div class="mb-3">
                 <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-calendar-alt text-indigo-500 mr-2"></i>Kalender Inspeksi</h2>

@@ -555,6 +555,7 @@ function applyFilters() {
     renderDivisiTab();
     renderEngineTab();
     renderIrrTab();
+    renderSeverityTab();
     renderCalendar();
     renderCalDayDetail();
     renderTable();
@@ -704,6 +705,7 @@ function mkDoughnutOpts(opts={}){
 function renderCharts() {
     // Destroy dulu semua
     ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType'].forEach(k=>dk(k));
+    renderSeverityCharts();
 
     // ==== TREND (overview tab) ====
     const trendEl = document.getElementById('trendChart');
@@ -1910,6 +1912,182 @@ function sortTable(field){
 function prevPage(){if(state.page>1){state.page--;renderTable();}}
 function nextPage(){const tp=Math.ceil(filteredData.length/state.pageSize);if(state.page<tp){state.page++;renderTable();}}
 
+// ======================================================
+// TINGKAT KERUSAKAN / KEPARAHAN
+// Klasifikasi berbasis aturan (kata kunci) dari Jenis Kerusakan + Keterangan
+// Kerusakan di spreadsheet. Ubah daftar kata kunci di bawah bila perlu.
+// ======================================================
+const SEVERITY_RULES = {
+    // Berat: unit berhenti total / komponen utama patah / perlu overhaul
+    Berat: {
+        weight: 3, color:'#dc2626', bg:'bg-red-50', text:'text-red-700',
+        keywords: ['patah','pecah','jebol','ngancing','ngejam','macet','mati','nggak start','gak start','tidak start','tidak hidup','tidak bisa','terbakar','hangus','overheat','overhaul','rusak berat','hancur','putus','bubut','pompa rusak','kemasukan','as krek','crank'],
+        damageTypes: ['Blok Mesin','Gearbox','Transmisi','Radiator']
+    },
+    // Sedang: unit masih jalan tapi performa turun / bocor / komponen aus / komponen rusak
+    Sedang: {
+        weight: 2, color:'#f59e0b', bg:'bg-amber-50', text:'text-amber-700',
+        keywords: ['bocor','rembes','aus','habis','getar','panas','lemah','kecil','debit','rusak','ganti','kotor','kopling','bearing','seal','packing'],
+        damageTypes: ['Turbin','Dinamo','Pompa Ebara','Prodo','Pompa Sumur Bor','RPM','Selang']
+    },
+    // Ringan: sambungan lepas, penyetelan, kelengkapan kecil
+    Ringan: {
+        weight: 1, color:'#10b981', bg:'bg-emerald-50', text:'text-emerald-700',
+        keywords: ['lepas','kendor','longgar','klem','baut','setel','stel','ganti oli','filter','lampu','kabel'],
+        damageTypes: ['Pipa PE','Gun','Rantai']
+    }
+};
+const SEVERITY_ORDER = ['Berat','Sedang','Ringan'];
+const __sevCache = new WeakMap();
+
+function assetCategory(d){
+    if(d.engineType && d.engineType!=='-') return 'Engine';
+    if(d.irrType && d.irrType!=='-') return 'Irigator';
+    if(/pompa|sumur/i.test(d.damageType||'')) return 'Pompa Sumur';
+    return 'Lainnya';
+}
+function daysSince(ts){ const t=new Date(ts); if(isNaN(t)) return 0; return Math.max(0, Math.floor((startOfDay(new Date())-startOfDay(t))/86400000)); }
+
+function classifySeverity(d){
+    if(__sevCache.has(d)) return __sevCache.get(d);
+    // Hanya KETERANGAN yang dipakai untuk kata kunci (bukan nama jenis), supaya
+    // "Transmisi – kampas rem habis" tidak otomatis Berat hanya karena kata "transmisi".
+    const text = String(d.keterangan||'').toLowerCase();
+    const reasons=[]; let level=null;
+    // 1) Kata kunci keterangan, dicek dari yang paling berat
+    for(const lv of SEVERITY_ORDER){
+        const hit = SEVERITY_RULES[lv].keywords.find(k=>text.includes(k));
+        if(hit){ level=lv; reasons.push(`kata kunci "${hit}"`); break; }
+    }
+    // 2) Fallback: jenis kerusakan
+    if(!level){
+        for(const lv of SEVERITY_ORDER){
+            if(SEVERITY_RULES[lv].damageTypes.some(t=>t.toLowerCase()===(d.damageType||'').toLowerCase())){ level=lv; reasons.push(`jenis "${d.damageType}"`); break; }
+        }
+    }
+    if(!level){ level='Sedang'; reasons.push('tidak ada kata kunci cocok → default Sedang'); }
+    // Penyesuaian: keterangan "lepas/kendor" pada jenis berat tetap turun satu tingkat sudah tertangani oleh urutan keyword.
+    __sevCache.set(d,{level,reasons});
+    return __sevCache.get(d);
+}
+
+// Skor prioritas 0–100: tingkat (maks 60) + umur belum ditangani (maks 25) + pengulangan (maks 15)
+function priorityScore(d, recurCount){
+    const {level} = classifySeverity(d);
+    const w = SEVERITY_RULES[level].weight;           // 1..3
+    let score = w*20;                                  // 20/40/60
+    const age = daysSince(d.timestamp);
+    const agePts = Math.min(25, age*2.5);              // +2.5/hari maks 25
+    score += d.status==='Belum Ditangani' ? agePts : agePts*0.4;
+    score += Math.min(15, Math.max(0,(recurCount||1)-1)*7.5);
+    if(d.status==='Proses') score -= 10;               // sudah ada PR
+    return Math.round(Math.max(0,Math.min(100,score)));
+}
+
+let sevLevelFilterState = '';
+let __sevChartData = null;
+function renderSeverityCharts(){
+    dk('severity'); dk('severityAsset');
+    if(!__sevChartData) return;
+    const {byLv, rows, total} = __sevChartData;
+    const dEl=document.getElementById('severityChart');
+    if(dEl && isElVisible(dEl) && total){
+        charts.severity = new Chart(dEl.getContext('2d'),{type:'doughnut',data:{labels:SEVERITY_ORDER,datasets:[{data:SEVERITY_ORDER.map(l=>byLv[l]),backgroundColor:SEVERITY_ORDER.map(l=>SEVERITY_RULES[l].color),borderWidth:0,hoverOffset:6}]},options:mkDoughnutOpts()});
+    }
+    const aEl=document.getElementById('severityAssetChart');
+    if(aEl && isElVisible(aEl) && total){
+        const assets=['Engine','Irigator','Pompa Sumur','Lainnya'].filter(a=>rows.some(r=>r.asset===a));
+        charts.severityAsset = new Chart(aEl.getContext('2d'),{type:'bar',data:{labels:assets,datasets:SEVERITY_ORDER.map(lv=>({label:lv,data:assets.map(a=>rows.filter(r=>r.asset===a&&r.level===lv).length),backgroundColor:SEVERITY_RULES[lv].color,stack:'s',borderRadius:4,maxBarThickness:56}))},options:mkOpts(false,{plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false}},y:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true}}})});
+    }
+}
+function toggleSeverityInfo(){
+    const el=document.getElementById('severityInfo'); if(!el) return;
+    el.classList.toggle('hidden');
+    if(!el.classList.contains('hidden')){
+        el.innerHTML = `
+            <p class="font-bold text-slate-800">Cara penilaian (otomatis dari teks di spreadsheet)</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li><b>Tingkat</b> ditentukan dari <i>Keterangan Kerusakan</i> + <i>Jenis Kerusakan</i>, dicek dari yang paling berat:
+                    ${SEVERITY_ORDER.map(lv=>`<div class="ml-4 mt-1"><span class="px-2 py-0.5 rounded-full ${SEVERITY_RULES[lv].bg} ${SEVERITY_RULES[lv].text} font-semibold">${lv}</span> <span class="text-slate-500">${SEVERITY_RULES[lv].keywords.join(', ')}</span></div>`).join('')}
+                    <div class="ml-4 mt-1 text-slate-500">Bila tidak ada kata kunci, dipakai jenis kerusakan; bila tetap tidak ada → <b>Sedang</b>.</div>
+                </li>
+                <li><b>Skor prioritas (0–100)</b> = tingkat (20/40/60) + umur laporan belum ditangani (2,5 poin/hari, maks 25) + pengulangan pada unit/lokasi yang sama (7,5 poin/laporan tambahan, maks 15) − 10 bila sudah ada nomor PR.</li>
+                <li>Kategori aset: <b>Engine</b> bila ada jenis engine, <b>Irigator</b> bila ada jenis irigator, <b>Pompa Sumur</b> bila jenis kerusakan menyebut pompa/sumur, sisanya <b>Lainnya</b>.</li>
+            </ol>
+            <p class="text-slate-500">Daftar kata kunci dapat disesuaikan di <code class="bg-slate-100 px-1 rounded">app.js → SEVERITY_RULES</code>.</p>`;
+    }
+}
+
+function renderSeverityTab(){
+    const kp = document.getElementById('sevKpis'); if(!kp) return;
+    const data = filteredData;
+    // Pengulangan: key unit (jenis+kode) jika ada, jika tidak lokasi+jenis kerusakan
+    const recKey = d => (d.engineCode&&d.engineCode!=='-'&&d.engineType!=='-') ? `E:${d.engineType} ${d.engineCode}`
+                      : (d.irrCode&&d.irrCode!=='-'&&d.irrType!=='-') ? `I:${d.irrType} ${d.irrCode}`
+                      : `L:${d.lokasi}|${d.damageType}`;
+    const rec = {}; data.forEach(d=>{ const k=recKey(d); (rec[k]=rec[k]||[]).push(d); });
+    const rows = data.map(d=>{ const c=classifySeverity(d); const n=rec[recKey(d)].length; return {d, level:c.level, reasons:c.reasons, recur:n, score:priorityScore(d,n), age:daysSince(d.timestamp), asset:assetCategory(d)}; });
+    const byLv = {Berat:0,Sedang:0,Ringan:0}; rows.forEach(r=>byLv[r.level]++);
+    const pendingRows = rows.filter(r=>r.d.status==='Belum Ditangani');
+    const avgAge = pendingRows.length ? Math.round(pendingRows.reduce((a,r)=>a+r.age,0)/pendingRows.length) : 0;
+    const beratPending = pendingRows.filter(r=>r.level==='Berat').length;
+    const total = rows.length;
+    const idx = total ? (rows.reduce((a,r)=>a+SEVERITY_RULES[r.level].weight,0)/(total*3)*100) : 0;
+
+    kp.innerHTML = [
+        {l:'Indeks Keparahan', v:Math.round(idx)+'%', s:'rata-rata bobot (0–100%)', c:idx>=66?'text-red-600':idx>=45?'text-amber-600':'text-emerald-600', i:'fa-gauge'},
+        {l:'Berat', v:byLv.Berat, s:`${beratPending} belum ditangani`, c:'text-red-600', i:'fa-triangle-exclamation'},
+        {l:'Sedang', v:byLv.Sedang, s:total?Math.round(byLv.Sedang/total*100)+'% dari total':'-', c:'text-amber-600', i:'fa-circle-exclamation'},
+        {l:'Ringan', v:byLv.Ringan, s:total?Math.round(byLv.Ringan/total*100)+'% dari total':'-', c:'text-emerald-600', i:'fa-circle-check'},
+        {l:'Umur Rata-rata', v:avgAge+' hari', s:`${pendingRows.length} laporan belum ditangani`, c:avgAge>7?'text-red-600':'text-slate-800', i:'fa-hourglass-half'}
+    ].map(k=>`<div class="card p-4"><div class="flex items-center justify-between mb-1"><span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">${k.l}</span><i class="fas ${k.i} ${k.c} text-sm"></i></div><div class="stat-number text-2xl ${k.c}">${k.v}</div><div class="text-[11px] text-slate-500">${k.s}</div></div>`).join('');
+
+    // Chart dirender di renderCharts() (agar tidak dihancurkan oleh siklus dk())
+    __sevChartData = {byLv, rows, total};
+    renderSeverityCharts();
+
+    // Matriks jenis × tingkat
+    const mx=document.getElementById('sevMatrix');
+    if(mx){
+        const types={}; rows.forEach(r=>{ const t=r.d.damageType||'-'; (types[t]=types[t]||{Berat:0,Sedang:0,Ringan:0,total:0}); types[t][r.level]++; types[t].total++; });
+        const ents=Object.entries(types).sort((a,b)=>b[1].Berat-a[1].Berat||b[1].total-a[1].total);
+        mx.innerHTML = ents.length ? `<table class="w-full text-xs"><thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5">Jenis kerusakan</th>${SEVERITY_ORDER.map(l=>`<th class="text-center py-1.5" style="color:${SEVERITY_RULES[l].color}">${l}</th>`).join('')}<th class="text-center py-1.5">Total</th></tr></thead><tbody>${ents.map(([t,v])=>`<tr class="border-b border-slate-100 last:border-0"><td class="py-1.5 font-medium text-slate-700">${escapeHtml(t)}</td>${SEVERITY_ORDER.map(l=>`<td class="text-center py-1.5">${v[l]?`<span class="inline-block min-w-[24px] px-1.5 py-0.5 rounded font-bold ${SEVERITY_RULES[l].bg} ${SEVERITY_RULES[l].text}">${v[l]}</span>`:'<span class="text-slate-300">·</span>'}</td>`).join('')}<td class="text-center py-1.5 font-bold text-slate-800">${v.total}</td></tr>`).join('')}</tbody></table>` : '<div class="text-xs text-slate-400 italic">Tidak ada data</div>';
+    }
+
+    // Berulang
+    const rc=document.getElementById('sevRecurring');
+    if(rc){
+        const groups=Object.entries(rec).filter(([k,v])=>v.length>=2).sort((a,b)=>b[1].length-a[1].length).slice(0,8);
+        rc.innerHTML = groups.length ? groups.map(([k,v])=>{
+            const label = k.startsWith('L:') ? `Lokasi ${k.slice(2).split('|')[0]} · ${k.slice(2).split('|')[1]}` : k.slice(2);
+            const worst = SEVERITY_ORDER.find(l=>v.some(x=>classifySeverity(x).level===l));
+            const loks=[...new Set(v.map(x=>x.lokasi))].join(', ');
+            const dmgs=[...new Set(v.map(x=>x.damageType))].join(', ');
+            return `<div class="flex items-start gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50/60"><div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${SEVERITY_RULES[worst].color}">${v.length}×</div><div class="min-w-0 text-xs"><div class="font-bold text-slate-800 truncate">${escapeHtml(label)}</div><div class="text-[10px] text-slate-500">Lokasi: ${escapeHtml(loks)} · Kerusakan: ${escapeHtml(dmgs)}</div><div class="text-[10px] mt-0.5"><span class="px-1.5 py-0.5 rounded ${SEVERITY_RULES[worst].bg} ${SEVERITY_RULES[worst].text} font-semibold">Terberat: ${worst}</span> <span class="text-slate-500">${v.filter(x=>x.status==='Belum Ditangani').length} belum ditangani</span></div></div></div>`;
+        }).join('') : '<div class="text-xs text-slate-400 italic py-4 text-center"><i class="fas fa-circle-check text-emerald-400 mr-1"></i>Tidak ada unit/lokasi dengan kerusakan berulang pada filter ini</div>';
+    }
+
+    // Tabel prioritas
+    const tb=document.getElementById('sevTable');
+    if(tb){
+        const list = rows.filter(r=>!sevLevelFilterState||r.level===sevLevelFilterState).sort((a,b)=>b.score-a.score||b.age-a.age).slice(0,50);
+        tb.innerHTML = `<thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-2 pr-2">#</th><th class="text-left py-2 pr-2">Prioritas</th><th class="text-left py-2 pr-2">Tingkat</th><th class="text-left py-2 pr-2">Tanggal</th><th class="text-left py-2 pr-2">Umur</th><th class="text-left py-2 pr-2">Lokasi</th><th class="text-left py-2 pr-2">Aset / Unit</th><th class="text-left py-2 pr-2">Kerusakan</th><th class="text-left py-2 pr-2">Sparepart</th><th class="text-left py-2 pr-2">Status</th><th class="text-left py-2">Alasan</th></tr></thead><tbody>${
+            list.length ? list.map((r,i)=>{ const d=r.d, R=SEVERITY_RULES[r.level];
+                const unit = d.engineType!=='-'&&d.engineType ? `Engine ${escapeHtml(d.engineType)} ${d.engineCode!=='-'?escapeHtml(d.engineCode):''}` : d.irrType!=='-'&&d.irrType ? `Irigator ${escapeHtml(d.irrType)} ${d.irrCode!=='-'?escapeHtml(d.irrCode):''}` : escapeHtml(r.asset);
+                const sc = r.score>=70?'#dc2626':r.score>=45?'#f59e0b':'#10b981';
+                return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${d.status==='Proses'?`<span class="status-badge bg-amber-100 text-amber-700">Proses${d.prNumber?` · ${escapeHtml(d.prNumber)}`:''}</span>`:'<span class="status-badge bg-slate-100 text-slate-700">Belum</span>'}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
+            }).join('') : '<tr><td colspan="11" class="py-6 text-center text-slate-400 italic">Tidak ada laporan pada tingkat ini</td></tr>'
+        }</tbody>`;
+    }
+    const sub=document.getElementById('sevDonutSub'); if(sub) sub.textContent = `${total} laporan pada filter aktif`;
+    // filter tombol
+    const lf=document.getElementById('sevLevelFilter');
+    if(lf && !lf.dataset.bound){
+        lf.dataset.bound='1';
+        lf.addEventListener('click',e=>{ const b=e.target.closest('button[data-lv]'); if(!b) return; sevLevelFilterState=b.dataset.lv; lf.querySelectorAll('button').forEach(x=>x.classList.toggle('ring-2',x===b)); renderSeverityTab(); });
+    }
+}
+
 // ---------- Tab badges ----------
 function updateTabBadges(){
     const bd=document.getElementById('badgeDamage');
@@ -1923,6 +2101,7 @@ function updateTabBadges(){
     if(bd) bd.textContent = types;
     if(bv) bv.textContent = divs;
     if(be) be.textContent = engUnits;
+    const bs=document.getElementById('badgeSeverity'); if(bs) bs.textContent = filteredData.filter(d=>classifySeverity(d).level==='Berat').length;
     if(bi) bi.textContent = irrUnits;
 }
 
