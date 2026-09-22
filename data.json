@@ -240,6 +240,26 @@
     "__row": 46
   },
   {
+    "timestamp": "2026-09-21T13:55:15+07:00",
+    "tanggalInspeksi": "2026-09-21",
+    "lokasi": "178C",
+    "divisi": "OP2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0031",
+    "irrigator": "ITI – 0031",
+    "damageType": "Turbin",
+    "keterangan": "Nilon bocor / rembes",
+    "damage": "Turbin — Nilon bocor / rembes",
+    "sparepart": "-",
+    "prNumber": "111",
+    "status": "Proses",
+    "unit": "178C",
+    "__row": 61
+  },
+  {
     "timestamp": "2026-09-21T11:18:03+07:00",
     "tanggalInspeksi": "2026-09-21",
     "lokasi": "136F1",
