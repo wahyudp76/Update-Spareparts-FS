@@ -134,8 +134,8 @@
     "keterangan": "Kipas flank rusak",
     "damage": "Prodo — Kipas flank rusak",
     "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
+    "prNumber": "1101",
+    "status": "Proses",
     "unit": "172F",
     "__row": 63
   },
@@ -714,8 +714,8 @@
     "keterangan": "Twin gun tidak mutar",
     "damage": "Gun — Twin gun tidak mutar",
     "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
+    "prNumber": "1210",
+    "status": "Proses",
     "unit": "190C",
     "__row": 37
   },
