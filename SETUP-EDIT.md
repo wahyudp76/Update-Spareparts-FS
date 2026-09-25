@@ -1,5 +1,7 @@
 # Panduan Mengaktifkan Fitur Edit/Hapus untuk SEMUA User
 
+> **Update v3 (kolom baru):** proxy versi terbaru juga menulis kolom **Tingkat Kerusakan** dan **Status Perbaikan**. Bila kedua kolom itu tidak ikut tersimpan saat edit dari web, ulangi langkah deploy di bawah dengan kode `scripts/write-proxy.gs` terbaru.
+
 > ## ⚠️ Edit/Hapus error "Sorry, unable to open the file" / "Page Not Found"?
 > Artinya Web App Apps Script **belum diotorisasi mengakses Spreadsheet** atau masih memakai
 > **versi kode lama**. Perbaiki dalam 4 langkah (±2 menit):

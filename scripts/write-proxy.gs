@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v2, 2026-09-19)
+ * PG2 Irrigation Dashboard — Write Proxy  (v3 — dukung kolom Tingkat Kerusakan & Status Perbaikan)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -30,7 +30,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v2';
+var VERSION    = 'v3';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -130,7 +130,9 @@ function doPost(e) {
         { key: 'Jenis Kerusakan',             val: body.damageType },
         { key: 'Keterangan Kerusakan',        val: body.keterangan },
         { key: 'Spareparts Yang Dibutuhkan',  val: body.sparepart },
-        { key: 'Nomor PR / Notifikasi',       val: body.prNumber }
+        { key: 'Nomor PR / Notifikasi',       val: body.prNumber },
+        { key: 'Tingkat Kerusakan',           val: body.tingkat },
+        { key: 'Status Perbaikan',            val: body.repairStatus }
       ];
       updates.forEach(function (u) {
         if (u.val === undefined) return;          // field tidak dikirim → jangan sentuh

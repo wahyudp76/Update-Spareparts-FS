@@ -212,6 +212,13 @@
                             <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
+                                        <div class="ms-wrap" id="tingkatFilter" data-state-key="tingkat" data-ph="Semua Tingkat">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Tingkat</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
+                        </div>
+                    </div>
                     <div class="relative">
                         <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
                         <input type="text" id="searchInput" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -262,7 +269,7 @@
         <!-- ==================== TAB: OVERVIEW ==================== -->
         <div class="tab-pane active" id="tab-overview">
             <!-- KPI Row -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
                 <div class="card card-hover p-4 bg-gradient-to-br from-white to-blue-50/30">
                     <div class="flex items-start justify-between">
                         <div>
@@ -288,9 +295,19 @@
                         <div>
                             <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-invoice text-amber-500"></i>Dalam Proses</div>
                             <div class="stat-number text-3xl text-amber-600 mt-1" id="statProses">0</div>
-                            <div class="text-[11px] text-slate-500 mt-0.5" id="statProsesSub">PR aktif</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statProsesSub">PR aktif, belum diperbaiki</div>
                         </div>
                         <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-cogs"></i></div>
+                    </div>
+                </div>
+                <div class="card card-hover p-4 bg-gradient-to-br from-white to-emerald-50/50">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-circle-check text-emerald-500"></i>Selesai Diperbaiki</div>
+                            <div class="stat-number text-3xl text-emerald-600 mt-1" id="statDone">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statDoneSub">Status Perbaikan: Sudah</div>
+                        </div>
+                        <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fas fa-check-double"></i></div>
                     </div>
                 </div>
                 <div class="card card-hover p-4 bg-gradient-to-br from-white to-slate-100">
@@ -483,9 +500,13 @@
             <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
                 <div>
                     <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-gauge text-red-600 mr-2"></i>Analisa Tingkat Kerusakan &amp; Keparahan</h2>
-                    <p class="text-xs text-slate-500 ml-6">Setiap laporan dari spreadsheet diklasifikasikan <b>Berat / Sedang / Ringan</b> berdasarkan jenis &amp; keterangan kerusakan, lalu diberi <b>skor prioritas</b> dengan mempertimbangkan umur laporan yang belum ditangani dan kerusakan berulang pada unit/lokasi yang sama.</p>
+                    <p class="text-xs text-slate-500 ml-6">Tingkat <b>Berat / Sedang / Ringan</b> diambil dari kolom <b>Tingkat Kerusakan</b> di spreadsheet (bila kosong, diperkirakan dari kata kunci keterangan), lalu diberi <b>skor prioritas</b> dengan mempertimbangkan umur laporan yang belum ditangani dan kerusakan berulang pada unit/lokasi yang sama.</p>
                 </div>
-                <button onclick="toggleSeverityInfo()" class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-circle-question mr-1"></i>Kriteria penilaian</button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <label class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer"><input type="checkbox" onchange="sevToggleDone(this.checked)" class="accent-emerald-600">Tampilkan yang sudah selesai</label>
+                    <span id="sevDoneNote" class="text-[11px] text-slate-400"></span>
+                    <button onclick="toggleSeverityInfo()" class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-circle-question mr-1"></i>Kriteria penilaian</button>
+                </div>
             </div>
             <div id="severityInfo" class="hidden card p-4 mb-3 text-xs text-slate-700 space-y-2"></div>
 
@@ -599,6 +620,7 @@
                                 <th class="px-3.5 py-2.5 text-left font-semibold">Keterangan</th>
                                 <th class="px-3.5 py-2.5 text-left font-semibold">Sparepart</th>
                                 <th class="px-3.5 py-2.5 text-left font-semibold">No PR</th>
+                            <th class="px-3.5 py-2.5 text-left font-semibold">Tingkat</th>
                             <th class="px-3.5 py-2.5 text-left font-semibold">Status</th>
                             <th class="px-3.5 py-2.5 text-center font-semibold w-[70px]">Aksi</th>
                         </tr>
@@ -680,8 +702,11 @@
                 <div><label class="form-label">Divisi</label>
                     <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
                 </div>
-                <div><label class="form-label">Status</label>
-                    <select id="f_status" class="form-input"><option>Belum Ditangani</option><option>Proses</option></select>
+                <div><label class="form-label">Status Perbaikan</label>
+                    <select id="f_repair" class="form-input"><option value="Belum">Belum diperbaiki</option><option value="Sudah">Sudah diperbaiki</option></select>
+                </div>
+                <div><label class="form-label">Tingkat Kerusakan</label>
+                    <select id="f_tingkat" class="form-input"><option value="">— belum dinilai —</option><option>Berat</option><option>Sedang</option><option>Ringan</option></select>
                 </div>
                 <div><label class="form-label">Jenis Engine</label><input type="text" id="f_engineType" class="form-input" placeholder="DEM / DEC / SPC"></div>
                 <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032"></div>

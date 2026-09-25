@@ -10,6 +10,34 @@ const SHEET_ID = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 const SHEET_NAME = 'Response';
 const DATA_URL = './data.json';
 
+// ---------- Model status (3 tahap) ----------
+// Sheet punya 2 kolom terpisah: "Status Perbaikan" (Sudah/Belum) dan "Nomor PR".
+//   Selesai         = Status Perbaikan "Sudah"
+//   Proses          = belum diperbaiki tapi sudah ada Nomor PR / Notifikasi
+//   Belum Ditangani = belum diperbaiki dan belum ada PR
+const STATUS_ORDER = ['Belum Ditangani','Proses','Selesai'];
+const STATUS_META = {
+    'Belum Ditangani': {color:'#94a3b8', bg:'bg-slate-100',   text:'text-slate-700',   icon:'fa-hourglass-half', short:'Belum'},
+    'Proses':          {color:'#f59e0b', bg:'bg-amber-100',   text:'text-amber-700',   icon:'fa-cogs',           short:'Proses'},
+    'Selesai':         {color:'#10b981', bg:'bg-emerald-100', text:'text-emerald-700', icon:'fa-circle-check',   short:'Selesai'}
+};
+const TINGKAT_ORDER = ['Berat','Sedang','Ringan'];
+function normRepair(v){ v=String(v||'').trim().toLowerCase(); if(!v) return ''; return /^(sudah|selesai|done|ya|yes|y|ok|1|true)/.test(v)?'Sudah':'Belum'; }
+function normTingkat(v){ v=String(v||'').trim().toLowerCase(); if(/berat|tinggi|high|major/.test(v)) return 'Berat'; if(/sedang|medium|moderate/.test(v)) return 'Sedang'; if(/ringan|rendah|low|minor/.test(v)) return 'Ringan'; return ''; }
+function deriveStatus(pr, repair){ if(normRepair(repair)==='Sudah') return 'Selesai'; return pr ? 'Proses' : 'Belum Ditangani'; }
+function isOpen(d){ return d.status!=='Selesai'; }
+function statusBadge(d, withPr=true){
+    const m = STATUS_META[d.status] || STATUS_META['Belum Ditangani'];
+    const extra = d.status==='Proses' && withPr && d.prNumber ? ` · ${escapeHtml(d.prNumber)}` : '';
+    return `<span class="status-badge ${m.bg} ${m.text}"><i class="fas ${m.icon} text-[9px]"></i>${d.status}${extra}</span>`;
+}
+function tingkatBadge(t){
+    if(!t) return '<span class="text-slate-400 italic text-[10px]">—</span>';
+    const R = (typeof SEVERITY_RULES!=='undefined' && SEVERITY_RULES[t]) ? SEVERITY_RULES[t] : {bg:'bg-slate-100',text:'text-slate-700'};
+    return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${t}</span>`;
+}
+
+
 let rawData = [];
 let filteredData = [];
 
@@ -22,6 +50,7 @@ const state = {
     selectedDate: null,
     divisi: [],
     status: [],
+    tingkat: [],
     lokasi: [],
     search: '',
     page: 1,
@@ -125,7 +154,7 @@ function localIsoDate(d){
 function normalizeFromCSV(rows) {
     if (!rows.length) return [];
     const headers = rows[0].map(h => String(h||'').trim());
-    const hi = {ts:-1,tglInsp:-1,lok:-1,div:-1,eT:-1,eC:-1,iT:-1,iC:-1,dT:-1,dN:-1,sp:-1,pr:-1};
+    const hi = {ts:-1,tglInsp:-1,lok:-1,div:-1,eT:-1,eC:-1,iT:-1,iC:-1,dT:-1,dN:-1,sp:-1,pr:-1,tk:-1,rp:-1};
     headers.forEach((name,i) => {
         const k = String(name).toLowerCase().trim();
         if (k === 'timestamp') hi.ts = i;
@@ -136,6 +165,8 @@ function normalizeFromCSV(rows) {
         else if (k.includes('kode engine')) hi.eC = i;
         else if (k.includes('jenis irrigator')) hi.iT = i;
         else if (k.includes('kode irrigator')) hi.iC = i;
+        else if (k.includes('tingkat')) hi.tk = i;
+        else if (k.includes('status perbaikan') || k.includes('status')) hi.rp = i;
         else if (k.includes('jenis kerusakan') || k === 'kerusakan') hi.dT = i;
         else if (k.includes('keterangan kerusakan') || k.includes('detail')) hi.dN = i;
         else if (k.includes('sparepart')) hi.sp = i;
@@ -151,11 +182,12 @@ function normalizeFromCSV(rows) {
         if (!tgl) continue;
         const lok = get('lok'), et = get('eT'), ec = get('eC'), it = get('iT'), ic = get('iC'), div = get('div');
         const dt = get('dT'), dn = get('dN'), sp = get('sp'), pr = get('pr');
+        const tingkat = normTingkat(get('tk')), repair = normRepair(get('rp'));
         const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
         const engine = [et,ec].filter(Boolean).join(' – ');
         const damage = dn ? (dt ? `${dt} — ${dn}` : dn) : (dt || '-');
         const spNorm = sp ? sp.replace(/[\r\n]+/g,'; ').replace(/\s*;\s*/g,'; ') : '-';
-        const status = pr ? 'Proses' : 'Belum Ditangani';
+        const status = deriveStatus(pr, repair);
         if (!lok && !ic && !dt && spNorm === '-') continue;
         // Normalisasi timestamp: gunakan komponen TANGGAL dari tgl (hasil parseDate)
         // tapi jam dari Timestamp asli jika tersedia, untuk sorting yang akurat.
@@ -172,7 +204,7 @@ function normalizeFromCSV(rows) {
             engineType: et || '-', engineCode: ec || '-', engine: engine || '-',
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
-            sparepart: spNorm, prNumber: pr || null, status, unit: lok || '-',
+            sparepart: spNorm, prNumber: pr || null, status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
             __row: i+2 // baris spreadsheet (header=1, data mulai 2)
         });
     }
@@ -201,7 +233,7 @@ function generateDemo() {
             irrigator:'',damageType:dc[0],keterangan:note,damage:`${dc[0]} — ${note}`,
             sparepart:sp[Math.floor(Math.random()*sp.length)],
             prNumber:hasPr?String(Math.floor(Math.random()*9000000)+1000000):null,
-            status:hasPr?'Proses':'Belum Ditangani',unit:''
+            status:hasPr?'Proses':'Belum Ditangani',repairStatus:'Belum',tingkat:['Berat','Sedang','Ringan'][Math.floor(Math.random()*3)],unit:''
         });
         const last=data[data.length-1];
         last.engine=`${last.engineType} – ${last.engineCode}`;
@@ -233,6 +265,8 @@ function normalizeFromJson(json) {
         const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
         const sp = (r.sparepart||'-');
         const pr = r.prNumber||null;
+        const repair = normRepair(r.repairStatus) || 'Belum';
+        const tingkat = normTingkat(r.tingkat);
         const tglObj = parseDate(r.tanggalInspeksi) || parseDate(r.timestamp);
         if(!tglObj) return null; // skip record rusak
         const tsObj = parseDate(r.timestamp) || tglObj;
@@ -250,7 +284,8 @@ function normalizeFromJson(json) {
             damage: dn?(dt?`${dt} — ${dn}`:dn):(dt||'-'),
             sparepart: sp,
             prNumber: pr,
-            status: pr?'Proses':'Belum Ditangani',
+            repairStatus: repair, tingkat,
+            status: deriveStatus(pr, repair),
             unit: r.lokasi || r.unit || '-',
             timestamp: mergedTs.toISOString(),
             tanggalInspeksi: localIsoDate(tglObj),
@@ -351,11 +386,13 @@ async function refreshData(forceLive=false, opts={}) {
 
         populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
         populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
-        populateMultiSelect('statusFilter', ['Belum Ditangani','Proses'], state.status);
+        populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
+        populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
 
         state.divisi = state.divisi.filter(v => rawData.some(d => d.divisi === v));
         state.lokasi = state.lokasi.filter(v => rawData.some(d => d.lokasi === v));
-        state.status = state.status.filter(v => ['Belum Ditangani','Proses'].includes(v));
+        state.status = state.status.filter(v => STATUS_ORDER.includes(v));
+        state.tingkat = state.tingkat.filter(v => TINGKAT_ORDER.includes(v));
 
         // Jangan reset halaman saat auto-refresh diam-diam (user mungkin sedang di halaman 3)
         if (!silent) state.page = 1;
@@ -527,9 +564,10 @@ function applyFilters() {
         if (state.divisi.length && !state.divisi.includes(d.divisi)) return false;
         if (state.lokasi.length && !state.lokasi.includes(d.lokasi)) return false;
         if (state.status.length && !state.status.includes(d.status)) return false;
+        if (state.tingkat.length && !state.tingkat.includes(effectiveTingkat(d))) return false;
         if (q) {
             // Blob utama (untuk pencarian dengan spasi & tanda baca)
-            const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status}`.toLowerCase();
+            const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status} ${d.tingkat||''}`.toLowerCase();
             // Blob "padat" (tanpa spasi/tanda baca) agar "BTI0032", "BTI 0032", "BTI-0032", "SPC 0127", "DEC 0033" semuanya ketemu
             const blobFlat = blob.replace(/[^a-z0-9]/g,'');
             const qFlat = q.replace(/[^a-z0-9]/g,'');
@@ -567,6 +605,7 @@ function renderActiveChips() {
     state.divisi.forEach(v => chips.push({label:`Div: ${v}`, clear:()=>{state.divisi=state.divisi.filter(x=>x!==v);repop('divisiFilter','divisi');}}));
     state.lokasi.forEach(v => chips.push({label:`Lok: ${v}`, clear:()=>{state.lokasi=state.lokasi.filter(x=>x!==v);repop('lokasiFilter','lokasi');}}));
     state.status.forEach(v => chips.push({label:`Status: ${v}`, clear:()=>{state.status=state.status.filter(x=>x!==v);repop('statusFilter','status');}}));
+    state.tingkat.forEach(v => chips.push({label:`Tingkat: ${v}`, clear:()=>{state.tingkat=state.tingkat.filter(x=>x!==v);repop('tingkatFilter','tingkat');}}));
     if (state.selectedDate) chips.push({label:`Tgl: ${fmtDate(state.selectedDate)}`, clear:()=>clearSelectedDate()});
     else if (state.period==='custom') chips.push({label:'Custom date', clear:()=>{state.period='all';state.dateFrom='';state.dateTo='';const df=document.getElementById('dateFrom');if(df)df.value='';const dt=document.getElementById('dateTo');if(dt)dt.value='';setPeriodUI('all');applyFilters();}});
 
@@ -585,7 +624,8 @@ function renderActiveChips() {
 function repop(id,key){
     const allOpts = key==='divisi' ? [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort()
                    : key==='lokasi' ? [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort()
-                   : ['Belum Ditangani','Proses'];
+                   : key==='tingkat' ? TINGKAT_ORDER
+                   : STATUS_ORDER;
     populateMultiSelect(id, allOpts, state[key]);
 }
 function setPeriodUI(p){
@@ -595,7 +635,7 @@ function setPeriodUI(p){
     });
 }
 function clearAllFilters() {
-    state.divisi = []; state.lokasi = []; state.status = [];
+    state.divisi = []; state.lokasi = []; state.status = []; state.tingkat = [];
     state.search = '';
     const si=document.getElementById('searchInput'); if(si) si.value = '';
     state.selectedDate = null;
@@ -606,7 +646,8 @@ function clearAllFilters() {
     setPeriodUI('all');
     populateMultiSelect('divisiFilter',[...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(),[]);
     populateMultiSelect('lokasiFilter',[...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(),[]);
-    populateMultiSelect('statusFilter',['Belum Ditangani','Proses'],[]);
+    populateMultiSelect('statusFilter',STATUS_ORDER,[]);
+    populateMultiSelect('tingkatFilter',TINGKAT_ORDER,[]);
     state.page = 1;
     applyFilters();
 }
@@ -627,7 +668,10 @@ function updateStats() {
     const loc=new Set(filteredData.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
     const proses=filteredData.filter(d=>d.status==='Proses').length;
     const pending=filteredData.filter(d=>d.status==='Belum Ditangani').length;
+    const done=filteredData.filter(d=>d.status==='Selesai').length;
     animateNumber('statTotal',t);
+    const sd = document.getElementById('statDone'); if(sd) animateNumberEl(sd,done);
+    const sds = document.getElementById('statDoneSub'); if(sds) sds.textContent = `${t?Math.round(done/t*100):0}% sudah diperbaiki`;
     const su = document.getElementById('statUnits'); if(su) animateNumberEl(su,loc);
     const sp = document.getElementById('statProses'); if(sp) animateNumberEl(sp,proses);
     const spe = document.getElementById('statPending'); if(spe) animateNumberEl(spe,pending);
@@ -797,7 +841,7 @@ function renderCharts() {
     // ==== STATUS DONUT (overview) ====
     const statusEl = document.getElementById('statusChart');
     if(statusEl && isElVisible(statusEl)){
-        const sg={'Belum Ditangani':0,'Proses':0};
+        const sg={'Belum Ditangani':0,'Proses':0,'Selesai':0};
         filteredData.forEach(d=>{if(sg[d.status]!==undefined)sg[d.status]++;});
         const ctx=statusEl.getContext('2d');
         if(ctx){
@@ -805,20 +849,22 @@ function renderCharts() {
                 type:'doughnut',
                 data:{labels:Object.keys(sg),datasets:[{
                     data:Object.values(sg),
-                    backgroundColor:['#94a3b8','#f59e0b'],borderWidth:0,hoverOffset:6
+                    backgroundColor:STATUS_ORDER.map(k=>STATUS_META[k].color),borderWidth:0,hoverOffset:6
                 }]},
                 options:mkDoughnutOpts()
             });
         }
         const ins = document.getElementById('statusInsight');
         if(ins){
-            const tot=sg['Belum Ditangani']+sg['Proses'];
+            const tot=sg['Belum Ditangani']+sg['Proses']+sg['Selesai'];
             const pct=tot?Math.round(sg['Belum Ditangani']/tot*100):0;
-            ins.innerHTML = pct>50
+            const pctDone=tot?Math.round(sg['Selesai']/tot*100):0;
+            ins.innerHTML = (pct>50
                 ? `<span class="text-red-600 font-semibold"><i class="fas fa-triangle-exclamation mr-1"></i>${pct}% belum ditangani</span>`
                 : pct>0
-                ? `<span class="text-amber-600 font-semibold"><i class="fas fa-circle-info mr-1"></i>${pct}% masih menunggu</span>`
-                : `<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Semua sudah diproses</span>`;
+                ? `<span class="text-amber-600 font-semibold"><i class="fas fa-circle-info mr-1"></i>${pct}% belum ditangani</span>`
+                : `<span class="text-emerald-600 font-semibold"><i class="fas fa-circle-check mr-1"></i>Semua sudah ditangani</span>`)
+                + ` <span class="text-slate-400">·</span> <span class="text-emerald-600 font-semibold">${pctDone}% selesai</span>`;
         }
     }
 
@@ -912,13 +958,15 @@ function renderCharts() {
         const divs = [...new Set(filteredData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort();
         const pending = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Belum Ditangani').length);
         const proses = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Proses').length);
+        const done = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Selesai').length);
         const ctx=stackEl.getContext('2d');
         if(ctx){
             charts.divStacked = new Chart(ctx,{
                 type:'bar',
                 data:{labels:divs,datasets:[
                     {label:'Belum Ditangani',data:pending,backgroundColor:'#94a3b8',borderRadius:{topLeft:0,topRight:0,bottomLeft:4,bottomRight:4},borderSkipped:false,stack:'s',maxBarThickness:56},
-                    {label:'Proses',data:proses,backgroundColor:'#f59e0b',borderRadius:{topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:56}
+                    {label:'Proses',data:proses,backgroundColor:'#f59e0b',borderRadius:0,borderSkipped:false,stack:'s',maxBarThickness:56},
+                    {label:'Selesai',data:done,backgroundColor:'#10b981',borderRadius:{topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:56}
                 ]},
                 options:mkOpts(false,{
                     plugins:{legend:{position:'bottom',labels:{boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'circle',font:{size:10},padding:12}}},
@@ -1125,9 +1173,7 @@ function renderOverview(){
         if(!recent.length){ rl.innerHTML = `<div class="text-xs text-slate-400 py-6 text-center italic">Tidak ada data pada filter ini</div>`; }
         else {
             rl.innerHTML = recent.map(d=>{
-                const sb = d.status==='Proses'
-                    ? '<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses</span>'
-                    : '<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum</span>';
+                const sb = statusBadge(d);
                 return `<div class="flex items-start gap-3 py-2.5 cursor-pointer hover:bg-slate-50 -mx-2 px-2 rounded-lg" onclick="selectDate('${d.tanggalInspeksi}');switchTab('calendar')">
                     <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0">
                         <div class="text-[8px] font-bold uppercase leading-none">${new Date(d.timestamp).toLocaleDateString('id-ID',{month:'short'})}</div>
@@ -1375,9 +1421,7 @@ function renderDivisiTab(){
             <!-- Laporan terbaru per divisi -->
             <div id="divlist-${dv.replace(/\W/g,'_')}" class="hidden mt-3 space-y-2">
                 ${latest.map(d=>{
-                    const sb = d.status==='Proses'
-                        ? '<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses</span>'
-                        : '<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum</span>';
+                    const sb = statusBadge(d);
                     return `<div class="p-2.5 rounded-lg border-l-2 bg-slate-50" style="border-color:${color}">
                         <div class="flex items-start justify-between gap-2 mb-1">
                             <span class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
@@ -1557,7 +1601,7 @@ function openTypeDetail(kind, type){
             <td class="py-1.5 pr-2 font-mono text-slate-700">${d[cf]&&d[cf]!=='-'?escapeHtml(d[cf]):'—'}</td>
             <td class="py-1.5 pr-2 text-slate-800">${escapeHtml(d.damageType||'-')}${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td>
             <td class="py-1.5 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td>
-            <td class="py-1.5 whitespace-nowrap">${d.status==='Proses'?`<span class="status-badge bg-amber-100 text-amber-700">Proses${d.prNumber?` · ${escapeHtml(d.prNumber)}`:''}</span>`:'<span class="status-badge bg-slate-100 text-slate-700">Belum</span>'}</td>
+            <td class="py-1.5 whitespace-nowrap">${statusBadge(d)}</td>
         </tr>`).join('');
 
     const lokDmgHtml = Object.entries(lokDmg).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).map(([l,m])=>`
@@ -1684,9 +1728,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
                 <summary class="text-[11px] font-semibold cursor-pointer list-none flex items-center gap-1" style="color:${color}"><i class="fas fa-chevron-right text-[9px] group-open:rotate-90 transition"></i>Detail ${u.items.length} laporan</summary>
                 <div class="mt-2 space-y-1.5 max-h-56 overflow-y-auto pr-1">
                     ${u.items.slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).slice(0,10).map(d=>{
-                        const sb = d.status==='Proses'
-                            ? '<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses</span>'
-                            : '<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum</span>';
+                        const sb = statusBadge(d);
                         return `<div class="p-2 rounded-lg bg-slate-50 text-[11px] border-l-2" style="border-color:${color}">
                             <div class="flex items-center justify-between mb-0.5">
                                 <span class="font-semibold text-slate-700">${d.lokasi} · ${d.divisi}</span>
@@ -1826,9 +1868,7 @@ function renderCalDayDetail(){
         return;
     }
     box.innerHTML=items.map(d=>{
-        const badge=d.status==='Proses'
-            ?'<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses</span>'
-            :'<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum</span>';
+        const badge = statusBadge(d);
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
@@ -1870,9 +1910,7 @@ function renderTable(){
     const dtc = document.getElementById('dataTableCount'); if(dtc) dtc.textContent = sorted.length;
 
     tbody.innerHTML=page.map(d=>{
-        const sb=d.status==='Proses'
-            ?'<span class="status-badge bg-amber-100 text-amber-700"><i class="fas fa-circle text-[6px]"></i>Proses (PR Aktif)</span>'
-            :'<span class="status-badge bg-slate-100 text-slate-700"><i class="fas fa-circle text-[6px]"></i>Belum Ditangani</span>';
+        const sb = statusBadge(d);
         const engCell=d.engine&&d.engine!=='-' ? `<div class="font-medium text-slate-700 text-xs">${escapeHtml(d.engine)}</div>` : '<span class="text-slate-400 italic text-xs">—</span>';
         const irrCell=d.irrigator&&d.irrigator!=='-' ? `<div class="font-medium text-slate-700 text-xs">${escapeHtml(d.irrigator)}</div>` : '<span class="text-slate-400 italic text-xs">—</span>';
         return `<tr class="table-row transition">
@@ -1889,6 +1927,7 @@ function renderTable(){
             <td class="px-4 py-3 text-xs text-slate-600 max-w-[200px]">${d.keterangan?escapeHtml(d.keterangan):'<span class="text-slate-400 italic">-</span>'}</td>
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
             <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
             <td class="px-3 py-3">
                 <div class="row-actions">
@@ -1948,8 +1987,10 @@ function assetCategory(d){
 }
 function daysSince(ts){ const t=new Date(ts); if(isNaN(t)) return 0; return Math.max(0, Math.floor((startOfDay(new Date())-startOfDay(t))/86400000)); }
 
+function effectiveTingkat(d){ return d.tingkat || classifySeverity(d).level; }
 function classifySeverity(d){
     if(__sevCache.has(d)) return __sevCache.get(d);
+    if(d.tingkat){ __sevCache.set(d,{level:d.tingkat, reasons:['kolom "Tingkat Kerusakan" di spreadsheet'], fromSheet:true}); return __sevCache.get(d); }
     // Hanya KETERANGAN yang dipakai untuk kata kunci (bukan nama jenis), supaya
     // "Transmisi – kampas rem habis" tidak otomatis Berat hanya karena kata "transmisi".
     const text = String(d.keterangan||'').toLowerCase();
@@ -1981,10 +2022,13 @@ function priorityScore(d, recurCount){
     score += d.status==='Belum Ditangani' ? agePts : agePts*0.4;
     score += Math.min(15, Math.max(0,(recurCount||1)-1)*7.5);
     if(d.status==='Proses') score -= 10;               // sudah ada PR
+    if(d.status==='Selesai') score = Math.round(score*0.15); // sudah diperbaiki → prioritas sangat rendah
     return Math.round(Math.max(0,Math.min(100,score)));
 }
 
 let sevLevelFilterState = '';
+let sevIncludeDone = false;
+function sevToggleDone(v){ sevIncludeDone=!!v; sevPage=1; renderSeverityTab(); }
 let sevPage = 1, sevPageSize = 10;
 function sevSetPageSize(n){ sevPageSize = parseInt(n,10)||10; sevPage = 1; renderSeverityTab(); }
 function sevGoPage(p){ sevPage = p; renderSeverityTab(); const t=document.getElementById('sevTable'); if(t) t.closest('.card').scrollIntoView({behavior:'smooth',block:'start'}); }
@@ -2023,7 +2067,9 @@ function toggleSeverityInfo(){
 
 function renderSeverityTab(){
     const kp = document.getElementById('sevKpis'); if(!kp) return;
-    const data = filteredData;
+    const data = sevIncludeDone ? filteredData : filteredData.filter(isOpen);
+    const doneCount = filteredData.filter(d=>!isOpen(d)).length;
+    const fromSheet = data.filter(d=>d.tingkat).length;
     // Pengulangan: key unit (jenis+kode) jika ada, jika tidak lokasi+jenis kerusakan
     const recKey = d => (d.engineCode&&d.engineCode!=='-'&&d.engineType!=='-') ? `E:${d.engineType} ${d.engineCode}`
                       : (d.irrCode&&d.irrCode!=='-'&&d.irrType!=='-') ? `I:${d.irrType} ${d.irrCode}`
@@ -2082,7 +2128,7 @@ function renderSeverityTab(){
             list.length ? list.map((r,i0)=>{ const i=startIdx+i0; const d=r.d, R=SEVERITY_RULES[r.level];
                 const unit = d.engineType!=='-'&&d.engineType ? `Engine ${escapeHtml(d.engineType)} ${d.engineCode!=='-'?escapeHtml(d.engineCode):''}` : d.irrType!=='-'&&d.irrType ? `Irigator ${escapeHtml(d.irrType)} ${d.irrCode!=='-'?escapeHtml(d.irrCode):''}` : escapeHtml(r.asset);
                 const sc = r.score>=70?'#dc2626':r.score>=45?'#f59e0b':'#10b981';
-                return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${d.status==='Proses'?`<span class="status-badge bg-amber-100 text-amber-700">Proses${d.prNumber?` · ${escapeHtml(d.prNumber)}`:''}</span>`:'<span class="status-badge bg-slate-100 text-slate-700">Belum</span>'}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
+                return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${statusBadge(d)}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
             }).join('') : '<tr><td colspan="11" class="py-6 text-center text-slate-400 italic">Tidak ada laporan pada tingkat ini</td></tr>'
         }</tbody>`;
         // Pagination
@@ -2099,7 +2145,8 @@ function renderSeverityTab(){
         }
         const ps=document.getElementById('sevPageSize'); if(ps && +ps.value!==sevPageSize) ps.value=String(sevPageSize);
     }
-    const sub=document.getElementById('sevDonutSub'); if(sub) sub.textContent = `${total} laporan pada filter aktif`;
+    const sub=document.getElementById('sevDonutSub'); if(sub) sub.textContent = `${total} laporan ${sevIncludeDone?'(termasuk selesai)':'yang masih terbuka'} · ${fromSheet} tingkat dari spreadsheet${total-fromSheet?`, ${total-fromSheet} estimasi kata kunci`:''}`;
+    const dn=document.getElementById('sevDoneNote'); if(dn) dn.textContent = doneCount ? `${doneCount} laporan sudah selesai diperbaiki ${sevIncludeDone?'ditampilkan':'disembunyikan'}` : '';
     // filter tombol
     const lf=document.getElementById('sevLevelFilter');
     if(lf && !lf.dataset.bound){
@@ -2121,7 +2168,7 @@ function updateTabBadges(){
     if(bd) bd.textContent = types;
     if(bv) bv.textContent = divs;
     if(be) be.textContent = engUnits;
-    const bs=document.getElementById('badgeSeverity'); if(bs) bs.textContent = filteredData.filter(d=>classifySeverity(d).level==='Berat').length;
+    const bs=document.getElementById('badgeSeverity'); if(bs) bs.textContent = filteredData.filter(d=>isOpen(d)&&effectiveTingkat(d)==='Berat').length;
     if(bi) bi.textContent = irrUnits;
 }
 
@@ -2135,8 +2182,8 @@ function onSearchInput(v){
 
 // ---------- Export ----------
 function exportCSV(){
-    const headers=['Timestamp','Tanggal Inspeksi','Lokasi','Divisi','Jenis Engine','Kode Engine','Jenis Irrigator','Kode Irrigator','Jenis Kerusakan','Keterangan Kerusakan','Spareparts Yang Dibutuhkan','Nomor PR / Notifikasi','Status'];
-    const rows=filteredData.map(d=>[new Date(d.timestamp).toISOString(),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status]);
+    const headers=['Timestamp','Tanggal Inspeksi','Lokasi','Divisi','Jenis Engine','Kode Engine','Jenis Irrigator','Kode Irrigator','Jenis Kerusakan','Keterangan Kerusakan','Spareparts Yang Dibutuhkan','Nomor PR / Notifikasi','Status','Tingkat Kerusakan','Status Perbaikan'];
+    const rows=filteredData.map(d=>[new Date(d.timestamp).toISOString(),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status,effectiveTingkat(d),d.repairStatus||'Belum']);
     const csv=[headers.join(','),...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n');
     const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a');
@@ -2291,7 +2338,8 @@ function openEditModal(globalIdx){
     document.getElementById('f_tanggal').value = d.tanggalInspeksi;
     document.getElementById('f_lokasi').value = d.lokasi==='-'?'':d.lokasi;
     document.getElementById('f_divisi').value = d.divisi==='-'?'PG2':d.divisi;
-    document.getElementById('f_status').value = d.status;
+    document.getElementById('f_repair').value = d.repairStatus==='Sudah'?'Sudah':'Belum';
+    document.getElementById('f_tingkat').value = d.tingkat || '';
     document.getElementById('f_engineType').value = d.engineType==='-'?'':d.engineType;
     document.getElementById('f_engineCode').value = d.engineCode==='-'?'':d.engineCode;
     document.getElementById('f_irrType').value = d.irrType==='-'?'':d.irrType;
@@ -2353,7 +2401,8 @@ async function submitEdit(){
         tanggalInspeksi: document.getElementById('f_tanggal').value,
         lokasi: document.getElementById('f_lokasi').value.trim() || '-',
         divisi: document.getElementById('f_divisi').value,
-        status: document.getElementById('f_status').value,
+        repairStatus: document.getElementById('f_repair').value,
+        tingkat: document.getElementById('f_tingkat').value,
         engineType: document.getElementById('f_engineType').value.trim() || '-',
         engineCode: document.getElementById('f_engineCode').value.trim() || '-',
         irrType: document.getElementById('f_irrType').value.trim() || '-',
@@ -2372,7 +2421,9 @@ async function submitEdit(){
         // Update local cache (optimistic)
         const upd = {...d};
         Object.assign(upd,{
-            lokasi:payload.lokasi, divisi:payload.divisi, status:payload.status,
+            lokasi:payload.lokasi, divisi:payload.divisi,
+            repairStatus:payload.repairStatus, tingkat:payload.tingkat,
+            status: deriveStatus(payload.prNumber, payload.repairStatus),
             engineType:payload.engineType, engineCode:payload.engineCode,
             irrType:payload.irrType, irrCode:payload.irrCode,
             damageType:payload.damageType, keterangan:payload.keterangan,

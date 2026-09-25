@@ -131,7 +131,7 @@ function mapRows(rows) {
   const hi = {
     timestamp:-1, tanggalInspeksi:-1, lokasi:-1, divisi:-1,
     engineType:-1, engineCode:-1, irrType:-1, irrCode:-1,
-    damageType:-1, damageNote:-1, sparepart:-1, prNumber:-1
+    damageType:-1, damageNote:-1, sparepart:-1, prNumber:-1, tingkat:-1, repair:-1
   };
 
   headers.forEach((name, i) => {
@@ -144,6 +144,8 @@ function mapRows(rows) {
     else if (k.includes('kode engine')) hi.engineCode = i;
     else if (k.includes('jenis irrigator')) hi.irrType = i;
     else if (k.includes('kode irrigator')) hi.irrCode = i;
+    else if (k.includes('tingkat')) hi.tingkat = i;
+    else if (k.includes('status perbaikan') || k.includes('status')) hi.repair = i;
     else if (k.includes('jenis kerusakan') || k === 'kerusakan') hi.damageType = i;
     else if (k.includes('keterangan kerusakan') || k.includes('detail kerusakan')) hi.damageNote = i;
     else if (k.includes('sparepart') || k.includes('spare part')) hi.sparepart = i;
@@ -196,9 +198,13 @@ function mapRows(rows) {
     const damage = dn ? `${dt}${dt && dn ? ' — ' : ''}${dn}` : (dt || '-');
     sp = sp ? sp.replace(/[\r\n]+/g, '; ').replace(/\s*;\s*/g, '; ') : '-';
 
-    // Status: Nomor PR terisi → Proses; jika tidak → Belum Ditangani.
-    // (Sheet tidak punya kolom status, ini heuristik yang paling masuk akal)
-    const status = pr ? 'Proses' : 'Belum Ditangani';
+    // Status 3 tahap dari 2 kolom sheet:
+    //   "Status Perbaikan" = Sudah → Selesai; selain itu: ada PR → Proses; tidak → Belum Ditangani
+    const repairRaw = get('repair').toLowerCase();
+    const repair = !repairRaw ? 'Belum' : (/^(sudah|selesai|done|ya|yes|y|ok|1|true)/.test(repairRaw) ? 'Sudah' : 'Belum');
+    const tkRaw = get('tingkat').toLowerCase();
+    const tingkat = /berat|tinggi|high|major/.test(tkRaw) ? 'Berat' : /sedang|medium|moderate/.test(tkRaw) ? 'Sedang' : /ringan|rendah|low|minor/.test(tkRaw) ? 'Ringan' : '';
+    const status = repair === 'Sudah' ? 'Selesai' : (pr ? 'Proses' : 'Belum Ditangani');
 
     if (!lokasi && !ic && !dt && sp === '-') continue;
 
@@ -219,6 +225,8 @@ function mapRows(rows) {
       sparepart: sp,
       prNumber: pr || null,
       status,
+      repairStatus: repair,
+      tingkat,
       unit: lokasi || '-',
       __row: i + 2 // baris spreadsheet (header=1, data mulai baris 2)
     });
