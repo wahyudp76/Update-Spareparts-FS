@@ -2538,6 +2538,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     // Setup banner edit/hapus
     initWriteSetup();
+    // Cek versi write-proxy di latar belakang: peringatkan bila kode lama masih terpasang
+    (async()=>{
+        const u=getWriteUrl(); if(!u) return;
+        try{
+            const r=await fetch(u+'?action=check',{redirect:'follow'}); const t=(await r.text()).trim();
+            const m=t.match(/\bv(\d+)\b/); const ver=m?+m[1]:0;
+            if(!/^ok:/i.test(t) || ver<3){
+                showToast('Write-proxy Apps Script versi lama/tidak valid ('+(t.slice(0,40)||'no response')+'). Edit Tingkat/Status Perbaikan tidak akan tersimpan — deploy ulang scripts/write-proxy.gs (lihat SETUP-EDIT.md).','warning');
+            }
+        }catch(e){}
+    })();
 
     // Re-render charts saat window resize (throttled) agar tidak terpotong
     let resizeT;
