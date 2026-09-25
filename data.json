@@ -1,5 +1,27 @@
 [
   {
+    "timestamp": "2026-09-25T19:03:59+07:00",
+    "tanggalInspeksi": "2026-09-25",
+    "lokasi": "169B",
+    "divisi": "OP2",
+    "engineType": "DEM",
+    "engineCode": "0036",
+    "engine": "DEM – 0036",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Blok Mesin",
+    "keterangan": "Penggantian fanbelt",
+    "damage": "Blok Mesin — Penggantian fanbelt",
+    "sparepart": "Fanbelt",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "unit": "169B",
+    "__row": 99
+  },
+  {
     "timestamp": "2026-09-25T10:30:25+07:00",
     "tanggalInspeksi": "2026-09-25",
     "lokasi": "137A",
