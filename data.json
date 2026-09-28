@@ -1,5 +1,137 @@
 [
   {
+    "timestamp": "2026-09-28T10:41:52+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "163C",
+    "divisi": "OP2",
+    "engineType": "DEC",
+    "engineCode": "0025",
+    "engine": "DEC – 0025",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Selang",
+    "keterangan": "Ganti selang radiator",
+    "damage": "Selang — Ganti selang radiator",
+    "sparepart": "Selang Radiator",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "unit": "163C",
+    "__row": 135
+  },
+  {
+    "timestamp": "2026-09-28T09:26:40+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "Bengkel PG2",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0222",
+    "engine": "SPC – 0222",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Radiator",
+    "keterangan": "Perbaikan radiator bocor",
+    "damage": "Radiator — Perbaikan radiator bocor",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "unit": "Bengkel PG2",
+    "__row": 134
+  },
+  {
+    "timestamp": "2026-09-28T09:23:43+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "Bengkel PG2",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0222",
+    "engine": "SPC – 0222",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Filter",
+    "keterangan": "Ganti filter oli",
+    "damage": "Filter — Ganti filter oli",
+    "sparepart": "Filter oli",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "unit": "Bengkel PG2",
+    "__row": 133
+  },
+  {
+    "timestamp": "2026-09-28T09:06:29+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "160C",
+    "divisi": "FM4",
+    "engineType": "SPC",
+    "engineCode": "0128",
+    "engine": "SPC – 0128",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Ebara",
+    "keterangan": "Ganti baut ebara yang patah",
+    "damage": "Pompa Ebara — Ganti baut ebara yang patah",
+    "sparepart": "Baut",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "unit": "160C",
+    "__row": 131
+  },
+  {
+    "timestamp": "2026-09-28T08:19:53+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "120C",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0222",
+    "engine": "SPC – 0222",
+    "irrType": "-",
+    "irrCode": "0222",
+    "irrigator": "0222",
+    "damageType": "Tangki Solar",
+    "keterangan": "Sabuk tangki solar rusak",
+    "damage": "Tangki Solar — Sabuk tangki solar rusak",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Ringan",
+    "unit": "120C",
+    "__row": 130
+  },
+  {
+    "timestamp": "2026-09-28T08:17:45+07:00",
+    "tanggalInspeksi": "2026-09-28",
+    "lokasi": "107F",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0018",
+    "engine": "SPC – 0018",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Knalpot",
+    "keterangan": "Knalpot bocor",
+    "damage": "Knalpot — Knalpot bocor",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Ringan",
+    "unit": "107F",
+    "__row": 129
+  },
+  {
     "timestamp": "2026-09-27T10:57:25+07:00",
     "tanggalInspeksi": "2026-09-27",
     "lokasi": "118F",
@@ -19,7 +151,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "118F",
-    "__row": 127
+    "__row": 125
   },
   {
     "timestamp": "2026-09-27T10:27:39+07:00",
@@ -41,7 +173,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "120C",
-    "__row": 126
+    "__row": 124
   },
   {
     "timestamp": "2026-09-27T10:26:00+07:00",
@@ -63,7 +195,7 @@
     "repairStatus": "Belum",
     "tingkat": "Ringan",
     "unit": "118K",
-    "__row": 125
+    "__row": 123
   },
   {
     "timestamp": "2026-09-27T10:23:16+07:00",
@@ -85,7 +217,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "136D",
-    "__row": 124
+    "__row": 122
   },
   {
     "timestamp": "2026-09-27T10:01:19+07:00",
@@ -107,7 +239,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "160E",
-    "__row": 123
+    "__row": 121
   },
   {
     "timestamp": "2026-09-27T09:33:12+07:00",
@@ -129,7 +261,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "169B",
-    "__row": 117
+    "__row": 115
   },
   {
     "timestamp": "2026-09-27T09:26:44+07:00",
@@ -151,7 +283,29 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "144D1",
-    "__row": 115
+    "__row": 113
+  },
+  {
+    "timestamp": "2026-09-27T09:20:14+07:00",
+    "tanggalInspeksi": "2026-09-27",
+    "lokasi": "118F",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0187",
+    "irrigator": "ITI – 0187",
+    "damageType": "Turbin",
+    "keterangan": "Ganti sil filow blok",
+    "damage": "Turbin — Ganti sil filow blok",
+    "sparepart": "Seal filow blok",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "unit": "118F",
+    "__row": 132
   },
   {
     "timestamp": "2026-09-26T20:01:39+07:00",
@@ -173,7 +327,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "123B",
-    "__row": 114
+    "__row": 112
   },
   {
     "timestamp": "2026-09-26T20:01:32+07:00",
@@ -195,7 +349,7 @@
     "repairStatus": "Belum",
     "tingkat": "Berat",
     "unit": "130E",
-    "__row": 113
+    "__row": 111
   },
   {
     "timestamp": "2026-09-26T19:56:21+07:00",
@@ -217,7 +371,7 @@
     "repairStatus": "Belum",
     "tingkat": "Berat",
     "unit": "103E",
-    "__row": 112
+    "__row": 110
   },
   {
     "timestamp": "2026-09-26T11:43:21+07:00",
@@ -239,7 +393,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "123B",
-    "__row": 130
+    "__row": 128
   },
   {
     "timestamp": "2026-09-26T11:40:26+07:00",
@@ -261,7 +415,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "123L",
-    "__row": 129
+    "__row": 127
   },
   {
     "timestamp": "2026-09-26T10:38:18+07:00",
@@ -283,12 +437,12 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "302E",
-    "__row": 111
+    "__row": 109
   },
   {
     "timestamp": "2026-09-26T10:03:53+07:00",
     "tanggalInspeksi": "2026-09-26",
-    "lokasi": "189",
+    "lokasi": "189A",
     "divisi": "OP2",
     "engineType": "-",
     "engineCode": "-",
@@ -304,8 +458,8 @@
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
-    "unit": "189",
-    "__row": 110
+    "unit": "189A",
+    "__row": 108
   },
   {
     "timestamp": "2026-09-26T09:59:07+07:00",
@@ -327,12 +481,12 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "160E",
-    "__row": 109
+    "__row": 107
   },
   {
     "timestamp": "2026-09-26T09:46:56+07:00",
     "tanggalInspeksi": "2026-09-26",
-    "lokasi": "100Z",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
@@ -348,13 +502,13 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "100Z",
-    "__row": 122
+    "unit": "Bengkel PG2",
+    "__row": 120
   },
   {
     "timestamp": "2026-09-26T09:45:06+07:00",
     "tanggalInspeksi": "2026-09-26",
-    "lokasi": "100Z",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
@@ -370,8 +524,8 @@
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
-    "unit": "100Z",
-    "__row": 121
+    "unit": "Bengkel PG2",
+    "__row": 119
   },
   {
     "timestamp": "2026-09-26T09:43:24+07:00",
@@ -393,7 +547,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "143C",
-    "__row": 120
+    "__row": 118
   },
   {
     "timestamp": "2026-09-26T09:37:48+07:00",
@@ -415,7 +569,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "144D1",
-    "__row": 119
+    "__row": 117
   },
   {
     "timestamp": "2026-09-26T09:34:41+07:00",
@@ -437,7 +591,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "116A",
-    "__row": 118
+    "__row": 116
   },
   {
     "timestamp": "2026-09-26T09:29:18+07:00",
@@ -459,7 +613,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "174C1",
-    "__row": 116
+    "__row": 114
   },
   {
     "timestamp": "2026-09-25T23:52:34+07:00",
@@ -481,7 +635,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "120C",
-    "__row": 107
+    "__row": 105
   },
   {
     "timestamp": "2026-09-25T23:50:54+07:00",
@@ -503,7 +657,7 @@
     "repairStatus": "Belum",
     "tingkat": "Berat",
     "unit": "103B",
-    "__row": 106
+    "__row": 104
   },
   {
     "timestamp": "2026-09-25T23:49:54+07:00",
@@ -525,7 +679,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "103B",
-    "__row": 105
+    "__row": 103
   },
   {
     "timestamp": "2026-09-25T23:47:58+07:00",
@@ -547,7 +701,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Berat",
     "unit": "144H",
-    "__row": 104
+    "__row": 102
   },
   {
     "timestamp": "2026-09-25T23:46:26+07:00",
@@ -569,7 +723,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "138B",
-    "__row": 103
+    "__row": 101
   },
   {
     "timestamp": "2026-09-25T19:52:36+07:00",
@@ -591,7 +745,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "118M",
-    "__row": 102
+    "__row": 100
   },
   {
     "timestamp": "2026-09-25T19:50:14+07:00",
@@ -613,7 +767,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "118M",
-    "__row": 101
+    "__row": 99
   },
   {
     "timestamp": "2026-09-25T19:36:29+07:00",
@@ -635,29 +789,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "118K",
-    "__row": 100
-  },
-  {
-    "timestamp": "2026-09-25T19:03:59+07:00",
-    "tanggalInspeksi": "2026-09-25",
-    "lokasi": "169B",
-    "divisi": "OP2",
-    "engineType": "DEM",
-    "engineCode": "0036",
-    "engine": "DEM – 0036",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Blok Mesin",
-    "keterangan": "Penggantian vanbelt",
-    "damage": "Blok Mesin — Penggantian vanbelt",
-    "sparepart": "Vanbelt",
-    "prNumber": null,
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Ringan",
-    "unit": "169B",
-    "__row": 99
+    "__row": 98
   },
   {
     "timestamp": "2026-09-25T11:39:03+07:00",
@@ -679,7 +811,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "136C",
-    "__row": 128
+    "__row": 126
   },
   {
     "timestamp": "2026-09-25T10:30:25+07:00",
@@ -701,7 +833,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "137A",
-    "__row": 98
+    "__row": 97
   },
   {
     "timestamp": "2026-09-25T09:54:25+07:00",
@@ -723,7 +855,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "123L",
-    "__row": 97
+    "__row": 96
   },
   {
     "timestamp": "2026-09-25T09:05:48+07:00",
@@ -745,7 +877,7 @@
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "unit": "120C",
-    "__row": 108
+    "__row": 106
   },
   {
     "timestamp": "2026-09-25T08:54:13+07:00",
@@ -767,7 +899,7 @@
     "repairStatus": "Belum",
     "tingkat": "Ringan",
     "unit": "134B",
-    "__row": 96
+    "__row": 95
   },
   {
     "timestamp": "2026-09-25T08:46:55+07:00",
@@ -789,7 +921,7 @@
     "repairStatus": "Belum",
     "tingkat": "Sedang",
     "unit": "303D",
-    "__row": 95
+    "__row": 94
   },
   {
     "timestamp": "2026-09-25T08:45:12+07:00",
@@ -811,28 +943,6 @@
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "117C1",
-    "__row": 94
-  },
-  {
-    "timestamp": "2026-09-25T08:16:51+07:00",
-    "tanggalInspeksi": "2026-09-25",
-    "lokasi": "169B",
-    "divisi": "OP2",
-    "engineType": "DEM",
-    "engineCode": "0036",
-    "engine": "DEM – 0036",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Blok Mesin",
-    "keterangan": "Ganti van belt",
-    "damage": "Blok Mesin — Ganti van belt",
-    "sparepart": "Vanbelt",
-    "prNumber": null,
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Sedang",
-    "unit": "169B",
     "__row": 93
   },
   {
@@ -851,8 +961,8 @@
     "damage": "Radiator — Dudukan kipas radiator patah",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "unit": "190C",
     "__row": 88
@@ -926,7 +1036,7 @@
   {
     "timestamp": "2026-09-24T20:35:00+07:00",
     "tanggalInspeksi": "2026-09-24",
-    "lokasi": "100Z",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
@@ -942,7 +1052,7 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "100Z",
+    "unit": "Bengkel PG2",
     "__row": 84
   },
   {
@@ -1828,7 +1938,7 @@
   {
     "timestamp": "2026-09-21T10:59:33+07:00",
     "tanggalInspeksi": "2026-09-21",
-    "lokasi": "100Z",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "-",
     "engineCode": "-",
@@ -1844,7 +1954,7 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Sedang",
-    "unit": "100Z",
+    "unit": "Bengkel PG2",
     "__row": 44
   },
   {
@@ -2554,7 +2664,7 @@
   {
     "timestamp": "2026-09-11T23:51:19+07:00",
     "tanggalInspeksi": "2026-09-11",
-    "lokasi": "160Z",
+    "lokasi": "Bengkel OP2",
     "divisi": "OP2",
     "engineType": "DEM",
     "engineCode": "0074",
@@ -2570,7 +2680,7 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "160Z",
+    "unit": "Bengkel OP2",
     "__row": 36
   },
   {
@@ -2642,7 +2752,7 @@
   {
     "timestamp": "2026-09-10T23:39:28+07:00",
     "tanggalInspeksi": "2026-09-10",
-    "lokasi": "100A",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "SPC",
     "engineCode": "0095",
@@ -2658,13 +2768,13 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "100A",
+    "unit": "Bengkel PG2",
     "__row": 33
   },
   {
     "timestamp": "2026-09-09T23:37:15+07:00",
     "tanggalInspeksi": "2026-09-09",
-    "lokasi": "100A",
+    "lokasi": "Bengkel PG2",
     "divisi": "PG2",
     "engineType": "DEC",
     "engineCode": "0004",
@@ -2680,7 +2790,7 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "100A",
+    "unit": "Bengkel PG2",
     "__row": 32
   },
   {
@@ -2774,7 +2884,7 @@
   {
     "timestamp": "2026-09-02T11:06:11+07:00",
     "tanggalInspeksi": "2026-09-02",
-    "lokasi": "140Z",
+    "lokasi": "Bengkel PG2",
     "divisi": "OP2",
     "engineType": "DEM",
     "engineCode": "0074",
@@ -2790,13 +2900,13 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "140Z",
+    "unit": "Bengkel PG2",
     "__row": 57
   },
   {
     "timestamp": "2026-09-01T10:25:17+07:00",
     "tanggalInspeksi": "2026-09-01",
-    "lokasi": "140Z",
+    "lokasi": "Bengkel FM4",
     "divisi": "FM4",
     "engineType": "SPC",
     "engineCode": "0062",
@@ -2812,7 +2922,7 @@
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Berat",
-    "unit": "140Z",
+    "unit": "Bengkel FM4",
     "__row": 56
   }
 ]
