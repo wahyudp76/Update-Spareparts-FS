@@ -78,7 +78,9 @@ function parseDateFlexible(s) {
   // Heuristik: jika field pertama > 12 → itu pasti hari → DD/MM.
   // Jika tidak jelas (keduanya ≤ 12), kita pilih DD/MM sesuai locale sheet
   // agar konsisten dengan data yang selama ini benar (tgl 1-12).
+  function fixYear(y){ y=parseInt(y,10); if(y<100) y+=2000; else if(y>=1000&&y<1900) y=y%100+2000; return y; }
   function tryDMY(dd, mm, yyyy, hh, mi, ss) {
+    yyyy = fixYear(yyyy);
     dd = parseInt(dd,10); mm = parseInt(mm,10);
     if (mm < 1 || mm > 12) return null;
     if (dd < 1 || dd > 31) return null;
@@ -88,6 +90,7 @@ function parseDateFlexible(s) {
     return d;
   }
   function tryMDY(mm, dd, yyyy, hh, mi, ss) {
+    yyyy = fixYear(yyyy);
     mm = parseInt(mm,10); dd = parseInt(dd,10);
     if (mm < 1 || mm > 12) return null;
     if (dd < 1 || dd > 31) return null;

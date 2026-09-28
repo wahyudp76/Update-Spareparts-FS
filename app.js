@@ -9,6 +9,18 @@
 const SHEET_ID = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 const SHEET_NAME = 'Response';
 const DATA_URL = './data.json';
+const LOCAL_CACHE_KEY = 'pg2_data_cache_v1';
+
+
+// Pra-hitung field turunan untuk filter cepat (dipanggil sekali per muat data)
+function indexRecords(arr){
+    arr.forEach(d=>{
+        d.__t = new Date(d.timestamp).getTime();
+        const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status} ${d.tingkat||''}`.toLowerCase();
+        d.__blob = blob; d.__flat = blob.replace(/[^a-z0-9]/g,'');
+    });
+    return arr;
+}
 
 // ---------- Model status (3 tahap) ----------
 // Sheet punya 2 kolom terpisah: "Status Perbaikan" (Sudah/Belum) dan "Nomor PR".
@@ -102,20 +114,18 @@ function parseDate(s) {
     // Spreadsheet ini locale ID → SEMUA format slash adalah DD/MM/YYYY
     // (dengan jam opsional). Jangan tebak MM/DD dari ada/tidaknya jam —
     // itu salah untuk locale ID dan bikin tanggal seperti 19/09 loncat ke 2027.
-    function tryDMY(dd,mm,yyyy,hh,mi,ss){
-        dd=+dd; mm=+mm;
+    // Tahun salah ketik seperti "0026" / "26" → 2026 (umum terjadi saat input manual di form)
+    function fixYear(y){ y=+y; if(y<100) y+=2000; else if(y>=1000&&y<1900) y=y%100+2000; return y; }
+    function mk(yyyy,mm,dd,hh,mi,ss){
+        const y=fixYear(yyyy);
         if(mm<1||mm>12||dd<1||dd>31) return null;
-        const d=new Date(yyyy, mm-1, dd, +(hh||0), +(mi||0), +(ss||0));
-        if(d.getFullYear()!==+yyyy||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
+        const d=new Date(y, mm-1, dd, +(hh||0), +(mi||0), +(ss||0));
+        if(y<100) d.setFullYear(y);
+        if(d.getFullYear()!==y||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
         return d;
     }
-    function tryMDY(mm,dd,yyyy,hh,mi,ss){
-        mm=+mm; dd=+dd;
-        if(mm<1||mm>12||dd<1||dd>31) return null;
-        const d=new Date(yyyy, mm-1, dd, +(hh||0), +(mi||0), +(ss||0));
-        if(d.getFullYear()!==+yyyy||d.getMonth()!==mm-1||d.getDate()!==dd) return null;
-        return d;
-    }
+    function tryDMY(dd,mm,yyyy,hh,mi,ss){ return mk(yyyy,+mm,+dd,hh,mi,ss); }
+    function tryMDY(mm,dd,yyyy,hh,mi,ss){ return mk(yyyy,+mm,+dd,hh,mi,ss); }
 
     // dd/mm/yyyy dengan jam opsional
     let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
@@ -337,6 +347,22 @@ async function refreshData(forceLive=false, opts={}) {
         if(es) es.classList.add('hidden');
     }
 
+    // First paint instan dari cache lokal (localStorage) sambil menunggu data segar
+    if (isFirstLoad && !rawData.length) {
+        try {
+            const c = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY)||'null');
+            if (c && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts) < 7*86400000) {
+                rawData = indexRecords(normalizeFromJson(c.data));
+                populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
+                populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
+                populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
+                populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
+                applyFilters();
+                if(ls) ls.classList.add('hidden');
+                const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `Cache lokal · ${rawData.length} record · memperbarui…`;
+            }
+        } catch(e) {}
+    }
     const run = (async () => {
         let data=null, source='empty', note='';
         // 1) Live Sheets
@@ -367,7 +393,10 @@ async function refreshData(forceLive=false, opts={}) {
             }
         }
 
-        rawData = data;
+        rawData = indexRecords(data);
+        if (source==='live-sheet' || source==='github-cache') {
+            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ts:Date.now(), src:source, data})); } catch(e) {}
+        }
         const syncEl=document.getElementById('syncTime');
         if(syncEl && source!=='stale' && source!=='error')
             syncEl.textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
@@ -491,9 +520,9 @@ function switchTab(tab) {
     state.tab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-'+tab));
-    // Render ulang chart yang sekarang visible (butuh layout karena Chart.js butuh container visible)
-    requestAnimationFrame(() => renderCharts());
-    if(tab === 'data') renderTable();
+    // Render konten tab ini bila belum (lazy) + chart yang sekarang visible
+    if(__dirtyTabs.has(tab)) renderTabContent(tab);
+    else requestAnimationFrame(() => renderCharts());
     window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -558,20 +587,19 @@ function applyFilters() {
 
     const q = (state.search || (document.getElementById('searchInput')&&document.getElementById('searchInput').value) || '').toLowerCase().trim();
 
+    const fromT = from.getTime(), toT = to.getTime();
+    const qFlat = q ? q.replace(/[^a-z0-9]/g,'') : '';
     filteredData = rawData.filter(d => {
-        const t = new Date(d.timestamp);
-        if (t < from || t > to) return false;
+        const t = d.__t !== undefined ? d.__t : new Date(d.timestamp).getTime();
+        if (t < fromT || t > toT) return false;
         if (state.divisi.length && !state.divisi.includes(d.divisi)) return false;
         if (state.lokasi.length && !state.lokasi.includes(d.lokasi)) return false;
         if (state.status.length && !state.status.includes(d.status)) return false;
         if (state.tingkat.length && !state.tingkat.includes(effectiveTingkat(d))) return false;
         if (q) {
-            // Blob utama (untuk pencarian dengan spasi & tanda baca)
-            const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status} ${d.tingkat||''}`.toLowerCase();
-            // Blob "padat" (tanpa spasi/tanda baca) agar "BTI0032", "BTI 0032", "BTI-0032", "SPC 0127", "DEC 0033" semuanya ketemu
-            const blobFlat = blob.replace(/[^a-z0-9]/g,'');
-            const qFlat = q.replace(/[^a-z0-9]/g,'');
-            if (!blob.includes(q) && !(qFlat && blobFlat.includes(qFlat))) return false;
+            // Blob utama + blob "padat" (BTI0032 / BTI 0032 / BTI-0032 semuanya ketemu) — sudah dipra-hitung
+            if(d.__blob===undefined) indexRecords([d]);
+            if (!d.__blob.includes(q) && !(qFlat && d.__flat.includes(qFlat))) return false;
         }
         return true;
     });
@@ -587,17 +615,29 @@ function applyFilters() {
 
     renderActiveChips();
     updateStats();
-    renderCharts();
-    renderOverview();
-    renderDamageTab();
-    renderDivisiTab();
-    renderEngineTab();
-    renderIrrTab();
-    renderSeverityTab();
-    renderCalendar();
-    renderCalDayDetail();
-    renderTable();
     updateTabBadges();
+    // Render malas: hanya tab yang sedang terlihat yang dirender sekarang;
+    // tab lain ditandai "kotor" dan dirender saat dibuka (hemat ~70% waktu per filter).
+    __dirtyTabs = new Set(['overview','damage','divisi','engine','irrigator','severity','calendar','data']);
+    renderTabContent(state.tab);
+}
+
+let __dirtyTabs = new Set();
+const TAB_RENDERERS = {
+    overview:  () => { renderOverview(); },
+    damage:    () => { renderDamageTab(); },
+    divisi:    () => { renderDivisiTab(); },
+    engine:    () => { renderEngineTab(); },
+    irrigator: () => { renderIrrTab(); },
+    severity:  () => { renderSeverityTab(); },
+    calendar:  () => { renderCalendar(); renderCalDayDetail(); },
+    data:      () => { renderTable(); }
+};
+function renderTabContent(tab){
+    if(!__dirtyTabs.has(tab)) return;
+    __dirtyTabs.delete(tab);
+    try { (TAB_RENDERERS[tab]||(()=>{}))(); } catch(e){ console.error('render tab',tab,e); }
+    renderCharts(); // hanya chart yang visible yang dibuat (isElVisible)
 }
 
 function renderActiveChips() {
@@ -1496,7 +1536,7 @@ function renderUnitTypeCards(cardsContainerId, data, typeField, colorMap, defaul
         const total=t.items.length;
         const pending=t.items.filter(x=>x.status==='Belum Ditangani').length;
         const units = new Set(t.items.map(x=>x.engineCode||x.irrCode||'-').filter(v=>v&&v!=='-')).size;
-        const color = colorMap[t.type]||defaultColor;
+        const color = typeColor(colorMap, t.type, defaultColor);
         // Top damage & sparepart
         const dmg={}, sp={};
         t.items.forEach(x=>{
@@ -1546,7 +1586,7 @@ function openTypeDetail(kind, type){
     const isEng = kind==='engine';
     const tf = isEng?'engineType':'irrType', cf = isEng?'engineCode':'irrCode';
     const items = filteredData.filter(d=>d[tf]===type);
-    const color = (isEng?ENG_COLORS:IRR_COLORS)[type] || (isEng?'#f97316':'#ec4899');
+    const color = typeColor(isEng?ENG_COLORS:IRR_COLORS, type, isEng?'#f97316':'#ec4899');
     const label = isEng?'Engine':'Irigator';
     const modal = document.getElementById('typeDetailModal');
     if(!modal) return;
@@ -1666,7 +1706,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
     const show = freq.length?freq.concat(rest.length?rest:[]).slice(0,24):units.slice(0,12);
     const maxV = units[0].total;
     g.innerHTML = show.map((u,idx)=>{
-        const color = colorMap[u.type]||defaultColor;
+        const color = typeColor(colorMap, u.type, defaultColor);
         const pctP = Math.round(u.pending/u.total*100);
         const sev = severityBadge(pctP);
         const topLoc = Object.entries(u.locMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
@@ -1749,6 +1789,12 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
     }).join('');
 }
 // Utility: gelapkan/terangin hex
+function typeColor(map, key, fallback){
+    if(map[key]) return map[key];
+    const pool=['#0ea5e9','#a855f7','#14b8a6','#f43f5e','#eab308','#64748b','#22c55e','#fb7185'];
+    let h=0; for(const ch of String(key||'')) h=(h*31+ch.charCodeAt(0))>>>0;
+    return key ? pool[h%pool.length] : fallback;
+}
 function shade(hex,pct){
     let c=hex.replace('#','');
     if(c.length===3) c=c.split('').map(x=>x+x).join('');
@@ -2438,7 +2484,7 @@ async function submitEdit(){
         upd.engine = [upd.engineType,upd.engineCode].filter(x=>x&&x!=='-').join(' – ') || '-';
         upd.irrigator = (upd.irrType&&upd.irrCode&&upd.irrType!==upd.irrCode)?`${upd.irrType} – ${upd.irrCode}`:(upd.irrCode||upd.irrType||'-');
         upd.damage = upd.keterangan ? (upd.damageType?`${upd.damageType} — ${upd.keterangan}`:upd.keterangan) : (upd.damageType||'-');
-        rawData[rawi] = upd;
+        rawData[rawi] = indexRecords([upd])[0];
         closeModal('editModal');
         showToast('Perubahan tersimpan di spreadsheet.','success');
         applyFilters();
