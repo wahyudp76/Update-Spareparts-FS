@@ -212,3 +212,14 @@ tab kembali aktif, atau koneksi pulih — urutan sumber data SELALU sama:
 
 Catatan: `data.json` sekarang menyimpan timestamp dengan offset `+07:00` (WIB), bukan
 `Z`/UTC, sehingga jam & tanggal konsisten dengan jalur live di semua zona waktu.
+
+
+## Validasi kualitas data (angka dengan titik/koma, dsb.)
+
+Tiga lapis pengaman agar angka yang salah tulis di spreadsheet tidak muncul janggal di dashboard:
+
+1. **Di spreadsheet (pencegahan)** — pasang `scripts/sheet-validator.gs` (Extensions → Apps Script → file baru → Run `installValidationTrigger`). Saat seseorang mengetik `11.095.745`, `1.1E7`, `32,0`, atau kode 2 digit, sel langsung **merah muda + catatan**, dan (opsional) dinormalkan otomatis. Kolom angka dipaksa ke format Teks.
+2. **Saat sync GitHub Actions** — `fetch-data.js` mencatat peringatan (`::warning`) di log run dan menulis `data.quality.json`.
+3. **Di dashboard** — banner kuning **"N baris spreadsheet perlu diperiksa"** + toast saat data dimuat, ikon ⚠ pada baris di tab Data Lengkap, dan modal detail (baris sheet, kolom, masalah, nilai yang ditampilkan, tombol perbaiki). Nilai dinormalkan untuk tampilan (`11.095.745` → `11095745`, `32` → `0032`) tetapi tetap ditandai sampai sumbernya diperbaiki.
+
+Yang diperiksa: Nomor PR (8 digit), Kode Engine/Irrigator (4 digit) — pemisah titik/koma, notasi ilmiah, spasi, karakter non-angka, nol di depan hilang; Tingkat Kerusakan & Status Perbaikan di luar pilihan; tahun tanggal tidak wajar; tanggal masa depan; kode tanpa jenis; lokasi kosong; kemungkinan duplikat.

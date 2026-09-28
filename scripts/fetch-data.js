@@ -187,14 +187,24 @@ function mapRows(rows) {
 
     const lokasi = get('lokasi');
     const et = get('engineType');
-    const ec = get('engineCode');
+    const ec = auditNum(get('engineCode'),'Kode Engine',4);
     const it = get('irrType');
-    const ic = get('irrCode');
+    const ic = auditNum(get('irrCode'),'Kode Irrigator',4);
     const divisi = get('divisi');
     const dt = get('damageType');
     const dn = get('damageNote');
     let sp = get('sparepart');
-    const pr = get('prNumber');
+    const prRaw = get('prNumber');
+    const issues = [];
+    function auditNum(raw,label,digits){
+      let v=String(raw||'').trim(), fixed=v; if(!v) return '';
+      if(/^-?\d+(\.\d+)?e[+-]?\d+$/i.test(v)){ issues.push(`${label} notasi ilmiah "${v}"`); fixed=String(Math.round(Number(v))); }
+      else if(/[.,]/.test(v)){ const mD=v.match(/^(\d+)[.,]0+$/); const dgt=mD?mD[1]:v.replace(/[.,\s]/g,''); if(/^\d+$/.test(dgt)){ issues.push(`${label} "${v}" memakai titik/koma sebagai pemisah`); fixed=dgt; } else issues.push(`${label} "${v}" bukan angka valid`); }
+      else if(!/^\d+$/.test(v)) issues.push(`${label} "${v}" mengandung karakter non-angka`);
+      if(digits && /^\d+$/.test(fixed) && fixed.length<digits){ issues.push(`${label} "${v}" ${fixed.length} digit (seharusnya ${digits}), nol di depan hilang`); fixed=fixed.padStart(digits,'0'); }
+      return fixed;
+    }
+    const pr = auditNum(prRaw,'Nomor PR',8);
 
     const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
     const engine = [et, ec].filter(Boolean).join(' – ');
@@ -230,10 +240,21 @@ function mapRows(rows) {
       status,
       repairStatus: repair,
       tingkat,
+      __rawTingkat: get('tingkat'), __rawRepair: get('repair'), __rawTgl: get('tanggalInspeksi'),
+      __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(get('tanggalInspeksi')),
+      __issues_sync: issues,
       unit: lokasi || '-',
       __row: i + 2 // baris spreadsheet (header=1, data mulai baris 2)
     });
   }
+  // Laporan kualitas data untuk log GitHub Actions + data.quality.json
+  const quality = out.filter(r => r.__issues_sync.length).map(r => ({ row: r.__row, lokasi: r.lokasi, tanggal: r.tanggalInspeksi, issues: r.__issues_sync }));
+  if (quality.length) {
+    console.log(`::warning title=Kualitas data spreadsheet::${quality.length} baris bermasalah (angka dengan titik/koma, kode tidak lengkap, dll.)`);
+    quality.forEach(q => console.log(`::warning title=Baris ${q.row} (${q.lokasi})::${q.issues.join('; ')}`));
+  }
+  fs.writeFileSync(path.join(__dirname, '..', 'data.quality.json'), JSON.stringify({ checkedAt: new Date().toISOString(), badRows: quality.length, items: quality }, null, 2));
+  out.forEach(r => delete r.__issues_sync);
   return out.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
 

@@ -22,6 +22,124 @@ function indexRecords(arr){
     return arr;
 }
 
+// ======================================================
+// VALIDASI KUALITAS DATA (angka dengan titik/koma, kode tak lengkap, dsb.)
+// Dijalankan pada SETIAP record setelah sync. Nilai bermasalah dinormalkan
+// untuk tampilan (mis. "11.095.745" -> "11095745") tetapi tetap ditandai
+// agar operator memperbaikinya di spreadsheet.
+// ======================================================
+function auditNumericField(raw, opts){
+    // opts: {label, digits (panjang wajib), allowEmpty}
+    const issues=[]; let v=String(raw==null?'':raw).trim(); let fixed=v;
+    if(!v) return {value:'', fixed:'', issues};
+    if(/^-?\d+(\.\d+)?e[+-]?\d+$/i.test(v)){
+        issues.push({type:'scientific', msg:`${opts.label} tertulis dalam notasi ilmiah "${v}" (sel diformat sebagai angka). Ubah format kolom menjadi Teks/Plain text.`});
+        fixed = String(Math.round(Number(v)));
+    } else if(/[.,]/.test(v)){
+        const sep = v.includes('.') && v.includes(',') ? 'titik & koma' : v.includes('.') ? 'titik' : 'koma';
+        // "32,0" / "0032.00" = desimal nol → ambil bagian bulatnya; selain itu buang semua pemisah
+        const mDec = v.match(/^(\d+)[.,]0+$/);
+        const digitsOnly = mDec ? mDec[1] : v.replace(/[.,\s]/g,'');
+        if(/^\d+$/.test(digitsOnly)){
+            issues.push({type:'separator', msg:`${opts.label} "${v}" mengandung ${sep} sebagai pemisah. Tulis angka tanpa pemisah (contoh: ${digitsOnly}).`});
+            fixed = digitsOnly;
+        } else {
+            issues.push({type:'nonnumeric', msg:`${opts.label} "${v}" bukan angka yang valid.`});
+        }
+    } else if(/\s/.test(v)){
+        issues.push({type:'space', msg:`${opts.label} "${v}" mengandung spasi.`});
+        fixed = v.replace(/\s+/g,'');
+    } else if(!/^\d+$/.test(v)){
+        issues.push({type:'nonnumeric', msg:`${opts.label} "${v}" mengandung karakter selain angka.`});
+    }
+    if(opts.digits && /^\d+$/.test(fixed) && fixed.length!==opts.digits){
+        if(fixed.length<opts.digits){
+            issues.push({type:'length', msg:`${opts.label} "${v}" hanya ${fixed.length} digit (seharusnya ${opts.digits}). Angka nol di depan mungkin hilang karena sel diformat angka — gunakan format Teks.`});
+            fixed = fixed.padStart(opts.digits,'0');
+        } else {
+            issues.push({type:'length', msg:`${opts.label} "${v}" ${fixed.length} digit (seharusnya ${opts.digits}).`});
+        }
+    }
+    return {value:v, fixed, issues};
+}
+function validateRecord(d){
+    const issues=[];
+    const add=(field,col,r)=>r.issues.forEach(x=>issues.push({field,col,type:x.type,msg:x.msg,raw:r.value,fixed:r.fixed}));
+    const pr = auditNumericField(d.prNumber, {label:'Nomor PR / Notifikasi', digits:8});
+    add('prNumber','Nomor PR / Notifikasi',pr); if(pr.issues.length && /^\d+$/.test(pr.fixed)) d.prNumber = pr.fixed;
+    if(d.engineCode && d.engineCode!=='-'){ const r=auditNumericField(d.engineCode,{label:'Kode Engine',digits:4}); add('engineCode','Kode Engine',r); if(r.issues.length && /^\d+$/.test(r.fixed)){ d.engineCode=r.fixed; d.engine=[d.engineType,d.engineCode].filter(x=>x&&x!=='-').join(' – ')||'-'; } }
+    if(d.irrCode && d.irrCode!=='-'){ const r=auditNumericField(d.irrCode,{label:'Kode Irrigator',digits:4}); add('irrCode','Kode Irrigator',r); if(r.issues.length && /^\d+$/.test(r.fixed)){ d.irrCode=r.fixed; d.irrigator=(d.irrType&&d.irrType!=='-'&&d.irrType!==d.irrCode)?`${d.irrType} – ${d.irrCode}`:d.irrCode; } }
+    if(d.irrCode && d.irrCode!=='-' && (!d.irrType || d.irrType==='-')) issues.push({field:'irrType',col:'Jenis Irrigator',type:'missing',msg:`Kode Irrigator ${d.irrCode} diisi tetapi Jenis Irrigator kosong.`});
+    if(d.engineCode && d.engineCode!=='-' && (!d.engineType || d.engineType==='-')) issues.push({field:'engineType',col:'Jenis Engine',type:'missing',msg:`Kode Engine ${d.engineCode} diisi tetapi Jenis Engine kosong.`});
+    if(d.__rawTingkat && !d.tingkat) issues.push({field:'tingkat',col:'Tingkat Kerusakan',type:'enum',msg:`Tingkat Kerusakan "${d.__rawTingkat}" tidak dikenali (gunakan Berat/Sedang/Ringan).`});
+    if(d.__rawRepair && !normRepair(d.__rawRepair)) issues.push({field:'repairStatus',col:'Status Perbaikan',type:'enum',msg:`Status Perbaikan "${d.__rawRepair}" tidak dikenali (gunakan Sudah/Belum).`});
+    if(d.__rawTgl && d.__yearFixed) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'year',msg:`Tanggal Inspeksi "${d.__rawTgl}" memiliki tahun tidak wajar — dibaca sebagai ${d.tanggalInspeksi}.`});
+    const t=new Date(d.timestamp); if(!isNaN(t) && t.getTime() > Date.now()+86400000) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'future',msg:`Tanggal ${d.tanggalInspeksi} berada di masa depan.`});
+    if(!d.lokasi || d.lokasi==='-') issues.push({field:'lokasi',col:'Lokasi',type:'missing',msg:'Lokasi kosong.'});
+    d.__issues = issues;
+    return issues;
+}
+function validateAll(arr){
+    let n=0; arr.forEach(d=>{ n += validateRecord(d).length ? 1 : 0; });
+    // Duplikat: timestamp + lokasi + jenis kerusakan sama persis
+    const seen={}; arr.forEach(d=>{ const k=`${d.timestamp}|${d.lokasi}|${d.damageType}`; (seen[k]=seen[k]||[]).push(d); });
+    Object.values(seen).filter(v=>v.length>1).forEach(v=>v.slice(1).forEach(d=>{ d.__issues.push({field:'dup',col:'—',type:'duplicate',msg:`Kemungkinan duplikat dari baris ${v[0].__row}.`}); }));
+    return arr.filter(d=>d.__issues.length);
+}
+let __lastQualityKey = '';
+function renderQualityBanner(){
+    const bad = rawData.filter(d=>d.__issues && d.__issues.length);
+    const el = document.getElementById('qualityBanner'); if(!el) return;
+    const sepCount = bad.reduce((a,d)=>a+d.__issues.filter(i=>i.type==='separator'||i.type==='scientific').length,0);
+    if(!bad.length){ el.classList.add('hidden'); el.innerHTML=''; __lastQualityKey=''; return; }
+    el.classList.remove('hidden');
+    el.innerHTML = `<div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 text-xs text-amber-900">
+            <i class="fas fa-triangle-exclamation text-amber-600"></i>
+            <b>${bad.length} baris spreadsheet perlu diperiksa</b>
+            ${sepCount?`<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">${sepCount} angka memakai titik/koma</span>`:''}
+            <span class="text-amber-700 hidden sm:inline">— nilai sudah dinormalkan di dashboard, tetapi sumber di spreadsheet sebaiknya diperbaiki.</span>
+        </div>
+        <button onclick="openQualityModal()" class="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg"><i class="fas fa-list-check mr-1"></i>Lihat detail</button>
+    </div>`;
+    // Toast sekali per kombinasi masalah baru (agar tidak spam tiap auto-refresh)
+    const key = bad.map(d=>d.__row+':'+d.__issues.map(i=>i.type).join('/')).join(',');
+    if(key!==__lastQualityKey){
+        __lastQualityKey = key;
+        if(sepCount) showToast(`${sepCount} angka di spreadsheet ditulis dengan titik/koma sebagai pemisah (mis. Nomor PR). Periksa panel "Kualitas Data".`,'warning');
+        else showToast(`${bad.length} baris spreadsheet memiliki data yang perlu diperiksa.`,'warning');
+    }
+}
+function openQualityModal(){
+    const modal=document.getElementById('typeDetailModal'); if(!modal) return;
+    const bad = rawData.filter(d=>d.__issues && d.__issues.length).sort((a,b)=>(a.__row||0)-(b.__row||0));
+    const rowsHtml = bad.map(d=>`<tr class="border-b border-slate-100 last:border-0 align-top">
+        <td class="py-2 pr-2 font-mono text-slate-500">${d.__row||'—'}</td>
+        <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-blue-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
+        <td class="py-2 pr-2">${d.__issues.map(i=>`<div class="mb-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${i.type==='separator'||i.type==='scientific'?'bg-red-100 text-red-700':i.type==='duplicate'?'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-800'}">${escapeHtml(i.col)}</span> <span class="text-slate-700">${escapeHtml(i.msg)}</span>${i.fixed&&i.fixed!==i.raw?` <span class="text-emerald-700 text-[10px]">→ ditampilkan sebagai <b>${escapeHtml(i.fixed)}</b></span>`:''}</div>`).join('')}</td>
+        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');switchTab('data');openEditModal(filteredData.indexOf(rawData[${rawData.indexOf(d)}]))" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>`:''}</td>
+    </tr>`).join('');
+    modal.querySelector('.modal').innerHTML = `
+        <div class="p-5 text-white" style="background:linear-gradient(135deg,#d97706,#b45309)">
+            <div class="flex items-start justify-between gap-3">
+                <div><div class="text-[10px] uppercase tracking-widest font-semibold opacity-80">Kualitas Data Spreadsheet</div>
+                <h3 class="display-font font-bold text-2xl leading-tight">${bad.length} baris perlu diperiksa</h3>
+                <div class="text-[11px] opacity-90 mt-1">Dashboard menormalkan nilai ini agar angka tidak tampil janggal, tetapi <b>sumber di Google Sheets tetap salah</b> sampai diperbaiki. Nomor baris mengacu ke sheet "Response".</div></div>
+                <button onclick="closeModal('typeDetailModal')" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="p-5">
+            <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs text-slate-700 mb-4">
+                <b>Cara mencegah:</b> di Google Sheets, blok kolom <i>Nomor PR / Notifikasi</i>, <i>Kode Engine</i>, <i>Kode Irrigator</i> → <b>Format → Number → Plain text</b>, lalu ketik angka tanpa titik/koma. Pasang juga pemeriksa otomatis <code class="bg-white px-1 rounded">scripts/sheet-validator.gs</code> agar sel bermasalah langsung diwarnai merah saat diketik.
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-xs">
+                <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5 pr-2">Baris</th><th class="text-left py-1.5 pr-2">Tanggal / Lokasi</th><th class="text-left py-1.5 pr-2">Masalah</th><th class="py-1.5"></th></tr></thead>
+                <tbody>${rowsHtml||'<tr><td colspan="4" class="py-6 text-center text-slate-400 italic">Tidak ada masalah</td></tr>'}</tbody>
+            </table></div>
+        </div>`;
+    openModal('typeDetailModal');
+}
+
 // ---------- Model status (3 tahap) ----------
 // Sheet punya 2 kolom terpisah: "Status Perbaikan" (Sudah/Belum) dan "Nomor PR".
 //   Selesai         = Status Perbaikan "Sudah"
@@ -193,6 +311,7 @@ function normalizeFromCSV(rows) {
         const lok = get('lok'), et = get('eT'), ec = get('eC'), it = get('iT'), ic = get('iC'), div = get('div');
         const dt = get('dT'), dn = get('dN'), sp = get('sp'), pr = get('pr');
         const tingkat = normTingkat(get('tk')), repair = normRepair(get('rp'));
+        const rawTk = get('tk'), rawRp = get('rp'), rawTgl = get('tglInsp');
         const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
         const engine = [et,ec].filter(Boolean).join(' – ');
         const damage = dn ? (dt ? `${dt} — ${dn}` : dn) : (dt || '-');
@@ -215,6 +334,7 @@ function normalizeFromCSV(rows) {
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
             sparepart: spNorm, prNumber: pr || null, status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
+            __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
             __row: i+2 // baris spreadsheet (header=1, data mulai 2)
         });
     }
@@ -299,6 +419,7 @@ function normalizeFromJson(json) {
             unit: r.lokasi || r.unit || '-',
             timestamp: mergedTs.toISOString(),
             tanggalInspeksi: localIsoDate(tglObj),
+            __rawTingkat: r.__rawTingkat||'', __rawRepair: r.__rawRepair||'', __rawTgl: r.__rawTgl||'', __yearFixed: !!r.__yearFixed,
             __row: typeof r.__row==='number'?r.__row:(i+2)
         };
     }).filter(Boolean).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -352,7 +473,7 @@ async function refreshData(forceLive=false, opts={}) {
         try {
             const c = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY)||'null');
             if (c && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts) < 7*86400000) {
-                rawData = indexRecords(normalizeFromJson(c.data));
+                rawData = indexRecords(normalizeFromJson(c.data)); validateAll(rawData);
                 populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
                 populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
                 populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
@@ -393,7 +514,9 @@ async function refreshData(forceLive=false, opts={}) {
             }
         }
 
+        validateAll(data);
         rawData = indexRecords(data);
+        renderQualityBanner();
         if (source==='live-sheet' || source==='github-cache') {
             try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ts:Date.now(), src:source, data})); } catch(e) {}
         }
@@ -1973,7 +2096,7 @@ function renderTable(){
             <td class="px-4 py-3 text-xs text-slate-600 max-w-[200px]">${d.keterangan?escapeHtml(d.keterangan):'<span class="text-slate-400 italic">-</span>'}</td>
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
             <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}${d.__issues&&d.__issues.length?` <i class="fas fa-triangle-exclamation text-amber-500 ml-1 cursor-help" title="${escapeHtml(d.__issues.map(i=>i.msg).join('\n'))}"></i>`:''}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
             <td class="px-3 py-3">
                 <div class="row-actions">
