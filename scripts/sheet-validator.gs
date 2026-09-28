@@ -42,7 +42,7 @@ function _ss() {
   return ss;
 }
 function _alert(msg) {
-  try { _alert(msg); } catch (e) { Logger.log(msg); }
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
 }
 
 function installValidationTrigger() {
