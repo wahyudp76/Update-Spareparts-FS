@@ -10,14 +10,16 @@
  * angka dengan pemisah otomatis dinormalkan (opsional, lihat AUTO_FIX).
  *
  * CARA PASANG (sekali, ±1 menit) — bisa di project Apps Script yang sama
- * dengan write-proxy.gs, cukup tambahkan file baru:
- *   1. Buka spreadsheet → Extensions → Apps Script.
+ * dengan write-proxy.gs (standalone) ATAU project terikat spreadsheet
+ * (Extensions → Apps Script). Keduanya didukung.
+ *   1. Buka project Apps Script.
  *   2. File → New → Script, beri nama "sheet-validator", tempel seluruh isi ini → Save.
  *   3. Pilih fungsi  installValidationTrigger  di toolbar → Run → izinkan akses.
  *      (Trigger "on edit" terpasang; berjalan untuk semua editor sheet.)
  *   4. Uji: ketik 11.095.745 di kolom Nomor PR → sel jadi merah muda + catatan.
  *   Opsional: jalankan  scanAllRows  untuk memeriksa seluruh data lama sekaligus.
  */
+var VAL_SPREADSHEET_ID = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk'; // ID spreadsheet (dipakai jika project standalone)
 var VAL_SHEET_NAME = 'Response';
 var AUTO_FIX = true; // true = angka dengan titik/koma otomatis diganti ke digit saja (tetap diberi catatan)
 var BAD_COLOR = '#fde2e2';
@@ -32,8 +34,19 @@ var ENUM_COLS = {
   'status perbaikan':  ['Sudah', 'Belum']
 };
 
+function _ss() {
+  // Berfungsi di project terikat spreadsheet maupun project standalone
+  var ss = null;
+  try { ss = SpreadsheetApp.getActive(); } catch (e) {}
+  if (!ss) ss = SpreadsheetApp.openById(VAL_SPREADSHEET_ID);
+  return ss;
+}
+function _alert(msg) {
+  try { _alert(msg); } catch (e) { Logger.log(msg); }
+}
+
 function installValidationTrigger() {
-  var ss = SpreadsheetApp.getActive();
+  var ss = _ss();
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'onEditValidate') ScriptApp.deleteTrigger(t);
   });
@@ -46,7 +59,7 @@ function installValidationTrigger() {
       if (NUMERIC_COLS[_n(h)]) sh.getRange(2, i + 1, Math.max(1, sh.getMaxRows() - 1), 1).setNumberFormat('@');
     });
   }
-  SpreadsheetApp.getUi().alert('Pemeriksa input aktif.\nKolom angka diset ke format Teks. Ketik angka tanpa titik/koma.');
+  _alert('Pemeriksa input aktif.\nKolom angka diset ke format Teks. Ketik angka tanpa titik/koma.');
 }
 
 function onEditValidate(e) {
@@ -68,7 +81,7 @@ function onEditValidate(e) {
 
 /** Periksa seluruh baris yang sudah ada (jalankan manual). */
 function scanAllRows() {
-  var sh = SpreadsheetApp.getActive().getSheetByName(VAL_SHEET_NAME);
+  var sh = _ss().getSheetByName(VAL_SHEET_NAME);
   var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   var last = sh.getLastRow(), bad = 0;
   for (var r = 2; r <= last; r++) {
@@ -76,7 +89,7 @@ function scanAllRows() {
       if (_checkCell(sh, r, c, headers[c - 1])) bad++;
     }
   }
-  SpreadsheetApp.getUi().alert('Selesai. Sel bermasalah: ' + bad + ' (ditandai merah muda + catatan).');
+  _alert('Selesai. Sel bermasalah: ' + bad + ' (ditandai merah muda + catatan).');
 }
 
 function _checkCell(sh, r, c, header) {
