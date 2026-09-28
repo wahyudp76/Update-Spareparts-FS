@@ -3174,7 +3174,7 @@
   {
     "timestamp": "2026-09-11T23:51:19+07:00",
     "tanggalInspeksi": "2026-09-11",
-    "lokasi": "Bengkel OP2",
+    "lokasi": "172I",
     "divisi": "OP2",
     "engineType": "DEM",
     "engineCode": "0074",
@@ -3194,7 +3194,7 @@
     "__rawRepair": "Belum",
     "__rawTgl": "11/09/2026",
     "__yearFixed": false,
-    "unit": "Bengkel OP2",
+    "unit": "172I",
     "__row": 36
   },
   {
