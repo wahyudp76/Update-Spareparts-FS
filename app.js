@@ -2494,8 +2494,100 @@ function requireWriteEndpoint(){
     return false;
 }
 
+function setEditMode(mode){
+    document.getElementById('editMode').value = mode;
+    const isCreate = mode==='create';
+    document.getElementById('editModalTitle').textContent = isCreate ? 'Tambah Laporan Baru' : 'Edit Laporan';
+    document.getElementById('editModalIcon').className = isCreate ? 'fas fa-plus-circle text-emerald-600 mr-2' : 'fas fa-pen-to-square text-blue-600 mr-2';
+    document.getElementById('createHint').classList.toggle('hidden', !isCreate);
+    const btn = document.getElementById('editSaveBtn');
+    btn.innerHTML = isCreate ? '<i class="fas fa-paper-plane mr-1"></i>Simpan ke Spreadsheet' : '<i class="fas fa-save mr-1"></i>Simpan ke Spreadsheet';
+    btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700');
+}
+function fillDatalists(){
+    const uniq = (f)=>[...new Set(rawData.map(d=>d[f]).filter(v=>v&&v!=='-'))].sort();
+    const set=(id,vals)=>{ const el=document.getElementById(id); if(el) el.innerHTML = vals.map(v=>`<option value="${escapeHtml(v)}">`).join(''); };
+    set('dl_lokasi', uniq('lokasi')); set('dl_engineType', uniq('engineType')); set('dl_irrType', uniq('irrType')); set('dl_damageType', uniq('damageType'));
+}
+// Validasi angka di sisi web (sebelum dikirim) — cegah titik/koma & digit salah masuk ke sheet
+function validateFormNumbers(){
+    const checks=[['f_prNumber','Nomor PR / Notifikasi',8],['f_engineCode','Kode Engine',4],['f_irrCode','Kode Irrigator',4]];
+    const errs=[];
+    checks.forEach(([id,label,digits])=>{
+        const el=document.getElementById(id); const v=el.value.trim(); el.classList.remove('border-red-400');
+        if(!v) return;
+        let msg=null;
+        if(/[.,]/.test(v)) msg=`${label} "${v}" memakai titik/koma sebagai pemisah — tulis tanpa pemisah (${v.replace(/[.,\s]/g,'')}).`;
+        else if(!/^\d+$/.test(v)) msg=`${label} "${v}" harus berupa angka saja.`;
+        else if(v.length!==digits) msg=`${label} "${v}" harus ${digits} digit (sekarang ${v.length}).`;
+        if(msg){ errs.push(msg); el.classList.add('border-red-400'); }
+    });
+    return errs;
+}
+function openCreateModal(){
+    if(!requireWriteEndpoint()) return;
+    fillDatalists();
+    setEditMode('create');
+    document.getElementById('editRowIdx').value = '';
+    document.getElementById('editSheetRow').value = '';
+    document.getElementById('editRowLabel').textContent = '';
+    const now=new Date(); const pad=n=>String(n).padStart(2,'0');
+    document.getElementById('f_tanggal').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    ['f_lokasi','f_engineType','f_engineCode','f_irrType','f_irrCode','f_damageType','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
+    document.getElementById('f_divisi').value = (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2';
+    document.getElementById('f_repair').value = 'Belum';
+    document.getElementById('f_tingkat').value = '';
+    document.getElementById('editMsg').innerHTML='';
+    document.getElementById('editSaveBtn').disabled=false;
+    openModal('editModal');
+    setTimeout(()=>document.getElementById('f_lokasi').focus(),150);
+}
+async function submitCreate(){
+    const g=id=>document.getElementById(id).value.trim();
+    const msg=document.getElementById('editMsg'), btn=document.getElementById('editSaveBtn');
+    const errs=validateFormNumbers();
+    if(!g('f_lokasi')) errs.unshift('Lokasi wajib diisi.');
+    if(!g('f_damageType')) errs.unshift('Jenis Kerusakan wajib diisi.');
+    if(!g('f_tanggal')) errs.unshift('Tanggal Inspeksi wajib diisi.');
+    if(errs.length){ msg.innerHTML=`<span class="text-red-600"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(errs[0])}</span>`; return; }
+    const payload={
+        action:'create',
+        tanggalInspeksi:g('f_tanggal'), lokasi:g('f_lokasi'), divisi:g('f_divisi'),
+        repairStatus:g('f_repair'), tingkat:g('f_tingkat'),
+        engineType:g('f_engineType')||'-', engineCode:g('f_engineCode')||'-',
+        irrType:g('f_irrType')||'-', irrCode:g('f_irrCode')||'-',
+        damageType:g('f_damageType'), keterangan:g('f_keterangan'),
+        sparepart:g('f_sparepart')||'-', prNumber:g('f_prNumber')||null
+    };
+    msg.innerHTML='<span class="text-emerald-700"><i class="fas fa-spinner spin mr-1"></i>Menambahkan ke spreadsheet…</span>';
+    btn.disabled=true;
+    try{
+        const res = await callWriteProxy(payload);
+        const m = res.match(/row\s+(\d+)/i); const newRow = m ? parseInt(m[1]) : null;
+        const [y,mo,day]=payload.tanggalInspeksi.split('-').map(Number);
+        const ts=new Date(y,mo-1,day,12,0,0).toISOString();
+        const rec = normalizeFromJson([{
+            timestamp: ts, tanggalInspeksi: payload.tanggalInspeksi, lokasi: payload.lokasi, divisi: payload.divisi,
+            engineType: payload.engineType, engineCode: payload.engineCode, irrType: payload.irrType, irrCode: payload.irrCode,
+            damageType: payload.damageType, keterangan: payload.keterangan, sparepart: payload.sparepart,
+            prNumber: payload.prNumber, repairStatus: payload.repairStatus, tingkat: payload.tingkat, __row: newRow
+        }])[0];
+        validateRecord(rec);
+        rawData.unshift(indexRecords([rec])[0]);
+        closeModal('editModal');
+        showToast(newRow?`Laporan tersimpan di spreadsheet (baris ${newRow}).`:'Laporan tersimpan di spreadsheet.','success');
+        applyFilters(); renderQualityBanner();
+        setTimeout(()=>refreshData(true,{silent:true}), 1500);
+    }catch(e){
+        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${escapeHtml(e.message)}</span>`;
+        btn.disabled=false;
+    }
+}
+
 function openEditModal(globalIdx){
     if(!requireWriteEndpoint()) return;
+    fillDatalists();
+    setEditMode('update');
     // globalIdx adalah indeks di filteredData
     const d = filteredData[globalIdx];
     if(!d) return;
@@ -2556,6 +2648,9 @@ async function callWriteProxy(payload){
 }
 
 async function submitEdit(){
+    if(document.getElementById('editMode').value==='create') return submitCreate();
+    const numErrs=validateFormNumbers();
+    if(numErrs.length){ document.getElementById('editMsg').innerHTML=`<span class="text-red-600"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(numErrs[0])}</span>`; return; }
     const rawi = parseInt(document.getElementById('editRowIdx').value);
     const sheetRow = document.getElementById('editSheetRow').value;
     const d = rawData[rawi];
@@ -2715,7 +2810,11 @@ document.addEventListener('DOMContentLoaded',()=>{
             const m=t.match(/\bv(\d+)\b/); const ver=m?+m[1]:0;
             if(!/^ok:/i.test(t) || ver<3){
                 showToast('Write-proxy Apps Script versi lama/tidak valid ('+(t.slice(0,40)||'no response')+'). Edit Tingkat/Status Perbaikan tidak akan tersimpan — deploy ulang scripts/write-proxy.gs (lihat SETUP-EDIT.md).','warning');
+            } else if(ver<4){
+                window.__proxyVersion = ver;
+                showToast('Write-proxy masih v'+ver+'. Fitur "Tambah Laporan" butuh v4 — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
             }
+            window.__proxyVersion = ver;
         }catch(e){}
     })();
 

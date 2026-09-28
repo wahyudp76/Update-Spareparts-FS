@@ -223,3 +223,12 @@ Tiga lapis pengaman agar angka yang salah tulis di spreadsheet tidak muncul jang
 3. **Di dashboard** — banner kuning **"N baris spreadsheet perlu diperiksa"** + toast saat data dimuat, ikon ⚠ pada baris di tab Data Lengkap, dan modal detail (baris sheet, kolom, masalah, nilai yang ditampilkan, tombol perbaiki). Nilai dinormalkan untuk tampilan (`11.095.745` → `11095745`, `32` → `0032`) tetapi tetap ditandai sampai sumbernya diperbaiki.
 
 Yang diperiksa: Nomor PR (8 digit), Kode Engine/Irrigator (4 digit) — pemisah titik/koma, notasi ilmiah, spasi, karakter non-angka, nol di depan hilang; Tingkat Kerusakan & Status Perbaikan di luar pilihan; tahun tanggal tidak wajar; tanggal masa depan; kode tanpa jenis; lokasi kosong; kemungkinan duplikat.
+
+
+## Tambah laporan langsung dari web (write-proxy v4)
+
+Tombol hijau **＋ Tambah Laporan** di header membuka form yang sama dengan Edit. Saat disimpan, dashboard mengirim `action:'create'` ke Apps Script write-proxy yang menambahkan **baris baru di sheet Response** (Timestamp diisi otomatis, kolom kode diformat Teks). Baris langsung tampil di dashboard dan disinkronkan ulang dari sheet 1,5 detik kemudian.
+
+Pengaman: Lokasi, Jenis Kerusakan, dan Tanggal wajib; Nomor PR (8 digit) dan Kode Engine/Irrigator (4 digit) ditolak jika memakai titik/koma atau jumlah digit salah — divalidasi di web **dan** di Apps Script. Form menyediakan saran (autocomplete) lokasi, jenis engine/irrigator, dan jenis kerusakan dari data yang ada.
+
+**Butuh write-proxy v4** — salin `scripts/write-proxy.gs` terbaru ke project Apps Script → Save → Deploy → *Manage deployments* → ✏️ Edit → Version: **New version** → Deploy (URL tidak berubah). Dashboard akan menampilkan peringatan jika proxy masih v3.

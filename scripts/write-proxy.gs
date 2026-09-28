@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v3 — dukung kolom Tingkat Kerusakan & Status Perbaikan)
+ * PG2 Irrigation Dashboard — Write Proxy  (v4 — tambah action 'create': catat laporan baru dari web)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -24,13 +24,14 @@
  * Endpoint:
  *   GET  ?action=ping    → "pong"           (server hidup)
  *   GET  ?action=check   → "ok: sheet …"    (server hidup + BISA baca sheet)
+ *   POST {action:'create', ...}  → "ok: created row N"
  *   POST {action:'update', ...}  → "ok: updated row N"
  *   POST {action:'delete', ...}  → "ok: deleted row N"
  *   Semua error → "error: <pesan>" (teks, bukan HTML) dengan HTTP 200.
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v3';
+var VERSION    = 'v4';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -73,7 +74,7 @@ function doPost(e) {
 
     var lastRow = sheet.getLastRow();
     var lastCol = sheet.getLastColumn();
-    if (lastRow < 2) return _text('error: Sheet kosong');
+    if (lastRow < 1 || lastCol < 1) return _text('error: Sheet tidak punya header');
     var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
     var headerIdx = {};
     headers.forEach(function (h, i) { headerIdx[_norm(h)] = i; });
@@ -87,6 +88,65 @@ function doPost(e) {
     }
 
     var tsCol = col('Timestamp'), tglCol = col('Tanggal Inspeksi'), lokCol = col('Lokasi'), dmgCol = col('Jenis Kerusakan');
+
+    // Definisi kolom yang bisa ditulis (dipakai create & update)
+    var FIELDS = [
+      { key: 'Tanggal Inspeksi',            prop: 'tanggalInspeksi', type: 'date' },
+      { key: 'Lokasi',                      prop: 'lokasi' },
+      { key: 'Divisi',                      prop: 'divisi' },
+      { key: 'Jenis Engine',                prop: 'engineType' },
+      { key: 'Kode Engine',                 prop: 'engineCode',  type: 'code', digits: 4 },
+      { key: 'Jenis Irrigator',             prop: 'irrType' },
+      { key: 'Kode Irrigator',              prop: 'irrCode',     type: 'code', digits: 4 },
+      { key: 'Jenis Kerusakan',             prop: 'damageType' },
+      { key: 'Keterangan Kerusakan',        prop: 'keterangan' },
+      { key: 'Spareparts Yang Dibutuhkan',  prop: 'sparepart' },
+      { key: 'Nomor PR / Notifikasi',       prop: 'prNumber',    type: 'code', digits: 8 },
+      { key: 'Tingkat Kerusakan',           prop: 'tingkat' },
+      { key: 'Status Perbaikan',            prop: 'repairStatus' }
+    ];
+    // Validasi angka: tolak titik/koma sebagai pemisah agar angka tidak normal tidak masuk sheet
+    function checkCode(f, v) {
+      v = String(v == null ? '' : v).trim();
+      if (!v || v === '-') return null;
+      if (/[.,]/.test(v)) return f.key + ' "' + v + '" memakai titik/koma — tulis angka tanpa pemisah';
+      if (!/^\d+$/.test(v)) return f.key + ' "' + v + '" harus berupa angka saja';
+      if (f.digits && v.length !== f.digits) return f.key + ' "' + v + '" harus ' + f.digits + ' digit';
+      return null;
+    }
+    function toCell(f, v) {
+      if (v === undefined) return undefined;
+      v = (v === '-' || v === null) ? '' : v;
+      if (f.type === 'date') {
+        if (!v) return '';
+        var m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0) : v;
+      }
+      return v;
+    }
+
+    if (action === 'create') {
+      if (!body.lokasi || body.lokasi === '-') return _text('error: Lokasi wajib diisi');
+      if (!body.damageType || body.damageType === '-') return _text('error: Jenis Kerusakan wajib diisi');
+      var errs = [];
+      FIELDS.forEach(function (f) { if (f.type === 'code') { var er = checkCode(f, body[f.prop]); if (er) errs.push(er); } });
+      if (errs.length) return _text('error: ' + errs.join('; '));
+      var rowVals = new Array(lastCol); for (var k = 0; k < lastCol; k++) rowVals[k] = '';
+      if (tsCol >= 0) rowVals[tsCol] = new Date();
+      FIELDS.forEach(function (f) {
+        var c = col(f.key); if (c < 0) return;
+        var v = toCell(f, body[f.prop]); if (v === undefined) return;
+        rowVals[c] = (f.type === 'code' && v !== '') ? String(v) : v;
+      });
+      var newRow = lastRow + 1;
+      sheet.getRange(newRow, 1, 1, lastCol).setValues([rowVals]);
+      // Kolom kode → format Teks supaya "0032" tidak berubah jadi 32 dan tidak muncul notasi ilmiah
+      FIELDS.forEach(function (f) { if (f.type === 'code') { var c = col(f.key); if (c >= 0) { var cell = sheet.getRange(newRow, c + 1); cell.setNumberFormat('@'); if (rowVals[c] !== '') cell.setValue(String(rowVals[c])); } } });
+      SpreadsheetApp.flush();
+      return _text('ok: created row ' + newRow);
+    }
+
+    if (lastRow < 2) return _text('error: Sheet kosong');
     var data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
 
     // Verifikasi bahwa baris kandidat memang baris yang dimaksud (lokasi + jenis kerusakan

@@ -167,6 +167,10 @@
                         <span id="syncTime">--:--</span>
                     </div>
                     <button onclick="openSetupModal()" id="settingsBtn" title="Pengaturan Write Endpoint" class="hidden w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500"><i class="fas fa-plug text-xs"></i></button>
+                    <button onclick="openCreateModal()" id="addBtn" title="Catat laporan kerusakan baru" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
+                        <i class="fas fa-plus text-[11px]"></i>
+                        <span class="hidden sm:inline">Tambah Laporan</span>
+                    </button>
                     <button onclick="refreshData(true)" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
                         <i class="fas fa-sync-alt text-[11px]" id="refreshIcon"></i>
                         <span class="hidden sm:inline">Refresh</span>
@@ -699,14 +703,16 @@
     <div id="editModal" class="modal-backdrop">
         <div class="modal p-5">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-pen-to-square text-blue-600 mr-2"></i>Edit Laporan <span id="editRowLabel" class="text-sm font-normal text-slate-500"></span></h3>
+                <h3 class="display-font font-bold text-slate-900 text-lg"><i id="editModalIcon" class="fas fa-pen-to-square text-blue-600 mr-2"></i><span id="editModalTitle">Edit Laporan</span> <span id="editRowLabel" class="text-sm font-normal text-slate-500"></span></h3>
                 <button onclick="closeModal('editModal')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500"><i class="fas fa-times"></i></button>
             </div>
             <input type="hidden" id="editRowIdx">
             <input type="hidden" id="editSheetRow">
+            <input type="hidden" id="editMode" value="update">
+            <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
-                <div><label class="form-label">Lokasi</label><input type="text" id="f_lokasi" class="form-input" placeholder="104I"></div>
+                <div><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input" placeholder="104I" list="dl_lokasi"><datalist id="dl_lokasi"></datalist></div>
                 <div><label class="form-label">Divisi</label>
                     <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
                 </div>
@@ -716,14 +722,14 @@
                 <div><label class="form-label">Tingkat Kerusakan</label>
                     <select id="f_tingkat" class="form-input"><option value="">— belum dinilai —</option><option>Berat</option><option>Sedang</option><option>Ringan</option></select>
                 </div>
-                <div><label class="form-label">Jenis Engine</label><input type="text" id="f_engineType" class="form-input" placeholder="DEM / DEC / SPC"></div>
-                <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032"></div>
-                <div><label class="form-label">Jenis Irrigator</label><input type="text" id="f_irrType" class="form-input" placeholder="BTI"></div>
-                <div><label class="form-label">Kode Irrigator</label><input type="text" id="f_irrCode" class="form-input" placeholder="0032"></div>
-                <div class="full"><label class="form-label">Jenis Kerusakan</label><input type="text" id="f_damageType" class="form-input"></div>
+                <div><label class="form-label">Jenis Engine</label><input type="text" id="f_engineType" class="form-input" placeholder="DEM / DEC / SPC" list="dl_engineType"><datalist id="dl_engineType"></datalist></div>
+                <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
+                <div><label class="form-label">Jenis Irrigator</label><input type="text" id="f_irrType" class="form-input" placeholder="BTI" list="dl_irrType"><datalist id="dl_irrType"></datalist></div>
+                <div><label class="form-label">Kode Irrigator</label><input type="text" id="f_irrCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
+                <div class="full"><label class="form-label">Jenis Kerusakan <span class="text-red-500">*</span></label><input type="text" id="f_damageType" class="form-input" list="dl_damageType"><datalist id="dl_damageType"></datalist></div>
                 <div class="full"><label class="form-label">Keterangan Kerusakan</label><textarea id="f_keterangan" class="form-input textarea"></textarea></div>
                 <div class="full"><label class="form-label">Spareparts Yang Dibutuhkan</label><textarea id="f_sparepart" class="form-input textarea" placeholder="Pisahkan dengan ; untuk beberapa item"></textarea></div>
-                <div class="full"><label class="form-label">Nomor PR / Notifikasi</label><input type="text" id="f_prNumber" class="form-input" placeholder="Biarkan kosong jika belum ada"></div>
+                <div class="full"><label class="form-label">Nomor PR / Notifikasi</label><input type="text" id="f_prNumber" class="form-input" placeholder="8 digit, kosongkan jika belum ada" inputmode="numeric"></div>
             </div>
             <div class="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-slate-100">
                 <div id="editMsg" class="text-xs"></div>
@@ -771,7 +777,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v6').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v7').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
