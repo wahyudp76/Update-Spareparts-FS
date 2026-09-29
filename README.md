@@ -232,3 +232,14 @@ Tombol hijau **＋ Tambah Laporan** di header membuka form yang sama dengan Edit
 Pengaman: Lokasi, Jenis Kerusakan, dan Tanggal wajib; Nomor PR (8 digit) dan Kode Engine/Irrigator (4 digit) ditolak jika memakai titik/koma atau jumlah digit salah — divalidasi di web **dan** di Apps Script. Form menyediakan saran (autocomplete) lokasi, jenis engine/irrigator, dan jenis kerusakan dari data yang ada.
 
 **Butuh write-proxy v4** — salin `scripts/write-proxy.gs` terbaru ke project Apps Script → Save → Deploy → *Manage deployments* → ✏️ Edit → Version: **New version** → Deploy (URL tidak berubah). Dashboard akan menampilkan peringatan jika proxy masih v3.
+
+## Tab Spareparts (analisa kebutuhan sparepart)
+
+Dibangun murni dari `filteredData` (mengikuti filter global) — tidak menyentuh alur sync/rekonsiliasi. Item dipecah dari kolom *Spareparts Yang Dibutuhkan* dengan pemisah `;`, disatukan tanpa membedakan huruf besar/kecil (variasi penulisan ditampilkan sebagai catatan). Isi tab:
+
+- **KPI**: jenis sparepart, masih dibutuhkan (laporan belum selesai), belum ada PR, urgensi kritis, sudah terpenuhi.
+- **Paling sering dibutuhkan** (top 12, terbuka vs terpenuhi) dan **kebutuhan per divisi** (top 8 × divisi).
+- **Spareparts Urgent**: skor = Σ bobot tingkat kerusakan kebutuhan terbuka (Berat 3/Sedang 2/Ringan 1) + umur laporan tertua (maks +6) + 1,5 per kebutuhan tanpa PR + 1 per lokasi tambahan. Kritis ≥ 9, Tinggi ≥ 5.
+- **Kebutuhan teratas per divisi**, **per jenis aset** (engine/irigator), **matriks sparepart × jenis kerusakan**, **kebutuhan berulang di lokasi yang sama**.
+- **Katalog** (urut total/terbuka/skor/terbaru/nama, pencarian, "hanya yang terbuka"), klik baris → daftar laporan terkait + tombol edit.
+- **Unduh ringkasan CSV** dan peringatan jumlah laporan terbuka yang belum mencantumkan sparepart.

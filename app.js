@@ -149,6 +149,257 @@ function openQualityModal(){
     openModal('typeDetailModal');
 }
 
+// ======================================================
+// TAB SPAREPARTS — analisa kebutuhan sparepart
+// Sumber: kolom "Spareparts Yang Dibutuhkan" (dipisah ";"). Bekerja murni di atas
+// filteredData (tidak menyentuh alur sync) sehingga aman terhadap refresh/rekonsiliasi.
+// ======================================================
+let spOpenOnly = false, spSearch = '', spSort = 'total';
+let __spChartData = null;
+
+// Pecah & normalkan daftar sparepart satu laporan → [{key, name}]
+function splitSpareparts(str){
+    if(!str || str==='-') return [];
+    const out=[]; const seen=new Set();
+    String(str).split(/[;\n]+/).forEach(raw=>{
+        let name = raw.replace(/\s+/g,' ').trim().replace(/^[-•*]\s*/,'').replace(/[.,;]+$/,'');
+        if(!name || name==='-') return;
+        const key = name.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+        if(!key || seen.has(key)) return; // item ganda dalam satu laporan dihitung sekali
+        seen.add(key); out.push({key, name});
+    });
+    return out;
+}
+const _spDispName = (variants) => { // pilih ejaan terbanyak; seri → yang berawalan huruf kapital
+    let best=null, bn=-1; for(const [n,c] of Object.entries(variants)){ if(c>bn || (c===bn && /^[A-Z]/.test(n) && !/^[A-Z]/.test(best))){ best=n; bn=c; } } return best||'';
+};
+
+function buildSparepartStats(){
+    const src = filteredData;
+    const items = {}; // key → agregat
+    let reportsWithSp=0, totalMentions=0, reportsNeedNoSp=0;
+    src.forEach(d=>{
+        const parts = splitSpareparts(d.sparepart);
+        if(!parts.length){ if(isOpen(d)) reportsNeedNoSp++; return; }
+        reportsWithSp++;
+        const lv = effectiveTingkat(d) || 'Ringan';
+        const w = (SEVERITY_RULES[lv]||SEVERITY_RULES.Ringan).weight;
+        const open = isOpen(d);
+        const age = daysSince(d.timestamp);
+        parts.forEach(({key,name})=>{
+            totalMentions++;
+            const it = items[key] || (items[key]={key, variants:{}, total:0, open:0, done:0, noPr:0, withPr:0, berat:0, sedang:0, ringan:0,
+                weight:0, oldestOpen:0, lastTs:0, firstTs:Infinity, byDiv:{}, byLok:{}, byDmg:{}, byAsset:{}, lokOpen:{}, records:[]});
+            it.variants[name]=(it.variants[name]||0)+1;
+            it.total++; it.records.push(d);
+            if(open){ it.open++; it.weight += w; if(age>it.oldestOpen) it.oldestOpen=age; if(d.prNumber) it.withPr++; else it.noPr++; it.lokOpen[d.lokasi]=(it.lokOpen[d.lokasi]||0)+1; }
+            else it.done++;
+            if(lv==='Berat') it.berat++; else if(lv==='Sedang') it.sedang++; else it.ringan++;
+            const t=d.__t||new Date(d.timestamp).getTime(); if(t>it.lastTs) it.lastTs=t; if(t<it.firstTs) it.firstTs=t;
+            const dv=d.divisi&&d.divisi!=='-'?d.divisi:'—'; it.byDiv[dv]=(it.byDiv[dv]||0)+1;
+            const lk=d.lokasi&&d.lokasi!=='-'?d.lokasi:'—'; it.byLok[lk]=(it.byLok[lk]||0)+1;
+            const dm=d.damageType&&d.damageType!=='-'?d.damageType:'—'; it.byDmg[dm]=(it.byDmg[dm]||0)+1;
+            const as=(d.engineType&&d.engineType!=='-')?`Engine ${d.engineType}`:(d.irrType&&d.irrType!=='-')?`Irigator ${d.irrType}`:assetCategory(d); it.byAsset[as]=(it.byAsset[as]||0)+1;
+        });
+    });
+    const list = Object.values(items).map(it=>{
+        it.name = _spDispName(it.variants);
+        const lokCount = Object.keys(it.lokOpen).length;
+        // Skor urgensi: bobot tingkat kebutuhan terbuka + umur (maks +6) + tanpa PR + sebaran lokasi
+        it.score = it.open ? Math.round((it.weight + Math.min(6, it.oldestOpen/10) + it.noPr*1.5 + Math.max(0,lokCount-1)*1.0)*10)/10 : 0;
+        it.urgency = it.score>=9 ? 'Kritis' : it.score>=5 ? 'Tinggi' : it.score>0 ? 'Sedang' : 'Selesai';
+        return it;
+    });
+    return { list, reportsWithSp, totalMentions, reportsNeedNoSp, reports: src.length };
+}
+function spToggleOpenOnly(v){ spOpenOnly=!!v; renderSparepartsTab(); renderCharts(); }
+function spSetSearch(v){ spSearch=(v||'').toLowerCase().trim(); clearTimeout(spSetSearch._t); spSetSearch._t=setTimeout(()=>renderSparepartsTab(false),150); }
+function spSetSort(v){ spSort=v; renderSparepartsTab(false); }
+const _spUrgBadge = u => ({Kritis:'bg-red-100 text-red-700',Tinggi:'bg-orange-100 text-orange-700',Sedang:'bg-amber-100 text-amber-800',Selesai:'bg-emerald-100 text-emerald-700'}[u]||'bg-slate-100 text-slate-600');
+const _spTop = (obj,n=3) => Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);
+
+function renderSparepartsTab(rebuildCharts=true){
+    const stats = buildSparepartStats();
+    let list = stats.list;
+    if(spOpenOnly) list = list.filter(i=>i.open>0);
+    const listAll = list;
+    if(spSearch) list = list.filter(i=>i.name.toLowerCase().includes(spSearch) || Object.keys(i.variants).some(v=>v.toLowerCase().includes(spSearch)));
+    const cnt = f => listAll.reduce((a,i)=>a+i[f],0);
+    const openItems = listAll.filter(i=>i.open>0).length;
+    const critical = listAll.filter(i=>i.urgency==='Kritis').length;
+    const noPr = cnt('noPr');
+
+    // KPI
+    const k=document.getElementById('spKpis');
+    if(k) k.innerHTML = [
+        {l:'Jenis Sparepart', v:listAll.length, s:`${stats.totalMentions} permintaan · ${stats.reportsWithSp} laporan`, c:'text-teal-700', i:'fa-gears'},
+        {l:'Masih Dibutuhkan', v:cnt('open'), s:`${openItems} jenis, belum selesai diperbaiki`, c:'text-amber-700', i:'fa-hourglass-half'},
+        {l:'Belum Ada PR', v:noPr, s:'kebutuhan terbuka tanpa nomor PR', c:'text-red-700', i:'fa-file-circle-exclamation'},
+        {l:'Urgensi Kritis', v:critical, s:'jenis sparepart skor ≥ 9', c:'text-red-700', i:'fa-fire'},
+        {l:'Sudah Terpenuhi', v:cnt('done'), s:'permintaan pada laporan selesai', c:'text-emerald-700', i:'fa-circle-check'},
+    ].map(x=>`<div class="card p-3"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1"><i class="fas ${x.i} ${x.c}"></i>${x.l}</div><div class="display-font font-bold text-2xl ${x.c} mt-1">${x.v.toLocaleString('id-ID')}</div><div class="text-[10px] text-slate-500">${x.s}</div></div>`).join('');
+
+    // Data chart
+    const topN = [...listAll].sort((a,b)=>b.total-a.total||b.open-a.open).slice(0,12);
+    const top8 = topN.slice(0,8);
+    const divs = [...new Set(filteredData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort();
+    __spChartData = { topN, top8, divs };
+    const ts=document.getElementById('spTopSub'); if(ts) ts.textContent = topN.length?`Top ${topN.length} berdasarkan jumlah laporan · ${spOpenOnly?'hanya kebutuhan terbuka':'terbuka + selesai'}`:'Belum ada data sparepart pada filter aktif';
+
+    // Urgent table
+    const urgent = listAll.filter(i=>i.open>0).sort((a,b)=>b.score-a.score||b.open-a.open).slice(0,15);
+    const ut=document.getElementById('spUrgentTable');
+    if(ut) ut.innerHTML = urgent.length ? `<thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200">
+        <th class="text-left py-2 pr-2">#</th><th class="text-left py-2 pr-2">Sparepart</th><th class="text-center py-2 px-2">Urgensi</th><th class="text-right py-2 px-2">Skor</th><th class="text-right py-2 px-2">Terbuka</th><th class="text-center py-2 px-2">Tingkat (B/S/R)</th><th class="text-right py-2 px-2">Tanpa PR</th><th class="text-right py-2 px-2">Tertua</th><th class="text-left py-2 px-2">Divisi</th><th class="text-left py-2 px-2">Lokasi</th><th class="py-2"></th></tr></thead><tbody>` +
+        urgent.map((i,ix)=>`<tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer" onclick="openSparepartDetail('${escapeHtml(i.key)}')">
+            <td class="py-2 pr-2 text-slate-400">${ix+1}</td>
+            <td class="py-2 pr-2 font-semibold text-slate-800">${escapeHtml(i.name)}</td>
+            <td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${_spUrgBadge(i.urgency)}">${i.urgency}</span></td>
+            <td class="py-2 px-2 text-right font-mono font-bold text-slate-700">${i.score}</td>
+            <td class="py-2 px-2 text-right font-semibold text-amber-700">${i.open}<span class="text-slate-400 font-normal">/${i.total}</span></td>
+            <td class="py-2 px-2 text-center text-[10px]"><span class="text-red-600 font-bold">${i.berat}</span> / <span class="text-amber-600 font-bold">${i.sedang}</span> / <span class="text-emerald-600 font-bold">${i.ringan}</span></td>
+            <td class="py-2 px-2 text-right ${i.noPr?'text-red-600 font-semibold':'text-slate-400'}">${i.noPr}</td>
+            <td class="py-2 px-2 text-right text-slate-600">${i.oldestOpen} hr</td>
+            <td class="py-2 px-2 text-slate-600">${_spTop(i.byDiv,3).map(([d,c])=>`<span class="inline-block px-1.5 rounded bg-slate-100 mr-0.5" style="color:${DIV_COLORS[d]||'#475569'}">${escapeHtml(d)} ${c}</span>`).join('')}</td>
+            <td class="py-2 px-2 text-slate-600 text-[11px]">${_spTop(i.lokOpen,4).map(([l,c])=>`${escapeHtml(l)}${c>1?`×${c}`:''}`).join(', ')}${Object.keys(i.lokOpen).length>4?` +${Object.keys(i.lokOpen).length-4}`:''}</td>
+            <td class="py-2 text-right text-slate-400"><i class="fas fa-chevron-right text-[10px]"></i></td></tr>`).join('') + '</tbody>'
+        : '<tbody><tr><td class="py-6 text-center text-slate-400 italic text-sm">Tidak ada kebutuhan sparepart yang masih terbuka pada filter aktif 🎉</td></tr></tbody>';
+
+    // Per divisi
+    const bd=document.getElementById('spByDiv');
+    if(bd){
+        const byDiv={}; listAll.forEach(i=>Object.entries(i.byDiv).forEach(([d,c])=>{ (byDiv[d]=byDiv[d]||[]).push({name:i.name,key:i.key,c,open:Math.min(i.open,c)}); }));
+        const dvs=Object.keys(byDiv).sort((a,b)=>(divs.indexOf(a)>=0?divs.indexOf(a):99)-(divs.indexOf(b)>=0?divs.indexOf(b):99)||a.localeCompare(b));
+        bd.innerHTML = dvs.length ? dvs.map(dv=>{ const arr=byDiv[dv].sort((a,b)=>b.c-a.c).slice(0,5); const tot=byDiv[dv].reduce((a,x)=>a+x.c,0); const mx=arr[0].c;
+            return `<div class="rounded-xl border border-slate-100 p-3"><div class="flex items-center justify-between mb-2"><span class="font-bold text-sm" style="color:${DIV_COLORS[dv]||'#475569'}">${escapeHtml(dv)}</span><span class="text-[10px] text-slate-400">${tot} permintaan</span></div>
+            ${arr.map(x=>`<div class="mb-1.5 cursor-pointer" onclick="openSparepartDetail('${escapeHtml(x.key)}')"><div class="flex justify-between text-[11px]"><span class="text-slate-700 truncate pr-2">${escapeHtml(x.name)}</span><span class="font-semibold text-slate-800">${x.c}</span></div><div class="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(x.c/mx*100)}%;background:${DIV_COLORS[dv]||'#475569'}"></div></div></div>`).join('')}</div>`; }).join('')
+        : '<div class="text-slate-400 italic text-sm col-span-3">Belum ada data</div>';
+    }
+    // Per aset
+    const ba=document.getElementById('spByAsset');
+    if(ba){
+        const byAs={}; listAll.forEach(i=>Object.entries(i.byAsset).forEach(([a,c])=>{ (byAs[a]=byAs[a]||[]).push({name:i.name,key:i.key,c}); }));
+        const ents=Object.entries(byAs).map(([a,arr])=>[a,arr.sort((x,y)=>y.c-x.c),arr.reduce((s,x)=>s+x.c,0)]).sort((x,y)=>y[2]-x[2]).slice(0,8);
+        ba.innerHTML = ents.length ? ents.map(([a,arr,tot])=>`<div class="flex items-start gap-2 text-xs border-b border-slate-100 pb-2 last:border-0"><div class="w-28 shrink-0 font-semibold text-slate-800">${escapeHtml(a)}<div class="text-[10px] text-slate-400 font-normal">${tot} permintaan</div></div><div class="flex flex-wrap gap-1">${arr.slice(0,6).map(x=>`<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] cursor-pointer hover:bg-teal-50" onclick="openSparepartDetail('${escapeHtml(x.key)}')">${escapeHtml(x.name)} <b>${x.c}</b></span>`).join('')}${arr.length>6?`<span class="text-[10px] text-slate-400">+${arr.length-6}</span>`:''}</div></div>`).join('') : '<div class="text-slate-400 italic text-sm">Belum ada data</div>';
+    }
+    // Matriks sparepart × jenis kerusakan
+    const mx=document.getElementById('spMatrix');
+    if(mx){
+        const rows=[...listAll].sort((a,b)=>b.total-a.total).slice(0,10);
+        const dmgTot={}; rows.forEach(i=>Object.entries(i.byDmg).forEach(([d,c])=>dmgTot[d]=(dmgTot[d]||0)+c));
+        const cols=Object.entries(dmgTot).sort((a,b)=>b[1]-a[1]).slice(0,6).map(e=>e[0]);
+        const max=Math.max(1,...rows.flatMap(i=>cols.map(c=>i.byDmg[c]||0)));
+        mx.innerHTML = rows.length ? `<table class="w-full text-[11px]"><thead><tr class="text-[10px] uppercase text-slate-400"><th class="text-left py-1.5 pr-2">Sparepart</th>${cols.map(c=>`<th class="text-center py-1.5 px-1 whitespace-nowrap">${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(i=>`<tr class="border-t border-slate-100"><td class="py-1.5 pr-2 font-medium text-slate-700 whitespace-nowrap">${escapeHtml(i.name)}</td>${cols.map(c=>{const v=i.byDmg[c]||0; const a=v?0.15+0.75*v/max:0; return `<td class="text-center py-1.5 px-1"><span class="inline-block min-w-[26px] px-1 rounded font-semibold" style="background:rgba(13,148,136,${a});color:${a>0.5?'#fff':'#0f766e'}">${v||'·'}</span></td>`;}).join('')}</tr>`).join('')}</tbody></table>` : '<div class="text-slate-400 italic text-sm">Belum ada data</div>';
+    }
+    // Kebutuhan berulang per lokasi
+    const rc=document.getElementById('spRecurring');
+    if(rc){
+        const rec=[]; listAll.forEach(i=>Object.entries(i.byLok).forEach(([l,c])=>{ if(c>=2 && l!=='—') rec.push({name:i.name,key:i.key,lok:l,c,open:i.lokOpen[l]||0}); }));
+        rec.sort((a,b)=>b.c-a.c||b.open-a.open);
+        rc.innerHTML = rec.length ? rec.slice(0,10).map(r=>`<div class="flex items-center justify-between text-xs bg-slate-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-purple-50" onclick="openSparepartDetail('${escapeHtml(r.key)}')"><div><span class="font-semibold text-slate-800">${escapeHtml(r.name)}</span> <span class="text-slate-400">di</span> <span class="font-semibold text-blue-700">${escapeHtml(r.lok)}</span></div><div class="flex items-center gap-2"><span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">${r.c}×</span>${r.open?`<span class="text-[10px] text-amber-700">${r.open} terbuka</span>`:'<span class="text-[10px] text-emerald-700">selesai</span>'}</div></div>`).join('') : '<div class="text-slate-400 italic text-sm">Tidak ada sparepart yang diminta berulang di lokasi yang sama</div>';
+    }
+    // Katalog
+    const sorters={ total:(a,b)=>b.total-a.total||b.open-a.open, open:(a,b)=>b.open-a.open||b.total-a.total, score:(a,b)=>b.score-a.score||b.total-a.total, recent:(a,b)=>b.lastTs-a.lastTs, name:(a,b)=>a.name.localeCompare(b.name,'id') };
+    const cat=[...list].sort(sorters[spSort]||sorters.total);
+    const ct=document.getElementById('spCatalogTable'), nd=document.getElementById('spNoData');
+    if(ct){
+        ct.innerHTML = cat.length ? `<thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-2 pr-2">Sparepart</th><th class="text-right py-2 px-2">Total</th><th class="text-right py-2 px-2">Terbuka</th><th class="text-right py-2 px-2">Selesai</th><th class="text-center py-2 px-2">Urgensi</th><th class="text-left py-2 px-2">Divisi</th><th class="text-left py-2 px-2">Jenis Kerusakan Utama</th><th class="text-left py-2 px-2">Terakhir Diminta</th><th class="text-left py-2 px-2">Variasi Penulisan</th></tr></thead><tbody>` +
+            cat.map(i=>`<tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer" onclick="openSparepartDetail('${escapeHtml(i.key)}')">
+                <td class="py-2 pr-2 font-semibold text-slate-800">${escapeHtml(i.name)}</td>
+                <td class="py-2 px-2 text-right font-bold">${i.total}</td>
+                <td class="py-2 px-2 text-right ${i.open?'text-amber-700 font-semibold':'text-slate-400'}">${i.open}</td>
+                <td class="py-2 px-2 text-right text-emerald-700">${i.done}</td>
+                <td class="py-2 px-2 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${_spUrgBadge(i.urgency)}">${i.urgency}</span></td>
+                <td class="py-2 px-2 text-slate-600">${_spTop(i.byDiv,3).map(([d,c])=>`${escapeHtml(d)} ${c}`).join(' · ')}</td>
+                <td class="py-2 px-2 text-slate-600">${_spTop(i.byDmg,2).map(([d,c])=>`${escapeHtml(d)} (${c})`).join(', ')}</td>
+                <td class="py-2 px-2 text-slate-500 whitespace-nowrap">${i.lastTs?fmtDateShort(i.lastTs):'—'}</td>
+                <td class="py-2 px-2 text-[10px] text-slate-400">${Object.keys(i.variants).length>1?`<span class="text-amber-700" title="${escapeHtml(Object.keys(i.variants).join(' | '))}"><i class="fas fa-spell-check mr-1"></i>${Object.keys(i.variants).length} variasi</span>`:'—'}</td></tr>`).join('') + '</tbody>' : '';
+        if(nd){ nd.classList.toggle('hidden', cat.length>0); nd.textContent = spSearch?`Tidak ada sparepart yang cocok dengan "${spSearch}"`:'Belum ada data sparepart pada filter aktif'; }
+    }
+    // Gap: laporan terbuka tanpa daftar sparepart
+    const gap=document.getElementById('spGap');
+    if(gap){
+        const n=stats.reportsNeedNoSp;
+        gap.classList.toggle('hidden', !n);
+        if(n) gap.innerHTML = `<div class="flex items-start gap-3 text-xs text-amber-900"><i class="fas fa-circle-info text-amber-600 mt-0.5"></i><div><b>${n} laporan yang belum selesai tidak mencantumkan sparepart.</b> Kebutuhan sparepart untuk laporan tersebut belum masuk analisa ini — lengkapi kolom <i>Spareparts Yang Dibutuhkan</i> di spreadsheet atau lewat tombol edit di tab Data Lengkap agar perencanaan pengadaan akurat.</div></div>`;
+    }
+    if(rebuildCharts) renderSparepartCharts();
+}
+
+function spBarOpts(extra){
+    const base = mkOpts(true,{indexAxis:'y'});
+    base.plugins.legend = {display:true,position:'top',labels:{boxWidth:10,font:{size:10}}};
+    base.scales = {x:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true},
+                   y:{stacked:true,grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},autoSkip:false},border:{display:false}}};
+    return Object.assign(base, extra||{});
+}
+function renderSparepartCharts(){
+    dk('spTop'); dk('spDiv');
+    if(!__spChartData) return;
+    const {topN, top8, divs} = __spChartData;
+    const tEl=document.getElementById('spTopChart');
+    if(tEl && isElVisible(tEl) && topN.length){
+        charts.spTop = new Chart(tEl.getContext('2d'),{type:'bar',data:{labels:topN.map(i=>i.name),datasets:[
+            {label:'Masih dibutuhkan',data:topN.map(i=>i.open),backgroundColor:'#f59e0b',stack:'s',borderRadius:3,maxBarThickness:18},
+            {label:'Sudah terpenuhi',data:topN.map(i=>i.done),backgroundColor:'#14b8a6',stack:'s',borderRadius:3,maxBarThickness:18}]},
+            options:spBarOpts({
+                onClick:(e,els)=>{ if(els.length) openSparepartDetail(topN[els[0].index].key); }})});
+    }
+    const dEl=document.getElementById('spDivChart');
+    if(dEl && isElVisible(dEl) && top8.length && divs.length){
+        const CC=['#2563eb','#f59e0b','#10b981','#8b5cf6','#ec4899','#64748b'];
+        charts.spDiv = new Chart(dEl.getContext('2d'),{type:'bar',data:{labels:top8.map(i=>i.name),datasets:divs.map((dv,ix)=>({label:dv,data:top8.map(i=>i.byDiv[dv]||0),backgroundColor:DIV_COLORS[dv]||CC[ix%CC.length],stack:'s',borderRadius:3,maxBarThickness:18}))},
+            options:spBarOpts({
+                onClick:(e,els)=>{ if(els.length) openSparepartDetail(top8[els[0].index].key); }})});
+    }
+}
+
+function openSparepartDetail(key){
+    const it = buildSparepartStats().list.find(i=>i.key===key);
+    const modal=document.getElementById('typeDetailModal'); if(!modal || !it) return;
+    const recs=[...it.records].sort((a,b)=>(isOpen(b)-isOpen(a))||(b.__t||0)-(a.__t||0));
+    modal.querySelector('.modal').innerHTML = `
+        <div class="p-5 text-white" style="background:linear-gradient(135deg,#0d9488,#0f766e)">
+            <div class="flex items-start justify-between gap-3">
+                <div><div class="text-[10px] uppercase tracking-widest font-semibold opacity-80">Detail Sparepart</div>
+                <h3 class="display-font font-bold text-2xl leading-tight">${escapeHtml(it.name)}</h3>
+                <div class="text-[11px] opacity-90 mt-1">${it.total} permintaan · ${it.open} masih terbuka · ${it.done} selesai · skor urgensi <b>${it.score}</b> (${it.urgency})${Object.keys(it.variants).length>1?` · ditulis sebagai: ${escapeHtml(Object.keys(it.variants).join(', '))}`:''}</div></div>
+                <button onclick="closeModal('typeDetailModal')" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <div class="p-5">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-xs">
+                <div class="bg-slate-50 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase">Divisi</div>${_spTop(it.byDiv,3).map(([d,c])=>`<div><b style="color:${DIV_COLORS[d]||'#475569'}">${escapeHtml(d)}</b> ${c}</div>`).join('')||'—'}</div>
+                <div class="bg-slate-50 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase">Lokasi teratas</div>${_spTop(it.byLok,3).map(([d,c])=>`<div><b>${escapeHtml(d)}</b> ${c}</div>`).join('')||'—'}</div>
+                <div class="bg-slate-50 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase">Jenis kerusakan</div>${_spTop(it.byDmg,3).map(([d,c])=>`<div><b>${escapeHtml(d)}</b> ${c}</div>`).join('')||'—'}</div>
+                <div class="bg-slate-50 rounded-lg p-2"><div class="text-[10px] text-slate-400 uppercase">Aset</div>${_spTop(it.byAsset,3).map(([d,c])=>`<div><b>${escapeHtml(d)}</b> ${c}</div>`).join('')||'—'}</div>
+            </div>
+            <div class="overflow-x-auto"><table class="w-full text-xs">
+                <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5 pr-2">Tanggal</th><th class="text-left py-1.5 pr-2">Lokasi</th><th class="text-left py-1.5 pr-2">Unit</th><th class="text-left py-1.5 pr-2">Kerusakan</th><th class="text-left py-1.5 pr-2">Tingkat</th><th class="text-left py-1.5 pr-2">Status</th><th class="py-1.5"></th></tr></thead>
+                <tbody>${recs.map(d=>`<tr class="border-b border-slate-100 last:border-0 align-top">
+                    <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-slate-400">${isOpen(d)?daysSince(d.timestamp)+' hari':''}</div></td>
+                    <td class="py-2 pr-2 font-semibold text-blue-700">${escapeHtml(d.lokasi)}<div class="text-[10px] text-slate-400 font-normal">${escapeHtml(d.divisi)}</div></td>
+                    <td class="py-2 pr-2 text-slate-600">${escapeHtml(d.engine!=='-'?d.engine:d.irrigator)}</td>
+                    <td class="py-2 pr-2 text-slate-700">${escapeHtml(d.damageType)}<div class="text-[10px] text-slate-400">${escapeHtml((d.keterangan||'').slice(0,80))}</div></td>
+                    <td class="py-2 pr-2">${tingkatBadge(effectiveTingkat(d))}</td>
+                    <td class="py-2 pr-2">${statusBadge(d)}</td>
+                    <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</td>
+                </tr>`).join('')}</tbody>
+            </table></div>
+        </div>`;
+    openModal('typeDetailModal');
+}
+
+function spExportCsv(){
+    const list=buildSparepartStats().list.sort((a,b)=>b.score-a.score||b.total-a.total);
+    const esc=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
+    const head=['Sparepart','Urgensi','Skor','Total Permintaan','Masih Terbuka','Selesai','Tanpa PR','Berat','Sedang','Ringan','Umur Terbuka Tertua (hari)','Divisi','Lokasi (terbuka)','Jenis Kerusakan','Terakhir Diminta'];
+    const rows=list.map(i=>[i.name,i.urgency,i.score,i.total,i.open,i.done,i.noPr,i.berat,i.sedang,i.ringan,i.oldestOpen,
+        Object.entries(i.byDiv).map(([d,c])=>`${d}:${c}`).join(' | '),Object.entries(i.lokOpen).map(([d,c])=>`${d}:${c}`).join(' | '),Object.entries(i.byDmg).map(([d,c])=>`${d}:${c}`).join(' | '),i.lastTs?new Date(i.lastTs).toISOString().slice(0,10):'']);
+    const csv='\ufeff'+[head,...rows].map(r=>r.map(esc).join(';')).join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=`kebutuhan-spareparts-${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
 // ---------- Model status (3 tahap) ----------
 // Sheet punya 2 kolom terpisah: "Status Perbaikan" (Sudah/Belum) dan "Nomor PR".
 //   Selesai         = Status Perbaikan "Sudah"
@@ -810,7 +1061,7 @@ function applyFilters() {
     updateTabBadges();
     // Render malas: hanya tab yang sedang terlihat yang dirender sekarang;
     // tab lain ditandai "kotor" dan dirender saat dibuka (hemat ~70% waktu per filter).
-    __dirtyTabs = new Set(['overview','damage','divisi','engine','irrigator','severity','calendar','data']);
+    __dirtyTabs = new Set(['overview','damage','divisi','engine','irrigator','severity','spareparts','calendar','data']);
     renderTabContent(state.tab);
 }
 
@@ -822,6 +1073,7 @@ const TAB_RENDERERS = {
     engine:    () => { renderEngineTab(); },
     irrigator: () => { renderIrrTab(); },
     severity:  () => { renderSeverityTab(); },
+    spareparts:() => { renderSparepartsTab(false); },
     calendar:  () => { renderCalendar(); renderCalDayDetail(); },
     data:      () => { renderTable(); }
 };
@@ -986,6 +1238,7 @@ function renderCharts() {
     // Destroy dulu semua
     ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType'].forEach(k=>dk(k));
     renderSeverityCharts();
+    renderSparepartCharts();
 
     // ==== TREND (overview tab) ====
     const trendEl = document.getElementById('trendChart');
@@ -2411,6 +2664,8 @@ function updateTabBadges(){
     if(bv) bv.textContent = divs;
     if(be) be.textContent = engUnits;
     const bs=document.getElementById('badgeSeverity'); if(bs) bs.textContent = filteredData.filter(d=>isOpen(d)&&effectiveTingkat(d)==='Berat').length;
+    // Badge spareparts: jumlah jenis sparepart yang masih dibutuhkan (laporan belum selesai) — murah, tanpa render tab
+    const bsp=document.getElementById('badgeSpareparts'); if(bsp){ const ks=new Set(); filteredData.forEach(d=>{ if(isOpen(d)) splitSpareparts(d.sparepart).forEach(x=>ks.add(x.key)); }); bsp.textContent = ks.size; }
     if(bi) bi.textContent = irrUnits;
 }
 

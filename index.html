@@ -269,6 +269,9 @@
                 <button class="tab-btn" data-tab="severity" onclick="switchTab('severity')">
                     <span class="tab-icon"><i class="fas fa-gauge"></i></span>Tingkat Kerusakan<span class="tab-badge" id="badgeSeverity">0</span>
                 </button>
+                <button class="tab-btn" data-tab="spareparts" onclick="switchTab('spareparts')">
+                    <span class="tab-icon"><i class="fas fa-gears"></i></span>Spareparts<span class="tab-badge" id="badgeSpareparts">0</span>
+                </button>
                 <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">
                     <span class="tab-icon"><i class="fas fa-calendar-alt"></i></span>Kalender
                 </button>
@@ -575,6 +578,98 @@
             </div>
         </div>
 
+        <!-- ==================== TAB: SPAREPARTS ==================== -->
+        <div class="tab-pane" id="tab-spareparts">
+            <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-gears text-teal-600 mr-2"></i>Analisa Kebutuhan Spareparts</h2>
+                    <p class="text-xs text-slate-500 ml-6">Diambil dari kolom <b>Spareparts Yang Dibutuhkan</b> (beberapa item dipisah tanda <b>;</b>). Nama disatukan tanpa membedakan huruf besar/kecil. Semua angka mengikuti filter global (divisi, lokasi, periode, status).</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <label class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer"><input type="checkbox" id="spOpenOnly" onchange="spToggleOpenOnly(this.checked)" class="accent-teal-600">Hanya kebutuhan yang masih terbuka</label>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
+                        <input type="text" id="spSearch" oninput="spSetSearch(this.value)" placeholder="Cari sparepart…" class="pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white w-44">
+                    </div>
+                </div>
+            </div>
+
+            <div id="spKpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
+                <div class="card p-4 lg:col-span-3">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-teal-600"><i class="fas fa-ranking-star text-[11px]"></i></span>Spareparts Paling Sering Dibutuhkan</h3>
+                    <p class="text-[11px] text-slate-500 mb-2" id="spTopSub">Top 12 berdasarkan jumlah laporan yang membutuhkan</p>
+                    <div class="chart-wrap h-[300px]"><canvas id="spTopChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-blue-600"><i class="fas fa-sitemap text-[11px]"></i></span>Kebutuhan per Divisi</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Top 8 sparepart, dipecah per divisi</p>
+                    <div class="chart-wrap h-[300px]"><canvas id="spDivChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-red-600"><i class="fas fa-fire text-[11px]"></i></span>Spareparts Urgent (Prioritas Pengadaan)</h3>
+                        <p class="text-[11px] text-slate-500">Skor = kebutuhan yang <b>belum selesai</b> × bobot tingkat kerusakan (Berat 3 · Sedang 2 · Ringan 1), ditambah umur laporan tertua, penalti bila <b>belum ada PR</b>, dan bonus bila diminta berulang di beberapa lokasi.</p>
+                    </div>
+                    <button onclick="spExportCsv()" class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"><i class="fas fa-file-csv mr-1"></i>Unduh ringkasan CSV</button>
+                </div>
+                <div class="overflow-x-auto"><table class="w-full text-xs" id="spUrgentTable"></table></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-blue-600"><i class="fas fa-building text-[11px]"></i></span>Kebutuhan Teratas per Divisi</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Lima sparepart yang paling dibutuhkan tiap divisi</p>
+                    <div id="spByDiv" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-orange-500"><i class="fas fa-oil-can text-[11px]"></i></span>Kebutuhan per Jenis Aset</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Sparepart apa yang paling sering diminta untuk tiap jenis engine / irigator</p>
+                    <div id="spByAsset" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-slate-700"><i class="fas fa-table-cells text-[11px]"></i></span>Sparepart × Jenis Kerusakan</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Kerusakan apa yang memicu kebutuhan sparepart tersebut</p>
+                    <div id="spMatrix" class="overflow-x-auto"></div>
+                </div>
+                <div class="card p-4">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-purple-600"><i class="fas fa-location-dot text-[11px]"></i></span>Lokasi dengan Kebutuhan Berulang</h3>
+                    <p class="text-[11px] text-slate-500 mb-2">Sparepart yang sama diminta ≥2× di lokasi yang sama — indikasi komponen cepat aus / perbaikan tidak tuntas</p>
+                    <div id="spRecurring" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-3">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-teal-600"><i class="fas fa-list text-[11px]"></i></span>Katalog Kebutuhan Spareparts</h3>
+                        <p class="text-[11px] text-slate-500">Semua sparepart yang pernah diminta pada filter aktif. Klik baris untuk melihat laporan terkait.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span>Urutkan</span>
+                        <select id="spSort" onchange="spSetSort(this.value)" class="border border-slate-200 rounded-md px-1.5 py-1 text-xs bg-white">
+                            <option value="total">Total permintaan</option>
+                            <option value="open">Masih terbuka</option>
+                            <option value="score">Skor urgensi</option>
+                            <option value="recent">Terbaru diminta</option>
+                            <option value="name">Nama A–Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto"><table class="w-full text-xs" id="spCatalogTable"></table></div>
+                <div id="spNoData" class="hidden py-8 text-center text-slate-400 text-sm italic"></div>
+            </div>
+
+            <div id="spGap" class="card p-4 mb-3 border-amber-200 bg-amber-50/40 hidden"></div>
+        </div>
+
         <div class="tab-pane" id="tab-calendar">
             <div class="mb-3">
                 <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-calendar-alt text-indigo-500 mr-2"></i>Kalender Inspeksi</h2>
@@ -777,7 +872,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v9').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v10').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
