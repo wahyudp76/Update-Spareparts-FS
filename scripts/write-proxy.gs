@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v5 — create + pencocokan baris toleran tanggal salah tahun)
+ * PG2 Irrigation Dashboard — Write Proxy  (v6 — idempoten via opId, tulis batch, lebih cepat & tahan retry)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v5';
+var VERSION    = 'v6';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -57,7 +57,7 @@ function doGet(e) {
 function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
-    lock.waitLock(20000);
+    lock.waitLock(12000);
   } catch (err) {
     return _text('error: server sibuk, coba lagi');
   }
@@ -67,6 +67,17 @@ function doPost(e) {
     var body;
     try { body = JSON.parse(raw || '{}'); } catch (pe) { return _text('error: body bukan JSON valid'); }
     var action = body.action || '';
+
+    // Idempoten: dashboard mengirim opId unik per operasi. Bila request yang sama
+    // diulang (retry setelah timeout/gangguan), kembalikan hasil sebelumnya tanpa
+    // menulis dua kali (mencegah baris ganda pada 'create' / error palsu pada 'delete').
+    var opId = body.opId ? String(body.opId).slice(0, 80) : '';
+    var opCache = CacheService.getScriptCache();
+    if (opId) {
+      var prev = opCache.get('op:' + opId);
+      if (prev) return _text(prev);
+    }
+    function _done(msg) { if (opId && /^ok/.test(msg)) { try { opCache.put('op:' + opId, msg, 21600); } catch (ce) {} } return _text(msg); }
 
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(SHEET_NAME);
@@ -143,7 +154,7 @@ function doPost(e) {
       // Kolom kode → format Teks supaya "0032" tidak berubah jadi 32 dan tidak muncul notasi ilmiah
       FIELDS.forEach(function (f) { if (f.type === 'code') { var c = col(f.key); if (c >= 0) { var cell = sheet.getRange(newRow, c + 1); cell.setNumberFormat('@'); if (rowVals[c] !== '') cell.setValue(String(rowVals[c])); } } });
       SpreadsheetApp.flush();
-      return _text('ok: created row ' + newRow);
+      return _done('ok: created row ' + newRow);
     }
 
     if (lastRow < 2) return _text('error: Sheet kosong');
@@ -187,40 +198,22 @@ function doPost(e) {
     if (action === 'update') {
       var r = findRow(body);
       if (r < 0) return _text('error: Baris tidak ditemukan di sheet (mungkin sudah dihapus/berubah). Klik Refresh lalu coba lagi.');
-      var updates = [
-        { key: 'Tanggal Inspeksi',            val: body.tanggalInspeksi, type: 'date' },
-        { key: 'Lokasi',                      val: body.lokasi },
-        { key: 'Divisi',                      val: body.divisi },
-        { key: 'Jenis Engine',                val: body.engineType },
-        { key: 'Kode Engine',                 val: body.engineCode },
-        { key: 'Jenis Irrigator',             val: body.irrType },
-        { key: 'Kode Irrigator',              val: body.irrCode },
-        { key: 'Jenis Kerusakan',             val: body.damageType },
-        { key: 'Keterangan Kerusakan',        val: body.keterangan },
-        { key: 'Spareparts Yang Dibutuhkan',  val: body.sparepart },
-        { key: 'Nomor PR / Notifikasi',       val: body.prNumber },
-        { key: 'Tingkat Kerusakan',           val: body.tingkat },
-        { key: 'Status Perbaikan',            val: body.repairStatus }
-      ];
-      updates.forEach(function (u) {
-        if (u.val === undefined) return;          // field tidak dikirim → jangan sentuh
-        var c = col(u.key);
-        if (c < 0) return;
-        var v = (u.val === '-' || u.val === null) ? '' : u.val;
-        var cell = sheet.getRange(r, c + 1);
-        if (u.type === 'date') {
-          if (!v) { cell.setValue(''); return; }
-          // Tulis sebagai objek Date (bukan string) → tampil sesuai locale sheet (ID = dd/MM/yyyy)
-          var m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-          if (m) { cell.setValue(new Date(+m[1], +m[2] - 1, +m[3], 12, 0, 0)); return; }
-          cell.setValue(v); return;
-        }
-        // Kode seperti "0032" harus tetap teks agar nol di depan tidak hilang
-        if (/^0\d+$/.test(String(v))) { cell.setNumberFormat('@'); cell.setValue(String(v)); return; }
-        cell.setValue(v);
+      // Tulis satu baris sekaligus (1 setValues) — jauh lebih cepat daripada 13 setValue terpisah
+      var rowRange = sheet.getRange(r, 1, 1, lastCol);
+      var cur = rowRange.getValues()[0];
+      var codeCols = [];
+      FIELDS.forEach(function (f) {
+        if (body[f.prop] === undefined) return;   // field tidak dikirim → jangan sentuh
+        var c = col(f.key); if (c < 0) return;
+        var v = toCell(f, body[f.prop]);
+        cur[c] = (f.type === 'code' && v !== '') ? String(v) : v;
+        if (f.type === 'code') codeCols.push(c);
       });
+      // Kolom kode → format Teks dulu agar "0032" tidak jadi 32 dan PR 8 digit tidak jadi 1.1E7
+      codeCols.forEach(function (c) { sheet.getRange(r, c + 1).setNumberFormat('@'); });
+      rowRange.setValues([cur]);
       SpreadsheetApp.flush();
-      return _text('ok: updated row ' + r);
+      return _done('ok: updated row ' + r);
     }
 
     if (action === 'delete') {
@@ -228,7 +221,7 @@ function doPost(e) {
       if (rd < 0) return _text('error: Baris tidak ditemukan di sheet (mungkin sudah dihapus). Klik Refresh lalu coba lagi.');
       sheet.deleteRow(rd);
       SpreadsheetApp.flush();
-      return _text('ok: deleted row ' + rd);
+      return _done('ok: deleted row ' + rd);
     }
 
     if (action === 'ping') return _text('pong');

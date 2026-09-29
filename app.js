@@ -2867,6 +2867,7 @@ function openCreateModal(){
     document.getElementById('f_tingkat').value = '';
     document.getElementById('editMsg').innerHTML='';
     document.getElementById('editSaveBtn').disabled=false;
+    submitCreate._opId = null;
     openModal('editModal');
     setTimeout(()=>document.getElementById('f_lokasi').focus(),150);
 }
@@ -2887,10 +2888,26 @@ async function submitCreate(){
         damageType:g('f_damageType'), keterangan:g('f_keterangan'),
         sparepart:g('f_sparepart')||'-', prNumber:g('f_prNumber')||null
     };
-    msg.innerHTML='<span class="text-emerald-700"><i class="fas fa-spinner spin mr-1"></i>Menambahkan ke spreadsheet…</span>';
+    const setStatus = t => { msg.innerHTML=`<span class="text-emerald-700"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    setStatus('Menambahkan ke spreadsheet…');
     btn.disabled=true;
+    if(submitCreate._opId) payload.opId = submitCreate._opId; // "Coba lagi" memakai opId yang sama → tidak dobel
     try{
-        const res = await callWriteProxy(payload);
+        let res;
+        try {
+            res = await callWriteProxy(payload, {onStatus:setStatus});
+            submitCreate._opId = null;
+        } catch(e){
+            if(!e.uncertain) throw e;
+            submitCreate._opId = e.opId;
+            setStatus('Tidak ada respons — memeriksa apakah laporan sudah masuk ke spreadsheet…');
+            let found=null;
+            const ok = await verifyWriteApplied(fresh => (found = fresh.find(x => x.lokasi===payload.lokasi && x.damageType===payload.damageType && x.tanggalInspeksi===payload.tanggalInspeksi && (x.keterangan||'')===(payload.keterangan||''))));
+            if(!ok) throw e;
+            submitCreate._opId = null;
+            res = 'ok: created row ' + (found && found.__row ? found.__row : '');
+            showToast('Apps Script lambat merespons, tetapi laporan terverifikasi sudah masuk ke spreadsheet.','success');
+        }
         const m = res.match(/row\s+(\d+)/i); const newRow = m ? parseInt(m[1]) : null;
         const [y,mo,day]=payload.tanggalInspeksi.split('-').map(Number);
         const ts=new Date(y,mo-1,day,12,0,0).toISOString();
@@ -2908,7 +2925,7 @@ async function submitCreate(){
         applyFilters(); renderQualityBanner();
         setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
-        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${escapeHtml(e.message)}</span>`;
+        msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitCreate()':null);
         btn.disabled=false;
     }
 }
@@ -2955,33 +2972,74 @@ function openEditModalRaw(rawi){
 // Apps Script menjawab 302 → googleusercontent; browser mengikuti otomatis.
 // Jika deployment belum diotorisasi / versi lama, Google mengirim HALAMAN HTML
 // ("Sorry, unable to open the file") alih-alih teks "ok: ..." → deteksi & jelaskan.
-async function callWriteProxy(payload){
+async function callWriteProxy(payload, opts={}){
     const url = getWriteUrl();
     if(!url) throw new Error('Endpoint write belum dikonfigurasi.');
-    const ctrl = new AbortController(); const tid=setTimeout(()=>ctrl.abort(), 30000);
-    let r, txt;
-    try{
-        r = await fetch(url,{ method:'POST', body: JSON.stringify(payload), redirect:'follow', signal: ctrl.signal,
-            // text/plain → "simple request", tidak memicu preflight CORS yang tidak didukung Apps Script
-            headers:{'Content-Type':'text/plain;charset=utf-8'} });
-        txt = await r.text();
-    } catch(e){
+    // opId unik per operasi → proxy (v6+) mengembalikan hasil sebelumnya bila request diulang,
+    // sehingga retry setelah timeout AMAN (tidak membuat baris ganda / error palsu).
+    if(!payload.opId) payload.opId = 'op-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+    const body = JSON.stringify(payload);
+    const MAX = opts.attempts || 3, PER_TRY = opts.timeoutMs || 40000;
+    const status = typeof opts.onStatus==='function' ? opts.onStatus : ()=>{};
+    let lastErr = null;
+    for(let attempt=1; attempt<=MAX; attempt++){
+        if(attempt>1){
+            status(`Apps Script belum merespons — mencoba lagi (${attempt}/${MAX})…`);
+            await new Promise(r=>setTimeout(r, attempt===2?1500:4000));
+        }
+        const ctrl = new AbortController(); const tid=setTimeout(()=>ctrl.abort(), PER_TRY);
+        let r, txt;
+        try{
+            r = await fetch(url,{ method:'POST', body, redirect:'follow', signal: ctrl.signal,
+                // text/plain → "simple request", tidak memicu preflight CORS yang tidak didukung Apps Script
+                headers:{'Content-Type':'text/plain;charset=utf-8'} });
+            txt = await r.text();
+        } catch(e){
+            clearTimeout(tid);
+            lastErr = e.name==='AbortError'
+                ? Object.assign(new Error(`Apps Script tidak merespons dalam ${Math.round(PER_TRY/1000)} detik.`), {transient:true})
+                : Object.assign(new Error('Tidak bisa menghubungi Apps Script ('+e.message+').'), {transient:true});
+            continue;
+        }
         clearTimeout(tid);
-        if(e.name==='AbortError') throw new Error('Timeout 30 detik — Apps Script tidak merespons.');
-        throw new Error('Tidak bisa menghubungi Apps Script ('+e.message+'). Pastikan deployment "Who has access: Anyone".');
+        const t = (txt||'').trim();
+        if(/^<!doctype|^<html/i.test(t)){
+            if(/unable to open the file/i.test(t)){
+                // Gangguan sementara Google yang umum terjadi pada web app Apps Script → coba lagi.
+                lastErr = Object.assign(new Error('Google Apps Script sementara tidak bisa membuka spreadsheet (gangguan sisi Google).'), {transient:true, html:true});
+                continue;
+            }
+            if(/accounts\.google\.com|Sign in/i.test(t))
+                throw new Error('Apps Script meminta login. Deploy ulang dengan "Who has access: Anyone" (bukan "Anyone with Google account").');
+            if(/Page Not Found/i.test(t))
+                throw new Error('URL Apps Script tidak ditemukan / deployment dihapus. Periksa WRITE_URL di config.js.');
+            throw new Error('Respons tidak dikenal dari Apps Script (HTML). Deploy ulang web app sebagai versi baru.');
+        }
+        if(!r.ok){ lastErr = Object.assign(new Error('HTTP '+r.status+': '+t.slice(0,200)), {transient: r.status>=500}); if(lastErr.transient) continue; throw lastErr; }
+        if(/^error: server sibuk/i.test(t)){ lastErr = Object.assign(new Error(t), {transient:true}); continue; }
+        if(!/^ok\b/i.test(t)) throw new Error(t.slice(0,300) || 'Respons kosong dari Apps Script');
+        return t;
     }
-    clearTimeout(tid);
-    const t = (txt||'').trim();
-    if(/^<!doctype|^<html/i.test(t)){
-        if(/unable to open the file|Page Not Found/i.test(t))
-            throw new Error('Apps Script menolak menulis ke spreadsheet: deployment belum diotorisasi untuk akses Spreadsheet atau memakai versi kode lama. Buka editor Apps Script → jalankan fungsi "authorize" sekali → Deploy → Manage deployments → Edit → Version: New version → Deploy.');
-        if(/accounts\.google\.com|Sign in/i.test(t))
-            throw new Error('Apps Script meminta login. Deploy ulang dengan "Who has access: Anyone" (bukan "Anyone with Google account").');
-        throw new Error('Respons tidak dikenal dari Apps Script (HTML). Deploy ulang web app sebagai versi baru.');
-    }
-    if(!r.ok) throw new Error('HTTP '+r.status+': '+t.slice(0,200));
-    if(!/^ok\b/i.test(t)) throw new Error(t.slice(0,300) || 'Respons kosong dari Apps Script');
-    return t;
+    // Semua percobaan gagal karena gangguan sementara: perubahan MUNGKIN sudah tersimpan.
+    const err = new Error((lastErr&&lastErr.message||'Gagal') + (lastErr&&lastErr.html
+        ? ' Jika terus terjadi: buka editor Apps Script → Run "authorize" → Deploy → Manage deployments → Edit → New version.'
+        : ''));
+    err.uncertain = true; err.opId = payload.opId;
+    throw err;
+}
+
+// Setelah kegagalan yang "tidak pasti" (timeout), periksa ke sheet apakah perubahan
+// sebenarnya sudah masuk. Mengembalikan true bila sudah.
+async function verifyWriteApplied(check){
+    try{
+        const fresh = await fetchLiveCSV();
+        if(!fresh || !fresh.length) return false;
+        return !!check(fresh);
+    }catch(e){ return false; }
+}
+function _writeFailHtml(e, retryFn){
+    return `<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>${escapeHtml(e.message)}</span>`
+        + (retryFn ? ` <button onclick="${retryFn}" class="ml-2 px-2 py-0.5 rounded bg-slate-900 text-white text-[11px] font-semibold"><i class="fas fa-rotate-right mr-1"></i>Coba lagi</button>` : '');
 }
 
 async function submitEdit(){
@@ -3015,10 +3073,24 @@ async function submitEdit(){
     };
     const msg=document.getElementById('editMsg');
     const btn=document.getElementById('editSaveBtn');
-    msg.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>Menyimpan ke spreadsheet…</span>';
+    const setStatus = t => { msg.innerHTML=`<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    setStatus('Menyimpan ke spreadsheet…');
     btn.disabled=true;
+    // opId dipertahankan antar klik "Coba lagi" agar proxy tidak menulis dua kali
+    submitEdit._opId = submitEdit._opId && submitEdit._opKey===rawi ? submitEdit._opId : null; submitEdit._opKey = rawi;
     try{
-        await callWriteProxy({action:'update', ...payload});
+        try {
+            const res = await callWriteProxy({action:'update', ...payload, ...(submitEdit._opId?{opId:submitEdit._opId}:{})}, {onStatus:setStatus});
+            submitEdit._opId = null;
+        } catch(e){
+            if(!e.uncertain) throw e;
+            submitEdit._opId = e.opId;
+            setStatus('Tidak ada respons — memeriksa apakah perubahan sudah masuk ke spreadsheet…');
+            const ok = await verifyWriteApplied(fresh => fresh.some(x => x.__row===d.__row ? _sameFields(x, payload) : false) || fresh.some(x => _sameFields(x, payload) && x.lokasi===payload.lokasi && x.damageType===payload.damageType));
+            if(!ok) throw e;
+            submitEdit._opId = null;
+            showToast('Apps Script lambat merespons, tetapi perubahan terverifikasi sudah tersimpan di spreadsheet.','success');
+        }
         // Update local cache (optimistic)
         const upd = {...d};
         Object.assign(upd,{
@@ -3048,7 +3120,7 @@ async function submitEdit(){
         // menyelaraskan ulang dari sumber kebenaran, termasuk nomor baris (__row).
         setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
-        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
+        msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitEdit()':null);
         btn.disabled=false;
     }
 }
@@ -3073,16 +3145,30 @@ async function submitDelete(){
     if(!d) return;
     const msg=document.getElementById('delMsg');
     const btn=document.getElementById('delConfirmBtn');
-    msg.innerHTML='<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>Menghapus…</span>';
+    const setStatus = t => { msg.innerHTML=`<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    setStatus('Menghapus…');
     btn.disabled=true;
+    submitDelete._opId = submitDelete._opKey===rawi ? submitDelete._opId : null; submitDelete._opKey = rawi;
     try{
-        await callWriteProxy({
-            action:'delete',
-            sheetRow: sheetRow?parseInt(sheetRow):null,
-            matchTs: d.timestamp,
-            matchLokasi: d.lokasi,
-            matchDamage: d.damageType
-        });
+        try {
+            await callWriteProxy({
+                action:'delete',
+                sheetRow: sheetRow?parseInt(sheetRow):null,
+                matchTs: d.timestamp,
+                matchLokasi: d.lokasi,
+                matchDamage: d.damageType,
+                ...(submitDelete._opId?{opId:submitDelete._opId}:{})
+            }, {onStatus:setStatus});
+            submitDelete._opId = null;
+        } catch(e){
+            if(!e.uncertain) throw e;
+            submitDelete._opId = e.opId;
+            setStatus('Tidak ada respons — memeriksa apakah baris sudah terhapus…');
+            const gone = await verifyWriteApplied(fresh => !fresh.some(x => x.lokasi===d.lokasi && x.damageType===d.damageType && x.tanggalInspeksi===d.tanggalInspeksi && (x.keterangan||'')===(d.keterangan||'')));
+            if(!gone) throw e;
+            submitDelete._opId = null;
+            showToast('Apps Script lambat merespons, tetapi baris terverifikasi sudah terhapus.','success');
+        }
         closeModal('deleteModal');
         showToast('Baris dihapus dari spreadsheet.','success');
         const deletedRow = d.__row;
@@ -3094,7 +3180,7 @@ async function submitDelete(){
         applyFilters(); renderQualityBanner();
         setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
-        msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
+        msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitDelete()':null);
         btn.disabled=false;
     }
 }
@@ -3149,9 +3235,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             const m=t.match(/\bv(\d+)\b/); const ver=m?+m[1]:0;
             if(!/^ok:/i.test(t) || ver<3){
                 showToast('Write-proxy Apps Script versi lama/tidak valid ('+(t.slice(0,40)||'no response')+'). Edit Tingkat/Status Perbaikan tidak akan tersimpan — deploy ulang scripts/write-proxy.gs (lihat SETUP-EDIT.md).','warning');
-            } else if(ver<4){
-                window.__proxyVersion = ver;
-                showToast('Write-proxy masih v'+ver+'. Fitur "Tambah Laporan" butuh v4 — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
+            } else if(ver<6){
+                showToast('Write-proxy masih v'+ver+'. Versi terbaru (v6) lebih cepat & tahan gangguan/timeout — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
             }
             window.__proxyVersion = ver;
         }catch(e){}

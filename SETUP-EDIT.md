@@ -72,3 +72,11 @@ Jika memilih cara per-device → paste URL itu ke modal Setup di dashboard.
 | Error 401/403 saat menyimpan | Pastikan "Who has access" di-deploy sebagai **Anyone** (bukan Anyone with Google). Deploy ulang jika perlu. |
 | "Baris tidak ditemukan" | Klik tombol Refresh (🔄) dulu untuk memastikan nomor baris akurat dengan live sheet, lalu coba lagi. |
 | Nonaktifkan di device saya padahal global aktif | Klik ikon steker di header → kosongkan URL → Simpan (tidak mempengaruhi user lain). |
+
+### "Timeout — Apps Script tidak merespons" / "Sorry, unable to open the file at this time"
+Ini gangguan sementara di sisi Google yang sesekali terjadi pada web app Apps Script (dari pengukuran: ±1 dari 7 permintaan). Sejak write-proxy **v6** + dashboard terbaru:
+- Dashboard **otomatis mencoba ulang hingga 3×** (jeda 1,5 dtk & 4 dtk), lalu **memverifikasi ke sheet** apakah perubahan sebenarnya sudah masuk sebelum melapor gagal.
+- Setiap operasi membawa `opId` unik; proxy menyimpan hasilnya 6 jam sehingga pengulangan **tidak pernah menulis dua kali** (tidak ada baris ganda saat Tambah, tidak ada error palsu saat Hapus).
+- Tombol **Coba lagi** di form memakai opId yang sama.
+- Update ditulis sebagai satu `setValues` (bukan 13 `setValue`) → lebih cepat, lebih kecil peluang timeout.
+Pastikan `…/exec?action=check` menampilkan `v6`.
