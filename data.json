@@ -23,7 +23,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "301B",
-    "__row": 153
+    "__row": 149
   },
   {
     "timestamp": "2026-09-29T22:10:42+07:00",
@@ -49,7 +49,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "124G",
-    "__row": 152
+    "__row": 148
   },
   {
     "timestamp": "2026-09-29T14:31:43+07:00",
@@ -75,7 +75,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 151
+    "__row": 147
   },
   {
     "timestamp": "2026-09-29T11:29:34+07:00",
@@ -101,7 +101,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 150
+    "__row": 146
   },
   {
     "timestamp": "2026-09-29T11:28:28+07:00",
@@ -127,7 +127,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 149
+    "__row": 145
   },
   {
     "timestamp": "2026-09-29T11:26:51+07:00",
@@ -153,7 +153,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "127E",
-    "__row": 148
+    "__row": 144
   },
   {
     "timestamp": "2026-09-29T11:12:36+07:00",
@@ -179,7 +179,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "139C1",
-    "__row": 147
+    "__row": 143
   },
   {
     "timestamp": "2026-09-29T11:01:31+07:00",
@@ -205,7 +205,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "169A",
-    "__row": 140
+    "__row": 136
   },
   {
     "timestamp": "2026-09-29T10:44:32+07:00",
@@ -231,7 +231,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "132D",
-    "__row": 146
+    "__row": 142
   },
   {
     "timestamp": "2026-09-29T10:43:59+07:00",
@@ -245,9 +245,9 @@
     "irrCode": "-",
     "irrigator": "-",
     "damageType": "Pompa Sumur Bor",
-    "keterangan": "Perbaikan seal green baut setelan",
-    "damage": "Pompa Sumur Bor — Perbaikan seal green baut setelan",
-    "sparepart": "Seal",
+    "keterangan": "Perbaikan baut seal gland packing",
+    "damage": "Pompa Sumur Bor — Perbaikan baut seal gland packing",
+    "sparepart": "Seal gland packing",
     "prNumber": null,
     "status": "Selesai",
     "repairStatus": "Sudah",
@@ -257,7 +257,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "144D1",
-    "__row": 139
+    "__row": 135
   },
   {
     "timestamp": "2026-09-29T10:35:16+07:00",
@@ -283,7 +283,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "118L",
-    "__row": 138
+    "__row": 134
   },
   {
     "timestamp": "2026-09-29T10:33:43+07:00",
@@ -309,7 +309,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "118D",
-    "__row": 137
+    "__row": 133
   },
   {
     "timestamp": "2026-09-29T09:24:36+07:00",
@@ -327,15 +327,15 @@
     "damage": "Pompa Sumur Bor — Debit air kecil",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "107F",
-    "__row": 145
+    "__row": 141
   },
   {
     "timestamp": "2026-09-29T09:09:25+07:00",
@@ -361,7 +361,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "136D",
-    "__row": 144
+    "__row": 140
   },
   {
     "timestamp": "2026-09-29T09:07:14+07:00",
@@ -387,7 +387,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "118L",
-    "__row": 143
+    "__row": 139
   },
   {
     "timestamp": "2026-09-29T09:06:34+07:00",
@@ -413,33 +413,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "117C1",
-    "__row": 142
-  },
-  {
-    "timestamp": "2026-09-28T13:49:03+07:00",
-    "tanggalInspeksi": "2026-09-28",
-    "lokasi": "120C",
-    "divisi": "PG2",
-    "engineType": "SPC",
-    "engineCode": "0222",
-    "engine": "SPC – 0222",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Tangki Solar",
-    "keterangan": "Sabuk tangki solar rusak",
-    "damage": "Tangki Solar — Sabuk tangki solar rusak",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
-    "tingkat": "Ringan",
-    "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
-    "__rawTgl": "28/09/2026",
-    "__yearFixed": false,
-    "unit": "120C",
-    "__row": 136
+    "__row": 138
   },
   {
     "timestamp": "2026-09-28T10:41:52+07:00",
@@ -465,7 +439,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "163C",
-    "__row": 135
+    "__row": 132
   },
   {
     "timestamp": "2026-09-28T09:23:43+07:00",
@@ -491,7 +465,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "120C",
-    "__row": 133
+    "__row": 131
   },
   {
     "timestamp": "2026-09-28T08:40:32+07:00",
@@ -517,7 +491,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "172F",
-    "__row": 141
+    "__row": 137
   },
   {
     "timestamp": "2026-09-28T08:19:53+07:00",
@@ -543,7 +517,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "120C",
-    "__row": 130
+    "__row": 128
   },
   {
     "timestamp": "2026-09-28T08:17:45+07:00",
@@ -569,7 +543,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "107F",
-    "__row": 129
+    "__row": 127
   },
   {
     "timestamp": "2026-09-27T10:57:25+07:00",
@@ -595,7 +569,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "118F",
-    "__row": 125
+    "__row": 123
   },
   {
     "timestamp": "2026-09-27T10:27:39+07:00",
@@ -621,7 +595,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "120C",
-    "__row": 124
+    "__row": 122
   },
   {
     "timestamp": "2026-09-27T10:26:00+07:00",
@@ -647,7 +621,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "118K",
-    "__row": 123
+    "__row": 121
   },
   {
     "timestamp": "2026-09-27T10:23:16+07:00",
@@ -673,7 +647,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "136D",
-    "__row": 122
+    "__row": 120
   },
   {
     "timestamp": "2026-09-27T10:01:19+07:00",
@@ -689,7 +663,7 @@
     "damageType": "Pipa PE",
     "keterangan": "Ganti fleksibel",
     "damage": "Pipa PE — Ganti fleksibel",
-    "sparepart": "Fleksibel",
+    "sparepart": "Pipa Fleksibel",
     "prNumber": null,
     "status": "Selesai",
     "repairStatus": "Sudah",
@@ -699,7 +673,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "160E",
-    "__row": 121
+    "__row": 119
   },
   {
     "timestamp": "2026-09-27T09:33:12+07:00",
@@ -725,7 +699,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "169B",
-    "__row": 115
+    "__row": 113
   },
   {
     "timestamp": "2026-09-27T09:26:44+07:00",
@@ -751,33 +725,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "144D1",
-    "__row": 113
-  },
-  {
-    "timestamp": "2026-09-27T09:26:40+07:00",
-    "tanggalInspeksi": "2026-09-27",
-    "lokasi": "120C",
-    "divisi": "PG2",
-    "engineType": "SPC",
-    "engineCode": "0222",
-    "engine": "SPC – 0222",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Radiator",
-    "keterangan": "Perbaikan radiator bocor",
-    "damage": "Radiator — Perbaikan radiator bocor",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Sudah",
-    "__rawTgl": "27/09/2026",
-    "__yearFixed": false,
-    "unit": "120C",
-    "__row": 134
+    "__row": 111
   },
   {
     "timestamp": "2026-09-27T09:20:14+07:00",
@@ -803,7 +751,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "118F",
-    "__row": 132
+    "__row": 130
   },
   {
     "timestamp": "2026-09-27T09:06:29+07:00",
@@ -829,7 +777,7 @@
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "160C",
-    "__row": 131
+    "__row": 129
   },
   {
     "timestamp": "2026-09-26T20:01:39+07:00",
@@ -855,7 +803,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "123B",
-    "__row": 112
+    "__row": 110
   },
   {
     "timestamp": "2026-09-26T20:01:32+07:00",
@@ -881,7 +829,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "130E",
-    "__row": 111
+    "__row": 109
   },
   {
     "timestamp": "2026-09-26T19:56:21+07:00",
@@ -907,7 +855,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "103E",
-    "__row": 110
+    "__row": 108
   },
   {
     "timestamp": "2026-09-26T11:43:21+07:00",
@@ -933,7 +881,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "123B",
-    "__row": 128
+    "__row": 126
   },
   {
     "timestamp": "2026-09-26T11:40:26+07:00",
@@ -949,7 +897,7 @@
     "damageType": "Pompa Sumur Bor",
     "keterangan": "Belt ebara retak",
     "damage": "Pompa Sumur Bor — Belt ebara retak",
-    "sparepart": "-",
+    "sparepart": "Belt ebara",
     "prNumber": null,
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
@@ -959,7 +907,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "123L",
-    "__row": 127
+    "__row": 125
   },
   {
     "timestamp": "2026-09-26T10:38:18+07:00",
@@ -985,7 +933,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "302E",
-    "__row": 109
+    "__row": 107
   },
   {
     "timestamp": "2026-09-26T10:03:53+07:00",
@@ -1011,7 +959,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "189A",
-    "__row": 108
+    "__row": 106
   },
   {
     "timestamp": "2026-09-26T09:59:07+07:00",
@@ -1037,7 +985,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "160E",
-    "__row": 107
+    "__row": 105
   },
   {
     "timestamp": "2026-09-26T09:46:56+07:00",
@@ -1063,7 +1011,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "Bengkel PG2",
-    "__row": 120
+    "__row": 118
   },
   {
     "timestamp": "2026-09-26T09:45:06+07:00",
@@ -1089,7 +1037,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "Bengkel PG2",
-    "__row": 119
+    "__row": 117
   },
   {
     "timestamp": "2026-09-26T09:43:24+07:00",
@@ -1115,7 +1063,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "143C",
-    "__row": 118
+    "__row": 116
   },
   {
     "timestamp": "2026-09-26T09:37:48+07:00",
@@ -1141,7 +1089,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "144D1",
-    "__row": 117
+    "__row": 115
   },
   {
     "timestamp": "2026-09-26T09:34:41+07:00",
@@ -1167,7 +1115,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "116A",
-    "__row": 116
+    "__row": 114
   },
   {
     "timestamp": "2026-09-26T09:29:18+07:00",
@@ -1193,7 +1141,7 @@
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 114
+    "__row": 112
   },
   {
     "timestamp": "2026-09-25T23:52:34+07:00",
@@ -1219,7 +1167,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "120C",
-    "__row": 105
+    "__row": 104
   },
   {
     "timestamp": "2026-09-25T23:50:54+07:00",
@@ -1237,15 +1185,15 @@
     "damage": "Pompa Sumur Bor — Air sumur tekor",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "103B",
-    "__row": 104
+    "__row": 103
   },
   {
     "timestamp": "2026-09-25T23:49:54+07:00",
@@ -1271,7 +1219,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "103B",
-    "__row": 103
+    "__row": 102
   },
   {
     "timestamp": "2026-09-25T23:47:58+07:00",
@@ -1297,7 +1245,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "144H",
-    "__row": 102
+    "__row": 101
   },
   {
     "timestamp": "2026-09-25T23:46:26+07:00",
@@ -1323,7 +1271,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "138B",
-    "__row": 101
+    "__row": 100
   },
   {
     "timestamp": "2026-09-25T19:52:36+07:00",
@@ -1349,7 +1297,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "118M",
-    "__row": 100
+    "__row": 99
   },
   {
     "timestamp": "2026-09-25T19:50:14+07:00",
@@ -1375,7 +1323,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "118M",
-    "__row": 99
+    "__row": 98
   },
   {
     "timestamp": "2026-09-25T19:36:29+07:00",
@@ -1401,7 +1349,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "118K",
-    "__row": 98
+    "__row": 97
   },
   {
     "timestamp": "2026-09-25T11:39:03+07:00",
@@ -1427,7 +1375,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "136C",
-    "__row": 126
+    "__row": 124
   },
   {
     "timestamp": "2026-09-25T10:30:25+07:00",
@@ -1453,7 +1401,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "137A",
-    "__row": 97
+    "__row": 96
   },
   {
     "timestamp": "2026-09-25T09:54:25+07:00",
@@ -1479,33 +1427,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "123L",
-    "__row": 96
-  },
-  {
-    "timestamp": "2026-09-25T09:05:48+07:00",
-    "tanggalInspeksi": "2026-09-25",
-    "lokasi": "120C",
-    "divisi": "PG2",
-    "engineType": "SPC",
-    "engineCode": "0222",
-    "engine": "SPC – 0222",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Ebara",
-    "keterangan": "Perbaikan belt pompa ebara",
-    "damage": "Pompa Ebara — Perbaikan belt pompa ebara",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Ringan",
-    "__rawTingkat": "Ringan",
-    "__rawRepair": "Sudah",
-    "__rawTgl": "25/09/2026",
-    "__yearFixed": false,
-    "unit": "120C",
-    "__row": 106
+    "__row": 95
   },
   {
     "timestamp": "2026-09-25T08:54:13+07:00",
@@ -1531,7 +1453,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "134B",
-    "__row": 95
+    "__row": 94
   },
   {
     "timestamp": "2026-09-25T08:46:55+07:00",
@@ -1557,7 +1479,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "303D",
-    "__row": 94
+    "__row": 93
   },
   {
     "timestamp": "2026-09-25T08:45:12+07:00",
@@ -1583,7 +1505,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "117C1",
-    "__row": 93
+    "__row": 92
   },
   {
     "timestamp": "2026-09-25T08:06:59+07:00",
@@ -1609,7 +1531,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "190C",
-    "__row": 88
+    "__row": 87
   },
   {
     "timestamp": "2026-09-25T08:05:07+07:00",
@@ -1635,7 +1557,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "169B",
-    "__row": 87
+    "__row": 86
   },
   {
     "timestamp": "2026-09-25T08:03:53+07:00",
@@ -1661,7 +1583,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "138B",
-    "__row": 86
+    "__row": 85
   },
   {
     "timestamp": "2026-09-25T08:02:07+07:00",
@@ -1687,7 +1609,7 @@
     "__rawTgl": "25/09/2026",
     "__yearFixed": false,
     "unit": "137A",
-    "__row": 85
+    "__row": 84
   },
   {
     "timestamp": "2026-09-24T20:35:00+07:00",
@@ -1705,15 +1627,15 @@
     "damage": "Sproket — Sproket aus dan PE kosong",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "Bengkel PG2",
-    "__row": 84
+    "__row": 83
   },
   {
     "timestamp": "2026-09-24T20:27:42+07:00",
@@ -1739,7 +1661,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "118E",
-    "__row": 83
+    "__row": 82
   },
   {
     "timestamp": "2026-09-24T14:29:45+07:00",
@@ -1765,7 +1687,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "158F",
-    "__row": 82
+    "__row": 81
   },
   {
     "timestamp": "2026-09-24T14:23:55+07:00",
@@ -1791,7 +1713,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "159D",
-    "__row": 81
+    "__row": 80
   },
   {
     "timestamp": "2026-09-24T12:07:27+07:00",
@@ -1817,7 +1739,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "102C",
-    "__row": 80
+    "__row": 79
   },
   {
     "timestamp": "2026-09-24T12:02:17+07:00",
@@ -1843,7 +1765,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 79
+    "__row": 78
   },
   {
     "timestamp": "2026-09-24T11:59:09+07:00",
@@ -1869,7 +1791,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "120J",
-    "__row": 78
+    "__row": 77
   },
   {
     "timestamp": "2026-09-24T11:50:13+07:00",
@@ -1895,7 +1817,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "164B",
-    "__row": 77
+    "__row": 76
   },
   {
     "timestamp": "2026-09-24T09:42:17+07:00",
@@ -1921,7 +1843,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "149A",
-    "__row": 76
+    "__row": 75
   },
   {
     "timestamp": "2026-09-24T08:15:54+07:00",
@@ -1947,7 +1869,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 92
+    "__row": 91
   },
   {
     "timestamp": "2026-09-24T08:14:35+07:00",
@@ -1973,7 +1895,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "174A",
-    "__row": 91
+    "__row": 90
   },
   {
     "timestamp": "2026-09-24T08:13:38+07:00",
@@ -1999,7 +1921,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "182H",
-    "__row": 90
+    "__row": 89
   },
   {
     "timestamp": "2026-09-24T08:12:04+07:00",
@@ -2025,7 +1947,7 @@
     "__rawTgl": "24/09/2026",
     "__yearFixed": false,
     "unit": "161B",
-    "__row": 89
+    "__row": 88
   },
   {
     "timestamp": "2026-09-23T14:27:09+07:00",
@@ -2051,7 +1973,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "190C",
-    "__row": 69
+    "__row": 68
   },
   {
     "timestamp": "2026-09-23T14:00:34+07:00",
@@ -2067,17 +1989,17 @@
     "damageType": "Pipa PE",
     "keterangan": "Flexible PE bocor",
     "damage": "Pipa PE — Flexible PE bocor",
-    "sparepart": "-",
+    "sparepart": "Flexible PE",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "168A",
-    "__row": 68
+    "__row": 67
   },
   {
     "timestamp": "2026-09-23T12:45:39+07:00",
@@ -2103,7 +2025,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "123B",
-    "__row": 67
+    "__row": 66
   },
   {
     "timestamp": "2026-09-23T09:31:16+07:00",
@@ -2129,7 +2051,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "301C",
-    "__row": 66
+    "__row": 65
   },
   {
     "timestamp": "2026-09-23T09:29:04+07:00",
@@ -2155,7 +2077,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "123G",
-    "__row": 65
+    "__row": 64
   },
   {
     "timestamp": "2026-09-23T08:43:30+07:00",
@@ -2181,7 +2103,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "131C",
-    "__row": 64
+    "__row": 63
   },
   {
     "timestamp": "2026-09-23T08:26:39+07:00",
@@ -2207,7 +2129,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "172F",
-    "__row": 63
+    "__row": 62
   },
   {
     "timestamp": "2026-09-23T05:31:37+07:00",
@@ -2233,7 +2155,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "190C",
-    "__row": 75
+    "__row": 74
   },
   {
     "timestamp": "2026-09-23T05:26:08+07:00",
@@ -2259,7 +2181,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "136C",
-    "__row": 74
+    "__row": 73
   },
   {
     "timestamp": "2026-09-23T05:24:15+07:00",
@@ -2285,7 +2207,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "125C",
-    "__row": 73
+    "__row": 72
   },
   {
     "timestamp": "2026-09-23T05:23:09+07:00",
@@ -2311,7 +2233,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "158C",
-    "__row": 72
+    "__row": 71
   },
   {
     "timestamp": "2026-09-23T05:13:31+07:00",
@@ -2337,7 +2259,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "103E",
-    "__row": 71
+    "__row": 70
   },
   {
     "timestamp": "2026-09-23T05:08:14+07:00",
@@ -2363,33 +2285,7 @@
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "144F",
-    "__row": 70
-  },
-  {
-    "timestamp": "2026-09-22T11:43:30+07:00",
-    "tanggalInspeksi": "2026-09-22",
-    "lokasi": "102C",
-    "divisi": "PG2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": "-",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Oil cooler pendingin gearbox bocor",
-    "damage": "Pompa Sumur Bor — Oil cooler pendingin gearbox bocor",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
-    "tingkat": "Berat",
-    "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
-    "__rawTgl": "22/09/2026",
-    "__yearFixed": false,
-    "unit": "102C",
-    "__row": 60
+    "__row": 69
   },
   {
     "timestamp": "2026-09-22T11:08:28+07:00",
@@ -2407,15 +2303,15 @@
     "damage": "Dinamo — Dinamo start rusak",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "303B",
-    "__row": 59
+    "__row": 58
   },
   {
     "timestamp": "2026-09-22T11:07:14+07:00",
@@ -2441,7 +2337,7 @@
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "101D",
-    "__row": 58
+    "__row": 57
   },
   {
     "timestamp": "2026-09-22T10:04:58+07:00",
@@ -2467,7 +2363,7 @@
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "115D",
-    "__row": 55
+    "__row": 54
   },
   {
     "timestamp": "2026-09-22T10:03:50+07:00",
@@ -2483,7 +2379,7 @@
     "damageType": "Transmisi",
     "keterangan": "Ganti kampas rem",
     "damage": "Transmisi — Ganti kampas rem",
-    "sparepart": "-",
+    "sparepart": "Kampas rem",
     "prNumber": null,
     "status": "Selesai",
     "repairStatus": "Sudah",
@@ -2493,7 +2389,7 @@
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "120C",
-    "__row": 54
+    "__row": 53
   },
   {
     "timestamp": "2026-09-22T09:51:11+07:00",
@@ -2519,7 +2415,7 @@
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "155H",
-    "__row": 53
+    "__row": 52
   },
   {
     "timestamp": "2026-09-22T08:04:53+07:00",
@@ -2545,7 +2441,7 @@
     "__rawTgl": "22/09/2026",
     "__yearFixed": false,
     "unit": "157H",
-    "__row": 62
+    "__row": 61
   },
   {
     "timestamp": "2026-09-21T22:25:08+07:00",
@@ -2571,7 +2467,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "103E",
-    "__row": 52
+    "__row": 51
   },
   {
     "timestamp": "2026-09-21T22:20:31+07:00",
@@ -2597,7 +2493,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "111C9",
-    "__row": 50
+    "__row": 49
   },
   {
     "timestamp": "2026-09-21T18:41:32+07:00",
@@ -2623,7 +2519,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "114E",
-    "__row": 49
+    "__row": 48
   },
   {
     "timestamp": "2026-09-21T18:39:32+07:00",
@@ -2649,7 +2545,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "120J",
-    "__row": 48
+    "__row": 47
   },
   {
     "timestamp": "2026-09-21T18:37:49+07:00",
@@ -2675,7 +2571,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 47
+    "__row": 46
   },
   {
     "timestamp": "2026-09-21T18:35:41+07:00",
@@ -2693,15 +2589,15 @@
     "damage": "Pipa PE — Pipa PE bocor",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "132B",
-    "__row": 46
+    "__row": 45
   },
   {
     "timestamp": "2026-09-21T13:55:15+07:00",
@@ -2727,7 +2623,33 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "178C",
-    "__row": 61
+    "__row": 60
+  },
+  {
+    "timestamp": "2026-09-21T11:43:30+07:00",
+    "tanggalInspeksi": "2026-09-21",
+    "lokasi": "102C",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "As sumur rusak",
+    "damage": "Pompa Sumur Bor — As sumur rusak",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "21/09/2026",
+    "__yearFixed": false,
+    "unit": "102C",
+    "__row": 59
   },
   {
     "timestamp": "2026-09-21T11:18:03+07:00",
@@ -2753,7 +2675,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "136F1",
-    "__row": 45
+    "__row": 44
   },
   {
     "timestamp": "2026-09-21T10:59:33+07:00",
@@ -2771,15 +2693,15 @@
     "damage": "Turbin — Perbaikan Fillowblock dan Seal nilon",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "Bengkel PG2",
-    "__row": 44
+    "__row": 43
   },
   {
     "timestamp": "2026-09-21T10:55:55+07:00",
@@ -2805,7 +2727,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "127E",
-    "__row": 43
+    "__row": 42
   },
   {
     "timestamp": "2026-09-21T10:55:08+07:00",
@@ -2831,7 +2753,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "124G",
-    "__row": 42
+    "__row": 41
   },
   {
     "timestamp": "2026-09-21T10:46:55+07:00",
@@ -2857,7 +2779,7 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "130E",
-    "__row": 41
+    "__row": 40
   },
   {
     "timestamp": "2026-09-21T10:41:47+07:00",
@@ -2883,32 +2805,6 @@
     "__rawTgl": "21/09/2026",
     "__yearFixed": false,
     "unit": "113D",
-    "__row": 40
-  },
-  {
-    "timestamp": "2026-09-21T10:40:20+07:00",
-    "tanggalInspeksi": "2026-09-21",
-    "lokasi": "303C",
-    "divisi": "PG2",
-    "engineType": "DEM",
-    "engineCode": "0035",
-    "engine": "DEM – 0035",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Blok Mesin",
-    "keterangan": "Dudukan ulir Neple oil cooler",
-    "damage": "Blok Mesin — Dudukan ulir Neple oil cooler",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
-    "__rawTgl": "21/09/2026",
-    "__yearFixed": false,
-    "unit": "303C",
     "__row": 39
   },
   {
@@ -2979,15 +2875,15 @@
     "damage": "Turbin — Seal mekanik bocor",
     "sparepart": "Seal mekanik",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "20/09/2026",
     "__yearFixed": false,
     "unit": "106I",
-    "__row": 51
+    "__row": 50
   },
   {
     "timestamp": "2026-09-20T13:36:18+07:00",
@@ -3161,11 +3057,11 @@
     "damage": "Gearbox — Seal gland packing rusak",
     "sparepart": "Seal gland packing",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "19/09/2026",
     "__yearFixed": false,
     "unit": "138B",
@@ -3317,11 +3213,11 @@
     "damage": "Prodo — Rusak Rilis Kopling",
     "sparepart": "Kopling Prodo",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "18/09/2026",
     "__yearFixed": false,
     "unit": "137A",
@@ -3897,7 +3793,7 @@
     "__rawTgl": "02/09/2026",
     "__yearFixed": false,
     "unit": "172I",
-    "__row": 57
+    "__row": 56
   },
   {
     "timestamp": "2026-09-01T10:25:17+07:00",
@@ -3915,14 +3811,14 @@
     "damage": "Radiator — Radiator disuntik, Gasket silinder head jebol",
     "sparepart": "Radiator",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "01/09/2026",
     "__yearFixed": false,
     "unit": "123G",
-    "__row": 56
+    "__row": 55
   }
 ]
