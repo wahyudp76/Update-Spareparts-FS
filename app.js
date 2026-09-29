@@ -450,6 +450,45 @@ async function fetchGithubCache() {
 let __refreshSeq = 0;
 let __refreshInFlight = null;
 
+// ---- Rekonsiliasi tulis-lalu-baca ----
+// Setelah edit/tambah/hapus, Google kadang masih mengirim CSV LAMA selama beberapa
+// detik (cache gviz). Tanpa penjaga ini, perubahan yang baru disimpan tampak
+// "kembali seperti semula" di dashboard. Perubahan lokal dipertahankan sampai
+// data server benar-benar mencerminkannya (maks. 60 detik), lalu sync diulang.
+const PENDING_TTL = 60*1000;
+const __pendingWrites = []; // {kind:'update'|'create'|'delete', ts, row, rec, key}
+const _wkey = d => `${d.lokasi}|${d.damageType}|${d.tanggalInspeksi}`;
+const _sameFields = (a,b) => ['lokasi','divisi','damageType','keterangan','sparepart','prNumber','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','tanggalInspeksi']
+    .every(f => String(a[f]==null?'':a[f]) === String(b[f]==null?'':b[f]));
+function notePendingWrite(kind, rec, row){
+    __pendingWrites.push({kind, ts:Date.now(), row: (typeof row==='number'?row:rec&&rec.__row), rec, key: rec?_wkey(rec):null});
+}
+function reconcilePendingWrites(data){
+    const now=Date.now(); let unresolved=false;
+    for(let i=__pendingWrites.length-1;i>=0;i--){
+        const pw=__pendingWrites[i];
+        if(now-pw.ts>PENDING_TTL){ __pendingWrites.splice(i,1); continue; }
+        let resolved=false;
+        if(pw.kind==='update'){
+            const srv = data.find(d=>d.__row===pw.row) || data.find(d=>_wkey(d)===pw.key);
+            if(!srv || _sameFields(srv,pw.rec)) resolved=true;
+            else { const idx=data.indexOf(srv); data[idx]=Object.assign({}, pw.rec, {__row: srv.__row}); }
+        } else if(pw.kind==='create'){
+            if(data.some(d=>_wkey(d)===pw.key)) resolved=true;
+            else data.unshift(pw.rec);
+        } else if(pw.kind==='delete'){
+            const idx = data.findIndex(d=>_wkey(d)===pw.key && (pw.row==null || d.__row===pw.row));
+            if(idx<0) resolved=true; else data.splice(idx,1);
+        }
+        if(resolved) __pendingWrites.splice(i,1); else unresolved=true;
+    }
+    if(unresolved){
+        clearTimeout(reconcilePendingWrites._t);
+        reconcilePendingWrites._t = setTimeout(()=>refreshData(true,{silent:true}), 5000);
+    }
+    return data;
+}
+
 /**
  * Muat data. Urutan sumber (selalu sama, baik saat load pertama, reload,
  * auto-refresh, maupun klik tombol Refresh):
@@ -477,30 +516,45 @@ async function refreshData(forceLive=false, opts={}) {
         if(es) es.classList.add('hidden');
     }
 
-    // First paint instan dari cache lokal (localStorage) sambil menunggu data segar
+    // Paint sementara (cache lokal / data.json) sambil menunggu data segar dari Sheets
+    const paintInterim = (recs, label) => {
+        rawData = indexRecords(recs); validateAll(rawData);
+        populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
+        populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
+        populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
+        populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
+        applyFilters();
+        if(ls) ls.classList.add('hidden');
+        const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `${label==='github-cache'?'Cache GitHub':'Cache lokal'} · ${rawData.length} record · memperbarui…`;
+    };
     if (isFirstLoad && !rawData.length) {
         try {
             const c = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY)||'null');
-            if (c && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts) < 7*86400000) {
-                rawData = indexRecords(normalizeFromJson(c.data)); validateAll(rawData);
-                populateMultiSelect('divisiFilter', [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort(), state.divisi);
-                populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
-                populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
-                populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
-                applyFilters();
-                if(ls) ls.classList.add('hidden');
-                const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `Cache lokal · ${rawData.length} record · memperbarui…`;
-            }
+            if (c && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts) < 7*86400000) paintInterim(normalizeFromJson(c.data), 'local');
         } catch(e) {}
     }
     const run = (async () => {
         let data=null, source='empty', note='';
-        // 1) Live Sheets
-        data = await fetchLiveCSV();
+        // 1) Live Sheets — pada muat pertama tanpa cache lokal, data.json (GitHub, origin
+        //    sama & cepat) diambil paralel dan dipakai dulu bila Sheets lambat (>1,2 dtk),
+        //    lalu ditimpa hasil live begitu tiba. Layar tidak kosong menunggu Google.
+        const livePromise = fetchLiveCSV();
+        let cachePromise = null;
+        if (isFirstLoad && !rawData.length) {
+            cachePromise = fetchGithubCache();
+            const early = await Promise.race([livePromise.then(()=> 'live'), new Promise(r=>setTimeout(()=>r('slow'),1200))]);
+            if (early === 'slow') {
+                const quick = await Promise.race([cachePromise, new Promise(r=>setTimeout(()=>r(null),1500))]);
+                if (quick && quick.length && seq === __refreshSeq && !rawData.length) {
+                    paintInterim(quick, 'github-cache');
+                }
+            }
+        }
+        data = await livePromise;
         if (data && data.length) source='live-sheet';
         // 2) Cadangan: data.json (cache GitHub)
         if (!data || !data.length) {
-            const cached = await fetchGithubCache();
+            const cached = await (cachePromise || fetchGithubCache());
             if (cached && cached.length) { data = cached; source='github-cache'; }
             else if (cached && !cached.length && data && !data.length) { data = []; source='empty'; }
         }
@@ -523,11 +577,17 @@ async function refreshData(forceLive=false, opts={}) {
             }
         }
 
+        if(source==='live-sheet' || source==='github-cache') data = reconcilePendingWrites(data);
         validateAll(data);
         rawData = indexRecords(data);
         renderQualityBanner();
         if (source==='live-sheet' || source==='github-cache') {
-            try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ts:Date.now(), src:source, data})); } catch(e) {}
+            // Simpan di latar (idle) tanpa field turunan agar cache kecil & parse cepat
+            const persist = () => { try {
+                const slim = data.map(d=>{ const o={}; for(const k in d){ if(!k.startsWith('__') || k==='__row') o[k]=d[k]; } return o; });
+                localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ts:Date.now(), src:source, data:slim}));
+            } catch(e) {} };
+            (window.requestIdleCallback ? requestIdleCallback(persist,{timeout:3000}) : setTimeout(persist,500));
         }
         const syncEl=document.getElementById('syncTime');
         if(syncEl && source!=='stale' && source!=='error')
@@ -857,15 +917,19 @@ function updateStats() {
 }
 function animateNumber(id,tgt){const el=document.getElementById(id);if(!el)return;animateNumberEl(el,tgt);}
 function animateNumberEl(el,tgt) {
+    // Hentikan animasi sebelumnya pada elemen yang sama — dua interval yang berjalan
+    // bersamaan bisa berakhir di angka lama (KPI salah setelah refresh beruntun).
+    if(el.__animT){ clearInterval(el.__animT); el.__animT=null; }
     const cur=parseInt((el.textContent||'0').replace(/\./g,''))||0;
-    if(cur===tgt)return;
+    if(cur===tgt){ el.textContent=tgt.toLocaleString('id-ID'); return; }
+    if(document.hidden){ el.textContent=tgt.toLocaleString('id-ID'); return; }
     const step=Math.max(1,Math.ceil(Math.abs(tgt-cur)/15));
     let v=cur;
-    const fn=setInterval(()=>{
+    el.__animT=setInterval(()=>{
         if(v<tgt)v=Math.min(v+step,tgt);
         else if(v>tgt)v=Math.max(v-step,tgt);
         el.textContent=v.toLocaleString('id-ID');
-        if(v===tgt)clearInterval(fn);
+        if(v===tgt){clearInterval(el.__animT); el.__animT=null;}
     },25);
 }
 
@@ -2583,10 +2647,11 @@ async function submitCreate(){
         }])[0];
         revalidateAfterWrite(rec);
         rawData.unshift(indexRecords([rec])[0]);
+        notePendingWrite('create', rawData[0], newRow);
         closeModal('editModal');
         showToast(newRow?`Laporan tersimpan di spreadsheet (baris ${newRow}).`:'Laporan tersimpan di spreadsheet.','success');
         applyFilters(); renderQualityBanner();
-        setTimeout(()=>refreshData(true,{silent:true}), 1500);
+        setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${escapeHtml(e.message)}</span>`;
         btn.disabled=false;
@@ -2720,12 +2785,13 @@ async function submitEdit(){
         upd.irrigator = (upd.irrType&&upd.irrCode&&upd.irrType!==upd.irrCode)?`${upd.irrType} – ${upd.irrCode}`:(upd.irrCode||upd.irrType||'-');
         upd.damage = upd.keterangan ? (upd.damageType?`${upd.damageType} — ${upd.keterangan}`:upd.keterangan) : (upd.damageType||'-');
         rawData[rawi] = indexRecords([revalidateAfterWrite(upd)])[0];
+        notePendingWrite('update', rawData[rawi], rawData[rawi].__row);
         closeModal('editModal');
         showToast('Perubahan tersimpan di spreadsheet.','success');
         applyFilters(); renderQualityBanner();
         // refreshData kini SELALU membaca Sheets langsung (bukan cache) → aman untuk
         // menyelaraskan ulang dari sumber kebenaran, termasuk nomor baris (__row).
-        setTimeout(()=>refreshData(true,{silent:true}), 1500);
+        setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
@@ -2765,12 +2831,13 @@ async function submitDelete(){
         closeModal('deleteModal');
         showToast('Baris dihapus dari spreadsheet.','success');
         const deletedRow = d.__row;
+        notePendingWrite('delete', d, deletedRow);
         rawData.splice(rawi,1);
         // Baris di bawah yang dihapus bergeser naik 1 di spreadsheet → koreksi __row lokal
         // agar edit/hapus berikutnya (sebelum refresh) tetap mengenai baris yang benar.
         if(typeof deletedRow==='number') rawData.forEach(x=>{ if(typeof x.__row==='number' && x.__row>deletedRow) x.__row--; });
         applyFilters(); renderQualityBanner();
-        setTimeout(()=>refreshData(true,{silent:true}), 1500);
+        setTimeout(()=>refreshData(true,{silent:true}), 2500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
         btn.disabled=false;
