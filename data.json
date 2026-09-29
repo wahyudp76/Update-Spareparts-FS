@@ -1,5 +1,57 @@
 [
   {
+    "timestamp": "2026-09-29T22:12:45+07:00",
+    "tanggalInspeksi": "2026-09-29",
+    "lokasi": "301B",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0109",
+    "irrigator": "ITI – 0109",
+    "damageType": "Transmisi",
+    "keterangan": "Perbaikan gear transmisi",
+    "damage": "Transmisi — Perbaikan gear transmisi",
+    "sparepart": "Gear transmisi",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "",
+    "__rawTingkat": "",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "29/09/2026",
+    "__yearFixed": false,
+    "unit": "301B",
+    "__row": 153
+  },
+  {
+    "timestamp": "2026-09-29T22:10:42+07:00",
+    "tanggalInspeksi": "2026-09-29",
+    "lokasi": "124G",
+    "divisi": "FM4",
+    "engineType": "SPE",
+    "engineCode": "0020",
+    "engine": "SPE – 0020",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Panel",
+    "keterangan": "Panel tidak bisa start",
+    "damage": "Panel — Panel tidak bisa start",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Berat",
+    "__rawTingkat": "Berat",
+    "__rawRepair": "Belum",
+    "__rawTgl": "29/09/2026",
+    "__yearFixed": false,
+    "unit": "124G",
+    "__row": 152
+  },
+  {
     "timestamp": "2026-09-29T14:31:43+07:00",
     "tanggalInspeksi": "2026-09-29",
     "lokasi": "143G",
@@ -23,7 +75,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 152
+    "__row": 151
   },
   {
     "timestamp": "2026-09-29T11:29:34+07:00",
@@ -49,7 +101,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 151
+    "__row": 150
   },
   {
     "timestamp": "2026-09-29T11:28:28+07:00",
@@ -75,7 +127,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 150
+    "__row": 149
   },
   {
     "timestamp": "2026-09-29T11:26:51+07:00",
@@ -101,7 +153,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "127E",
-    "__row": 149
+    "__row": 148
   },
   {
     "timestamp": "2026-09-29T11:12:36+07:00",
@@ -127,7 +179,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "139C1",
-    "__row": 148
+    "__row": 147
   },
   {
     "timestamp": "2026-09-29T11:01:31+07:00",
@@ -179,7 +231,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "132D",
-    "__row": 147
+    "__row": 146
   },
   {
     "timestamp": "2026-09-29T10:43:59+07:00",
@@ -258,32 +310,6 @@
     "__yearFixed": false,
     "unit": "118D",
     "__row": 137
-  },
-  {
-    "timestamp": "2026-09-29T09:28:18+07:00",
-    "tanggalInspeksi": "2026-09-29",
-    "lokasi": "144D1",
-    "divisi": "FM4",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": "-",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Pompa Sumur Bor",
-    "keterangan": "Perbaikan seal gland packing",
-    "damage": "Pompa Sumur Bor — Perbaikan seal gland packing",
-    "sparepart": "Seal gland packing",
-    "prNumber": null,
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Sudah",
-    "__rawTgl": "29/09/2026",
-    "__yearFixed": false,
-    "unit": "144D1",
-    "__row": 146
   },
   {
     "timestamp": "2026-09-29T09:24:36+07:00",
@@ -975,7 +1001,7 @@
     "damageType": "Pompa Sumur Bor",
     "keterangan": "ganti seal asbes sumur",
     "damage": "Pompa Sumur Bor — ganti seal asbes sumur",
-    "sparepart": "seal",
+    "sparepart": "Seal asbes",
     "prNumber": null,
     "status": "Selesai",
     "repairStatus": "Sudah",
@@ -2121,11 +2147,11 @@
     "damage": "Blok Mesin — Overhaul mesin",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "23/09/2026",
     "__yearFixed": false,
     "unit": "123G",
