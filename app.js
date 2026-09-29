@@ -3011,18 +3011,21 @@ async function callWriteProxy(payload, opts={}){
             }
             if(/accounts\.google\.com|Sign in/i.test(t))
                 throw new Error('Apps Script meminta login. Deploy ulang dengan "Who has access: Anyone" (bukan "Anyone with Google account").');
-            if(/Page Not Found/i.test(t))
-                throw new Error('URL Apps Script tidak ditemukan / deployment dihapus. Periksa WRITE_URL di config.js.');
+            if(/Page Not Found/i.test(t) || r.status===404){
+                // Saat Google sedang terganggu, /exec yang valid pun bisa sesaat menjawab 404 → coba lagi.
+                lastErr = Object.assign(new Error('Apps Script sesaat menjawab "Page Not Found" (gangguan sisi Google, atau URL deployment berubah).'), {transient:true, html:true});
+                continue;
+            }
             throw new Error('Respons tidak dikenal dari Apps Script (HTML). Deploy ulang web app sebagai versi baru.');
         }
-        if(!r.ok){ lastErr = Object.assign(new Error('HTTP '+r.status+': '+t.slice(0,200)), {transient: r.status>=500}); if(lastErr.transient) continue; throw lastErr; }
+        if(!r.ok){ lastErr = Object.assign(new Error('HTTP '+r.status+': '+t.slice(0,200)), {transient: r.status>=500 || r.status===404 || r.status===429}); if(lastErr.transient) continue; throw lastErr; }
         if(/^error: server sibuk/i.test(t)){ lastErr = Object.assign(new Error(t), {transient:true}); continue; }
         if(!/^ok\b/i.test(t)) throw new Error(t.slice(0,300) || 'Respons kosong dari Apps Script');
         return t;
     }
     // Semua percobaan gagal karena gangguan sementara: perubahan MUNGKIN sudah tersimpan.
     const err = new Error((lastErr&&lastErr.message||'Gagal') + (lastErr&&lastErr.html
-        ? ' Jika terus terjadi: buka editor Apps Script → Run "authorize" → Deploy → Manage deployments → Edit → New version.'
+        ? ' Biasanya pulih dalam beberapa menit. Jika terus terjadi: buka <URL>/exec?action=check di browser — bila bukan "ok: …", jalankan "authorize" lalu Deploy → Manage deployments → Edit → New version.'
         : ''));
     err.uncertain = true; err.opId = payload.opId;
     throw err;
