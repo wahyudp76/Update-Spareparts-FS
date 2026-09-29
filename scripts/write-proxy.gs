@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v4 — tambah action 'create': catat laporan baru dari web)
+ * PG2 Irrigation Dashboard — Write Proxy  (v5 — create + pencocokan baris toleran tanggal salah tahun)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v4';
+var VERSION    = 'v5';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -164,9 +164,17 @@ function doPost(e) {
       return lokOk && dmgOk && tsOk;
     }
 
+    function rowMatchesLoose(rowVals, p) {
+      // Untuk nomor baris yang dikirim dashboard: cukup lokasi + jenis kerusakan sama.
+      // (Tanggal bisa saja sedang salah di sheet — justru itu yang mau diperbaiki.)
+      var lokOk = _norm(rowVals[lokCol]) === _norm(p.matchLokasi);
+      var dmgOk = dmgCol < 0 || _norm(rowVals[dmgCol]) === _norm(p.matchDamage);
+      return lokOk && dmgOk;
+    }
     function findRow(p) {
       var sr = parseInt(p.sheetRow, 10);
       if (sr >= 2 && sr <= lastRow && rowMatches(data[sr - 2], p)) return sr;
+      if (sr >= 2 && sr <= lastRow && rowMatchesLoose(data[sr - 2], p)) return sr;
       // fallback: cari di seluruh sheet
       var found = [];
       for (var i = 0; i < data.length; i++) if (rowMatches(data[i], p)) found.push(i + 2);
@@ -233,12 +241,14 @@ function doPost(e) {
 }
 
 function _norm(v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().toLowerCase(); }
+// Tahun salah ketik ("0026" → 26, "26") dianggap 2026 agar baris tetap bisa dicocokkan & diperbaiki
+function _fixYear(y) { return (y >= 0 && y < 100) ? 2000 + y : y; }
 function _ts(v) {
-  if (v instanceof Date) return v.getTime();
+  if (v instanceof Date) { var y = v.getFullYear(); return y < 100 ? new Date(_fixYear(y), v.getMonth(), v.getDate()).getTime() : v.getTime(); }
   if (!v) return 0;
   var s = String(v).trim();
-  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);       // dd/MM/yyyy (locale ID)
-  if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);     // dd/MM/yyyy (locale ID)
+  if (m) return new Date(_fixYear(+m[3]), +m[2] - 1, +m[1]).getTime();
   var d = new Date(s);
   return isNaN(d.getTime()) ? 0 : d.getTime();
 }

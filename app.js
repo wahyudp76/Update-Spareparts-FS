@@ -86,6 +86,15 @@ function validateAll(arr){
     Object.values(seen).filter(v=>v.length>1).forEach(v=>v.slice(1).forEach(d=>{ d.__issues.push({field:'dup',col:'—',type:'duplicate',msg:`Kemungkinan duplikat dari baris ${v[0].__row}.`}); }));
     return arr.filter(d=>d.__issues.length);
 }
+// Setelah baris ditulis ke sheet (edit/tambah), nilai di sheet = nilai form (sudah normal),
+// jadi tanda masalah lama harus dihitung ulang, bukan dibawa dari record sebelumnya.
+function revalidateAfterWrite(rec){
+    rec.__rawTingkat = rec.tingkat || ''; rec.__rawRepair = rec.repairStatus || '';
+    rec.__rawTgl = rec.tanggalInspeksi || ''; rec.__yearFixed = false;
+    rec.__issues = [];
+    validateRecord(rec);
+    return rec;
+}
 let __lastQualityKey = '';
 function renderQualityBanner(){
     const bad = rawData.filter(d=>d.__issues && d.__issues.length);
@@ -117,7 +126,7 @@ function openQualityModal(){
         <td class="py-2 pr-2 font-mono text-slate-500">${d.__row||'—'}</td>
         <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-blue-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
         <td class="py-2 pr-2">${d.__issues.map(i=>`<div class="mb-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${i.type==='separator'||i.type==='scientific'?'bg-red-100 text-red-700':i.type==='duplicate'?'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-800'}">${escapeHtml(i.col)}</span> <span class="text-slate-700">${escapeHtml(i.msg)}</span>${i.fixed&&i.fixed!==i.raw?` <span class="text-emerald-700 text-[10px]">→ ditampilkan sebagai <b>${escapeHtml(i.fixed)}</b></span>`:''}</div>`).join('')}</td>
-        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');switchTab('data');openEditModal(filteredData.indexOf(rawData[${rawData.indexOf(d)}]))" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>`:''}</td>
+        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>`:''}</td>
     </tr>`).join('');
     modal.querySelector('.modal').innerHTML = `
         <div class="p-5 text-white" style="background:linear-gradient(135deg,#d97706,#b45309)">
@@ -2572,7 +2581,7 @@ async function submitCreate(){
             damageType: payload.damageType, keterangan: payload.keterangan, sparepart: payload.sparepart,
             prNumber: payload.prNumber, repairStatus: payload.repairStatus, tingkat: payload.tingkat, __row: newRow
         }])[0];
-        validateRecord(rec);
+        revalidateAfterWrite(rec);
         rawData.unshift(indexRecords([rec])[0]);
         closeModal('editModal');
         showToast(newRow?`Laporan tersimpan di spreadsheet (baris ${newRow}).`:'Laporan tersimpan di spreadsheet.','success');
@@ -2585,13 +2594,18 @@ async function submitCreate(){
 }
 
 function openEditModal(globalIdx){
-    if(!requireWriteEndpoint()) return;
-    fillDatalists();
-    setEditMode('update');
     // globalIdx adalah indeks di filteredData
     const d = filteredData[globalIdx];
     if(!d) return;
-    const rawi = rawData.indexOf(d);
+    return openEditModalRaw(rawData.indexOf(d));
+}
+// Buka editor berdasarkan indeks di rawData (tidak bergantung pada filter aktif)
+function openEditModalRaw(rawi){
+    if(!requireWriteEndpoint()) return;
+    fillDatalists();
+    setEditMode('update');
+    const d = rawData[rawi];
+    if(!d){ showToast('Baris tidak ditemukan di data lokal. Klik Refresh lalu coba lagi.','warning'); return; }
     document.getElementById('editRowIdx').value = rawi;
     document.getElementById('editSheetRow').value = d.__row || '';
     document.getElementById('editRowLabel').textContent = `· ${d.lokasi} · ${d.damageType||'-'} · ${fmtDateShort(d.timestamp)}`;
@@ -2610,6 +2624,9 @@ function openEditModal(globalIdx){
     document.getElementById('f_sparepart').value = d.sparepart==='-'?'':d.sparepart;
     document.getElementById('f_prNumber').value = d.prNumber || '';
     document.getElementById('editMsg').innerHTML='';
+    if(d.__issues && d.__issues.length){
+        document.getElementById('editMsg').innerHTML = `<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(d.__issues[0].msg)}${d.__issues.length>1?` (+${d.__issues.length-1} lainnya)`:''} — form sudah berisi nilai yang dinormalkan; klik Simpan untuk menulisnya ke spreadsheet.</span>`;
+    }
     document.getElementById('editSaveBtn').disabled=false;
     openModal('editModal');
 }
@@ -2702,10 +2719,10 @@ async function submitEdit(){
         upd.engine = [upd.engineType,upd.engineCode].filter(x=>x&&x!=='-').join(' – ') || '-';
         upd.irrigator = (upd.irrType&&upd.irrCode&&upd.irrType!==upd.irrCode)?`${upd.irrType} – ${upd.irrCode}`:(upd.irrCode||upd.irrType||'-');
         upd.damage = upd.keterangan ? (upd.damageType?`${upd.damageType} — ${upd.keterangan}`:upd.keterangan) : (upd.damageType||'-');
-        rawData[rawi] = indexRecords([upd])[0];
+        rawData[rawi] = indexRecords([revalidateAfterWrite(upd)])[0];
         closeModal('editModal');
         showToast('Perubahan tersimpan di spreadsheet.','success');
-        applyFilters();
+        applyFilters(); renderQualityBanner();
         // refreshData kini SELALU membaca Sheets langsung (bukan cache) → aman untuk
         // menyelaraskan ulang dari sumber kebenaran, termasuk nomor baris (__row).
         setTimeout(()=>refreshData(true,{silent:true}), 1500);
@@ -2752,7 +2769,7 @@ async function submitDelete(){
         // Baris di bawah yang dihapus bergeser naik 1 di spreadsheet → koreksi __row lokal
         // agar edit/hapus berikutnya (sebelum refresh) tetap mengenai baris yang benar.
         if(typeof deletedRow==='number') rawData.forEach(x=>{ if(typeof x.__row==='number' && x.__row>deletedRow) x.__row--; });
-        applyFilters();
+        applyFilters(); renderQualityBanner();
         setTimeout(()=>refreshData(true,{silent:true}), 1500);
     }catch(e){
         msg.innerHTML=`<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>Error: ${e.message}</span>`;
