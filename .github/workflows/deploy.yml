@@ -43,6 +43,7 @@ jobs:
           TZ: Asia/Jakarta
         run: |
           node scripts/fetch-data.js
+          node scripts/fetch-form-options.js
           echo "=== data.meta.json ==="
           cat data.meta.json || true
 

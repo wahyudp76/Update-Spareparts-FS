@@ -2832,18 +2832,30 @@ function setEditMode(mode){
     btn.innerHTML = isCreate ? '<i class="fas fa-paper-plane mr-1"></i>Simpan ke Spreadsheet' : '<i class="fas fa-save mr-1"></i>Simpan ke Spreadsheet';
     btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700');
 }
-// Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2"
-// (form ID 19vA7xX0ggR3lIihGI_X4c1QpqBNaUCoEGK_Tv4swOBM). Bila form diubah, perbarui di sini.
+// Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2".
+// Daftar bawaan di bawah ini adalah cadangan; saat dimuat, dashboard menimpanya dengan
+// form-options.json yang diperbarui otomatis oleh GitHub Actions dari Google Form
+// (scripts/fetch-form-options.js), jadi perubahan pilihan di form ikut tanpa ubah kode.
 const FORM_OPTIONS = {
     divisi:     ['PG2','FM4','OP2'],
     engineType: ['SPC','DEC','DED','DEM','SPE'],
     irrType:    ['BTI','ITI'],
-    damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel'],
+    damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel','Ban'],
     tingkat:    ['Ringan','Sedang','Berat'],
     repair:     ['Sudah','Belum']
 };
 // Isi <select> dari daftar form; nilai lama yang tidak ada di daftar (data historis) tetap
 // ditampilkan sebagai opsi agar edit tidak diam-diam mengubah data.
+async function loadFormOptions(){
+    try{
+        const r = await fetch('form-options.json?t='+Math.floor(Date.now()/600000), {cache:'no-cache'});
+        if(!r.ok) return;
+        const j = await r.json();
+        if(!j || !j.options) return;
+        Object.entries(j.options).forEach(([k,v])=>{ if(Array.isArray(v) && v.length && FORM_OPTIONS[k]) FORM_OPTIONS[k]=v; });
+        window.__formOptionsAt = j.fetchedAt;
+    }catch(e){}
+}
 function fillSelect(id, options, current, emptyLabel){
     const el=document.getElementById(id); if(!el) return;
     const cur = (current==null||current==='-') ? '' : String(current);
@@ -3257,6 +3269,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     // Setup banner edit/hapus
     initWriteSetup();
+    loadFormOptions(); // sinkron pilihan dropdown dengan Google Form (latar belakang)
     // Cek versi write-proxy di latar belakang: peringatkan bila kode lama masih terpasang
     (async()=>{
         const u=getWriteUrl(); if(!u) return;
