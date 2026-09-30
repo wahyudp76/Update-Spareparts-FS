@@ -1,5 +1,31 @@
 [
   {
+    "timestamp": "2026-09-30T10:19:56+07:00",
+    "tanggalInspeksi": "2026-09-30",
+    "lokasi": "117C",
+    "divisi": "PG2",
+    "engineType": "DEM",
+    "engineCode": "0073",
+    "engine": "DEM – 0073",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Ebara",
+    "keterangan": "Ganti bet pompa",
+    "damage": "Pompa Ebara — Ganti bet pompa",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "30/09/2026",
+    "__yearFixed": false,
+    "unit": "117C",
+    "__row": 156
+  },
+  {
     "timestamp": "2026-09-30T08:47:49+07:00",
     "tanggalInspeksi": "2026-09-30",
     "lokasi": "162H",
@@ -23,7 +49,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "162H",
-    "__row": 156
+    "__row": 155
   },
   {
     "timestamp": "2026-09-30T08:45:55+07:00",
@@ -49,7 +75,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "162I",
-    "__row": 155
+    "__row": 154
   },
   {
     "timestamp": "2026-09-30T08:30:24+07:00",
@@ -75,7 +101,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "112D",
-    "__row": 154
+    "__row": 153
   },
   {
     "timestamp": "2026-09-30T08:27:51+07:00",
@@ -88,9 +114,9 @@
     "irrType": "-",
     "irrCode": "-",
     "irrigator": "-",
-    "damageType": "HM",
+    "damageType": "Box Panel",
     "keterangan": "Perbaikan instlasi elektrik",
-    "damage": "HM — Perbaikan instlasi elektrik",
+    "damage": "Box Panel — Perbaikan instlasi elektrik",
     "sparepart": "-",
     "prNumber": null,
     "status": "Belum Ditangani",
@@ -101,7 +127,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "117C",
-    "__row": 153
+    "__row": 152
   },
   {
     "timestamp": "2026-09-30T08:20:43+07:00",
@@ -127,7 +153,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "144F",
-    "__row": 152
+    "__row": 151
   },
   {
     "timestamp": "2026-09-30T08:17:28+07:00",
@@ -153,7 +179,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "143C",
-    "__row": 151
+    "__row": 150
   },
   {
     "timestamp": "2026-09-30T08:13:55+07:00",
@@ -171,15 +197,15 @@
     "damage": "Pompa Ebara — Bearing ebara pecah",
     "sparepart": "Bearing",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "136F1",
-    "__row": 150
+    "__row": 149
   },
   {
     "timestamp": "2026-09-29T22:12:45+07:00",
@@ -205,7 +231,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "301B",
-    "__row": 149
+    "__row": 148
   },
   {
     "timestamp": "2026-09-29T22:10:42+07:00",
@@ -231,7 +257,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "124G",
-    "__row": 148
+    "__row": 147
   },
   {
     "timestamp": "2026-09-29T14:31:43+07:00",
@@ -249,40 +275,14 @@
     "damage": "Pompa Sumur Bor — Seal gland packing rusak",
     "sparepart": "Seal gland packing",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 147
-  },
-  {
-    "timestamp": "2026-09-29T11:29:34+07:00",
-    "tanggalInspeksi": "2026-09-29",
-    "lokasi": "142B",
-    "divisi": "FM4",
-    "engineType": "DEC",
-    "engineCode": "0039",
-    "engine": "DEC – 0039",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Dinamo",
-    "keterangan": "Tidak bisa star",
-    "damage": "Dinamo — Tidak bisa star",
-    "sparepart": "-",
-    "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
-    "__rawTgl": "29/09/2026",
-    "__yearFixed": false,
-    "unit": "142B",
     "__row": 146
   },
   {
@@ -899,11 +899,11 @@
     "damage": "Tangki Solar — Tangki solar bocor",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "27/09/2026",
     "__yearFixed": false,
     "unit": "144D1",
@@ -1055,11 +1055,11 @@
     "damage": "Pompa Sumur Bor — Seal gland packing rusak",
     "sparepart": "Seal gland packing",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "123B",
@@ -1315,11 +1315,11 @@
     "damage": "Tangki Solar — Tangki solar rembes",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "26/09/2026",
     "__yearFixed": false,
     "unit": "174C1",
