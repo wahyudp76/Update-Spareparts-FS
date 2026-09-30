@@ -2832,10 +2832,38 @@ function setEditMode(mode){
     btn.innerHTML = isCreate ? '<i class="fas fa-paper-plane mr-1"></i>Simpan ke Spreadsheet' : '<i class="fas fa-save mr-1"></i>Simpan ke Spreadsheet';
     btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700');
 }
+// Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2"
+// (form ID 19vA7xX0ggR3lIihGI_X4c1QpqBNaUCoEGK_Tv4swOBM). Bila form diubah, perbarui di sini.
+const FORM_OPTIONS = {
+    divisi:     ['PG2','FM4','OP2'],
+    engineType: ['SPC','DEC','DED','DEM','SPE'],
+    irrType:    ['BTI','ITI'],
+    damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel'],
+    tingkat:    ['Ringan','Sedang','Berat'],
+    repair:     ['Sudah','Belum']
+};
+// Isi <select> dari daftar form; nilai lama yang tidak ada di daftar (data historis) tetap
+// ditampilkan sebagai opsi agar edit tidak diam-diam mengubah data.
+function fillSelect(id, options, current, emptyLabel){
+    const el=document.getElementById(id); if(!el) return;
+    const cur = (current==null||current==='-') ? '' : String(current);
+    const opts = [...options];
+    if(cur && !opts.includes(cur)) opts.push(cur);
+    el.innerHTML = (emptyLabel!==undefined ? `<option value="">${emptyLabel}</option>` : '') +
+        opts.map(o=>`<option value="${escapeHtml(o)}"${o===cur?' selected':''}>${escapeHtml(o)}${options.includes(o)?'':' (tidak ada di form)'}</option>`).join('');
+    el.value = cur;
+}
+function fillFormSelects(d){
+    d = d || {};
+    fillSelect('f_divisi', FORM_OPTIONS.divisi, d.divisi && d.divisi!=='-' ? d.divisi : 'PG2');
+    fillSelect('f_engineType', FORM_OPTIONS.engineType, d.engineType, '— tidak ada —');
+    fillSelect('f_irrType', FORM_OPTIONS.irrType, d.irrType, '— tidak ada —');
+    fillSelect('f_damageType', FORM_OPTIONS.damageType, d.damageType, '— pilih jenis kerusakan —');
+}
 function fillDatalists(){
     const uniq = (f)=>[...new Set(rawData.map(d=>d[f]).filter(v=>v&&v!=='-'))].sort();
     const set=(id,vals)=>{ const el=document.getElementById(id); if(el) el.innerHTML = vals.map(v=>`<option value="${escapeHtml(v)}">`).join(''); };
-    set('dl_lokasi', uniq('lokasi')); set('dl_engineType', uniq('engineType')); set('dl_irrType', uniq('irrType')); set('dl_damageType', uniq('damageType'));
+    set('dl_lokasi', uniq('lokasi'));
 }
 // Validasi angka di sisi web (sebelum dikirim) — cegah titik/koma & digit salah masuk ke sheet
 function validateFormNumbers(){
@@ -2861,8 +2889,8 @@ function openCreateModal(){
     document.getElementById('editRowLabel').textContent = '';
     const now=new Date(); const pad=n=>String(n).padStart(2,'0');
     document.getElementById('f_tanggal').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-    ['f_lokasi','f_engineType','f_engineCode','f_irrType','f_irrCode','f_damageType','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
-    document.getElementById('f_divisi').value = (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2';
+    ['f_lokasi','f_engineCode','f_irrCode','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
+    fillFormSelects({ divisi: (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2' });
     document.getElementById('f_repair').value = 'Belum';
     document.getElementById('f_tingkat').value = '';
     document.getElementById('editMsg').innerHTML='';
@@ -2878,6 +2906,8 @@ async function submitCreate(){
     if(!g('f_lokasi')) errs.unshift('Lokasi wajib diisi.');
     if(!g('f_damageType')) errs.unshift('Jenis Kerusakan wajib diisi.');
     if(!g('f_tanggal')) errs.unshift('Tanggal Inspeksi wajib diisi.');
+    if(!g('f_keterangan')) errs.push('Keterangan Kerusakan wajib diisi (sesuai Google Form).');
+    if(!g('f_tingkat')) errs.push('Tingkat Kerusakan wajib dipilih (Ringan/Sedang/Berat).');
     if(errs.length){ msg.innerHTML=`<span class="text-red-600"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(errs[0])}</span>`; return; }
     const payload={
         action:'create',
@@ -2949,14 +2979,11 @@ function openEditModalRaw(rawi){
     // Isi form
     document.getElementById('f_tanggal').value = d.tanggalInspeksi;
     document.getElementById('f_lokasi').value = d.lokasi==='-'?'':d.lokasi;
-    document.getElementById('f_divisi').value = d.divisi==='-'?'PG2':d.divisi;
+    fillFormSelects(d);
     document.getElementById('f_repair').value = d.repairStatus==='Sudah'?'Sudah':'Belum';
     document.getElementById('f_tingkat').value = d.tingkat || '';
-    document.getElementById('f_engineType').value = d.engineType==='-'?'':d.engineType;
     document.getElementById('f_engineCode').value = d.engineCode==='-'?'':d.engineCode;
-    document.getElementById('f_irrType').value = d.irrType==='-'?'':d.irrType;
     document.getElementById('f_irrCode').value = d.irrCode==='-'?'':d.irrCode;
-    document.getElementById('f_damageType').value = d.damageType==='-'?'':d.damageType;
     document.getElementById('f_keterangan').value = d.keterangan || '';
     document.getElementById('f_sparepart').value = d.sparepart==='-'?'':d.sparepart;
     document.getElementById('f_prNumber').value = d.prNumber || '';

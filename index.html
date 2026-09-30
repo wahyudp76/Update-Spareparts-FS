@@ -804,7 +804,7 @@
             <input type="hidden" id="editRowIdx">
             <input type="hidden" id="editSheetRow">
             <input type="hidden" id="editMode" value="update">
-            <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
+            <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib — sama dengan Google Form. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
                 <div><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input" placeholder="104I" list="dl_lokasi"><datalist id="dl_lokasi"></datalist></div>
@@ -814,15 +814,15 @@
                 <div><label class="form-label">Status Perbaikan</label>
                     <select id="f_repair" class="form-input"><option value="Belum">Belum diperbaiki</option><option value="Sudah">Sudah diperbaiki</option></select>
                 </div>
-                <div><label class="form-label">Tingkat Kerusakan</label>
-                    <select id="f_tingkat" class="form-input"><option value="">— belum dinilai —</option><option>Berat</option><option>Sedang</option><option>Ringan</option></select>
+                <div><label class="form-label">Tingkat Kerusakan <span class="text-red-500">*</span></label>
+                    <select id="f_tingkat" class="form-input"><option value="">— pilih tingkat —</option><option>Ringan</option><option>Sedang</option><option>Berat</option></select>
                 </div>
-                <div><label class="form-label">Jenis Engine</label><input type="text" id="f_engineType" class="form-input" placeholder="DEM / DEC / SPC" list="dl_engineType"><datalist id="dl_engineType"></datalist></div>
+                <div><label class="form-label">Jenis Engine</label><select id="f_engineType" class="form-input"></select></div>
                 <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
-                <div><label class="form-label">Jenis Irrigator</label><input type="text" id="f_irrType" class="form-input" placeholder="BTI" list="dl_irrType"><datalist id="dl_irrType"></datalist></div>
+                <div><label class="form-label">Jenis Irrigator</label><select id="f_irrType" class="form-input"></select></div>
                 <div><label class="form-label">Kode Irrigator</label><input type="text" id="f_irrCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
-                <div class="full"><label class="form-label">Jenis Kerusakan <span class="text-red-500">*</span></label><input type="text" id="f_damageType" class="form-input" list="dl_damageType"><datalist id="dl_damageType"></datalist></div>
-                <div class="full"><label class="form-label">Keterangan Kerusakan</label><textarea id="f_keterangan" class="form-input textarea"></textarea></div>
+                <div class="full"><label class="form-label">Jenis Kerusakan <span class="text-red-500">*</span></label><select id="f_damageType" class="form-input"></select></div>
+                <div class="full"><label class="form-label">Keterangan Kerusakan <span class="text-red-500">*</span></label><textarea id="f_keterangan" class="form-input textarea" placeholder="Jelaskan kerusakan yang ditemukan"></textarea></div>
                 <div class="full"><label class="form-label">Spareparts Yang Dibutuhkan</label><textarea id="f_sparepart" class="form-input textarea" placeholder="Pisahkan dengan ; untuk beberapa item"></textarea></div>
                 <div class="full"><label class="form-label">Nomor PR / Notifikasi</label><input type="text" id="f_prNumber" class="form-input" placeholder="8 digit, kosongkan jika belum ada" inputmode="numeric"></div>
             </div>
@@ -872,7 +872,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v12').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v13').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
