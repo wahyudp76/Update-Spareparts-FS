@@ -1,5 +1,525 @@
 [
   {
+    "timestamp": "2026-10-02T20:15:38+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "109D1",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0199",
+    "irrigator": "ITI – 0199",
+    "damageType": "Hidrolik",
+    "keterangan": "Selang hidrolik pecah",
+    "damage": "Hidrolik — Selang hidrolik pecah",
+    "sparepart": "Selang hidrolik",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "109D1",
+    "__row": 215
+  },
+  {
+    "timestamp": "2026-10-02T20:11:47+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "139C1",
+    "divisi": "FM4",
+    "engineType": "DED",
+    "engineCode": "0027",
+    "engine": "DED – 0027",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Dinamo",
+    "keterangan": "Mesin tidak star",
+    "damage": "Dinamo — Mesin tidak star",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "139C1",
+    "__row": 214
+  },
+  {
+    "timestamp": "2026-10-02T19:58:48+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "154K",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0159",
+    "irrigator": "ITI – 0159",
+    "damageType": "Gun",
+    "keterangan": "Kaki gun bengkok",
+    "damage": "Gun — Kaki gun bengkok",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "154K",
+    "__row": 213
+  },
+  {
+    "timestamp": "2026-10-02T19:54:29+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "161E",
+    "divisi": "OP2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "BTI",
+    "irrCode": "0030",
+    "irrigator": "BTI – 0030",
+    "damageType": "Hidrolik",
+    "keterangan": "Hidrolik tidak berfungsi",
+    "damage": "Hidrolik — Hidrolik tidak berfungsi",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "161E",
+    "__row": 212
+  },
+  {
+    "timestamp": "2026-10-02T19:52:17+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "168G",
+    "divisi": "OP2",
+    "engineType": "SPC",
+    "engineCode": "0158",
+    "engine": "SPC – 0158",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Blok Mesin",
+    "keterangan": "Tali gas putus",
+    "damage": "Blok Mesin — Tali gas putus",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "168G",
+    "__row": 211
+  },
+  {
+    "timestamp": "2026-10-02T19:43:28+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "154K",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0159",
+    "irrigator": "ITI – 0159",
+    "damageType": "Gun",
+    "keterangan": "Kaki twin rusak",
+    "damage": "Gun — Kaki twin rusak",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "154K",
+    "__row": 210
+  },
+  {
+    "timestamp": "2026-10-02T19:33:34+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "136F1",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0236",
+    "irrigator": "ITI – 0236",
+    "damageType": "Hidrolik",
+    "keterangan": "Dongkrak keluar oli",
+    "damage": "Hidrolik — Dongkrak keluar oli",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "136F1",
+    "__row": 209
+  },
+  {
+    "timestamp": "2026-10-02T19:19:46+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "144D",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0077",
+    "irrigator": "ITI – 0077",
+    "damageType": "Pipa PE",
+    "keterangan": "Pipa Pe bocor",
+    "damage": "Pipa PE — Pipa Pe bocor",
+    "sparepart": "Pipa PE",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "144D",
+    "__row": 208
+  },
+  {
+    "timestamp": "2026-10-02T19:14:46+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "121C",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Perbaikan seal asbes",
+    "damage": "Pompa Sumur Bor — Perbaikan seal asbes",
+    "sparepart": "Seal",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "121C",
+    "__row": 207
+  },
+  {
+    "timestamp": "2026-10-02T19:11:06+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "101B",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0078",
+    "irrigator": "ITI – 0078",
+    "damageType": "Pipa PE",
+    "keterangan": "Pipa PE bocor",
+    "damage": "Pipa PE — Pipa PE bocor",
+    "sparepart": "Pipa PE",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "101B",
+    "__row": 138
+  },
+  {
+    "timestamp": "2026-10-02T19:05:40+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "120J",
+    "divisi": "PG2",
+    "engineType": "DED",
+    "engineCode": "0018",
+    "engine": "DED – 0018",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Selang",
+    "keterangan": "Perbaikan selang solar bocor",
+    "damage": "Selang — Perbaikan selang solar bocor",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "120J",
+    "__row": 137
+  },
+  {
+    "timestamp": "2026-10-02T16:25:39+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "135E",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0011",
+    "irrigator": "ITI – 0011",
+    "damageType": "Turbin",
+    "keterangan": "Turbin jebol",
+    "damage": "Turbin — Turbin jebol",
+    "sparepart": "Turbin",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "135E",
+    "__row": 206
+  },
+  {
+    "timestamp": "2026-10-02T16:22:15+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "155I",
+    "divisi": "FM4",
+    "engineType": "SPC",
+    "engineCode": "0223",
+    "engine": "SPC – 0223",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Ebara",
+    "keterangan": "Ganti vanbelt ebara",
+    "damage": "Pompa Ebara — Ganti vanbelt ebara",
+    "sparepart": "Vanbelt ebara",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "155I",
+    "__row": 205
+  },
+  {
+    "timestamp": "2026-10-02T16:21:03+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "129F",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0009",
+    "irrigator": "ITI – 0009",
+    "damageType": "Transmisi",
+    "keterangan": "Ganti transmisi dan rantai",
+    "damage": "Transmisi — Ganti transmisi dan rantai",
+    "sparepart": "Transmisi dan rantai",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "129F",
+    "__row": 204
+  },
+  {
+    "timestamp": "2026-10-02T16:19:11+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "158S",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Bearing as sumur habis",
+    "damage": "Pompa Sumur Bor — Bearing as sumur habis",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "158S",
+    "__row": 203
+  },
+  {
+    "timestamp": "2026-10-02T16:15:49+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "121C",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Sumur Bor",
+    "keterangan": "Perbaikan seal asbes",
+    "damage": "Pompa Sumur Bor — Perbaikan seal asbes",
+    "sparepart": "Seal asbes",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "121C",
+    "__row": 202
+  },
+  {
+    "timestamp": "2026-10-02T16:12:51+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "101B",
+    "divisi": "PG2",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "ITI",
+    "irrCode": "0078",
+    "irrigator": "ITI – 0078",
+    "damageType": "Pipa PE",
+    "keterangan": "PE gun bocor",
+    "damage": "Pipa PE — PE gun bocor",
+    "sparepart": "-",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "101B",
+    "__row": 201
+  },
+  {
+    "timestamp": "2026-10-02T16:09:56+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "120J",
+    "divisi": "PG2",
+    "engineType": "DED",
+    "engineCode": "0018",
+    "engine": "DED – 0018",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Selang",
+    "keterangan": "Perbaikan selang solar",
+    "damage": "Selang — Perbaikan selang solar",
+    "sparepart": "Selang solar",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "120J",
+    "__row": 200
+  },
+  {
+    "timestamp": "2026-10-02T16:07:27+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "303B",
+    "divisi": "PG2",
+    "engineType": "DED",
+    "engineCode": "0014",
+    "engine": "DED – 0014",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Filter",
+    "keterangan": "Ganti filter solar",
+    "damage": "Filter — Ganti filter solar",
+    "sparepart": "Filter solar",
+    "prNumber": null,
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Belum",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "303B",
+    "__row": 199
+  },
+  {
+    "timestamp": "2026-10-02T16:02:46+07:00",
+    "tanggalInspeksi": "2026-10-02",
+    "lokasi": "118E",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0139",
+    "engine": "SPC – 0139",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Ebara",
+    "keterangan": "Perbaikan seal asbes",
+    "damage": "Pompa Ebara — Perbaikan seal asbes",
+    "sparepart": "Seal asbes",
+    "prNumber": null,
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "02/10/2026",
+    "__yearFixed": false,
+    "unit": "118E",
+    "__row": 198
+  },
+  {
     "timestamp": "2026-10-02T11:35:45+07:00",
     "tanggalInspeksi": "2026-10-02",
     "lokasi": "173A",
@@ -23,7 +543,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "173A",
-    "__row": 195
+    "__row": 197
   },
   {
     "timestamp": "2026-10-02T11:35:09+07:00",
@@ -49,7 +569,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "152D",
-    "__row": 194
+    "__row": 196
   },
   {
     "timestamp": "2026-10-02T11:33:37+07:00",
@@ -75,7 +595,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "157H",
-    "__row": 193
+    "__row": 195
   },
   {
     "timestamp": "2026-10-02T11:26:31+07:00",
@@ -91,7 +611,7 @@
     "damageType": "Pompa Sumur Bor",
     "keterangan": "Ganti seal asbes yg rembes",
     "damage": "Pompa Sumur Bor — Ganti seal asbes yg rembes",
-    "sparepart": "Seal",
+    "sparepart": "Seal asbes",
     "prNumber": null,
     "status": "Selesai",
     "repairStatus": "Sudah",
@@ -101,7 +621,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "189A",
-    "__row": 192
+    "__row": 194
   },
   {
     "timestamp": "2026-10-02T10:31:42+07:00",
@@ -127,7 +647,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "106I",
-    "__row": 191
+    "__row": 193
   },
   {
     "timestamp": "2026-10-02T10:24:43+07:00",
@@ -153,7 +673,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "101D",
-    "__row": 190
+    "__row": 192
   },
   {
     "timestamp": "2026-10-02T09:54:54+07:00",
@@ -179,7 +699,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "123B",
-    "__row": 189
+    "__row": 191
   },
   {
     "timestamp": "2026-10-02T09:52:50+07:00",
@@ -205,7 +725,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "161B",
-    "__row": 188
+    "__row": 190
   },
   {
     "timestamp": "2026-10-02T09:47:51+07:00",
@@ -231,7 +751,7 @@
     "__rawTgl": "02/10/2026",
     "__yearFixed": false,
     "unit": "169B",
-    "__row": 187
+    "__row": 189
   },
   {
     "timestamp": "2026-10-01T21:53:40+07:00",
@@ -257,7 +777,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "145C",
-    "__row": 186
+    "__row": 188
   },
   {
     "timestamp": "2026-10-01T21:50:33+07:00",
@@ -283,7 +803,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "303D",
-    "__row": 185
+    "__row": 187
   },
   {
     "timestamp": "2026-10-01T14:38:04+07:00",
@@ -309,7 +829,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "130I",
-    "__row": 182
+    "__row": 184
   },
   {
     "timestamp": "2026-10-01T14:37:34+07:00",
@@ -335,7 +855,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "190C",
-    "__row": 181
+    "__row": 183
   },
   {
     "timestamp": "2026-10-01T14:28:10+07:00",
@@ -361,7 +881,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "117D",
-    "__row": 180
+    "__row": 182
   },
   {
     "timestamp": "2026-10-01T14:24:00+07:00",
@@ -387,7 +907,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "164B",
-    "__row": 179
+    "__row": 181
   },
   {
     "timestamp": "2026-10-01T14:22:35+07:00",
@@ -413,7 +933,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "165B",
-    "__row": 178
+    "__row": 180
   },
   {
     "timestamp": "2026-10-01T14:17:41+07:00",
@@ -439,7 +959,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 177
+    "__row": 179
   },
   {
     "timestamp": "2026-10-01T14:13:17+07:00",
@@ -465,7 +985,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "190C",
-    "__row": 176
+    "__row": 178
   },
   {
     "timestamp": "2026-10-01T14:12:23+07:00",
@@ -491,7 +1011,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "136D",
-    "__row": 175
+    "__row": 177
   },
   {
     "timestamp": "2026-10-01T14:07:48+07:00",
@@ -517,7 +1037,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "143C",
-    "__row": 174
+    "__row": 176
   },
   {
     "timestamp": "2026-10-01T14:06:59+07:00",
@@ -543,7 +1063,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "130I",
-    "__row": 173
+    "__row": 175
   },
   {
     "timestamp": "2026-10-01T14:04:33+07:00",
@@ -569,7 +1089,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "137A",
-    "__row": 172
+    "__row": 174
   },
   {
     "timestamp": "2026-10-01T14:02:30+07:00",
@@ -595,7 +1115,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "123L",
-    "__row": 171
+    "__row": 173
   },
   {
     "timestamp": "2026-10-01T13:59:00+07:00",
@@ -613,15 +1133,15 @@
     "damage": "Hidrolik — Jack hidrolik patah",
     "sparepart": "-",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "131C",
-    "__row": 170
+    "__row": 172
   },
   {
     "timestamp": "2026-10-01T13:54:50+07:00",
@@ -647,7 +1167,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "175B",
-    "__row": 169
+    "__row": 171
   },
   {
     "timestamp": "2026-10-01T13:52:03+07:00",
@@ -665,15 +1185,15 @@
     "damage": "Box Panel — RPM, HM sering error",
     "sparepart": "RPM, HM Meter",
     "prNumber": null,
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "173A",
-    "__row": 168
+    "__row": 170
   },
   {
     "timestamp": "2026-10-01T13:49:54+07:00",
@@ -699,7 +1219,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 167
+    "__row": 169
   },
   {
     "timestamp": "2026-10-01T13:48:23+07:00",
@@ -725,7 +1245,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "170D",
-    "__row": 166
+    "__row": 168
   },
   {
     "timestamp": "2026-10-01T13:47:14+07:00",
@@ -751,7 +1271,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "175B",
-    "__row": 165
+    "__row": 167
   },
   {
     "timestamp": "2026-10-01T13:38:03+07:00",
@@ -777,7 +1297,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "130I",
-    "__row": 164
+    "__row": 166
   },
   {
     "timestamp": "2026-10-01T09:46:24+07:00",
@@ -803,7 +1323,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "118K",
-    "__row": 163
+    "__row": 165
   },
   {
     "timestamp": "2026-10-01T09:41:40+07:00",
@@ -829,7 +1349,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "155H",
-    "__row": 162
+    "__row": 164
   },
   {
     "timestamp": "2026-10-01T09:37:50+07:00",
@@ -855,7 +1375,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "130A",
-    "__row": 161
+    "__row": 163
   },
   {
     "timestamp": "2026-10-01T09:28:40+07:00",
@@ -881,7 +1401,7 @@
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "144d",
-    "__row": 160
+    "__row": 162
   },
   {
     "timestamp": "2026-09-30T14:50:08+07:00",
@@ -907,7 +1427,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "156D",
-    "__row": 184
+    "__row": 186
   },
   {
     "timestamp": "2026-09-30T14:26:36+07:00",
@@ -933,7 +1453,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "162D",
-    "__row": 159
+    "__row": 161
   },
   {
     "timestamp": "2026-09-30T14:09:24+07:00",
@@ -959,7 +1479,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "118D",
-    "__row": 158
+    "__row": 160
   },
   {
     "timestamp": "2026-09-30T13:36:55+07:00",
@@ -985,7 +1505,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "109G",
-    "__row": 157
+    "__row": 159
   },
   {
     "timestamp": "2026-09-30T10:19:56+07:00",
@@ -1011,7 +1531,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "117C",
-    "__row": 156
+    "__row": 158
   },
   {
     "timestamp": "2026-09-30T08:47:49+07:00",
@@ -1037,7 +1557,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "162H",
-    "__row": 155
+    "__row": 157
   },
   {
     "timestamp": "2026-09-30T08:45:55+07:00",
@@ -1063,7 +1583,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "162I",
-    "__row": 154
+    "__row": 156
   },
   {
     "timestamp": "2026-09-30T08:30:24+07:00",
@@ -1089,7 +1609,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "112D",
-    "__row": 153
+    "__row": 155
   },
   {
     "timestamp": "2026-09-30T08:27:51+07:00",
@@ -1115,7 +1635,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "117C",
-    "__row": 152
+    "__row": 154
   },
   {
     "timestamp": "2026-09-30T08:20:43+07:00",
@@ -1141,7 +1661,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "144F",
-    "__row": 151
+    "__row": 153
   },
   {
     "timestamp": "2026-09-30T08:17:28+07:00",
@@ -1167,7 +1687,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "143C",
-    "__row": 150
+    "__row": 152
   },
   {
     "timestamp": "2026-09-30T08:13:55+07:00",
@@ -1193,7 +1713,7 @@
     "__rawTgl": "30/09/2026",
     "__yearFixed": false,
     "unit": "136F1",
-    "__row": 149
+    "__row": 151
   },
   {
     "timestamp": "2026-09-29T22:12:45+07:00",
@@ -1219,7 +1739,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "301B",
-    "__row": 148
+    "__row": 150
   },
   {
     "timestamp": "2026-09-29T22:10:42+07:00",
@@ -1245,7 +1765,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "124G",
-    "__row": 147
+    "__row": 149
   },
   {
     "timestamp": "2026-09-29T14:45:25+07:00",
@@ -1271,7 +1791,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 183
+    "__row": 185
   },
   {
     "timestamp": "2026-09-29T14:31:43+07:00",
@@ -1297,7 +1817,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 146
+    "__row": 148
   },
   {
     "timestamp": "2026-09-29T11:28:28+07:00",
@@ -1323,7 +1843,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 145
+    "__row": 147
   },
   {
     "timestamp": "2026-09-29T11:26:51+07:00",
@@ -1349,7 +1869,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "127E",
-    "__row": 144
+    "__row": 146
   },
   {
     "timestamp": "2026-09-29T11:12:36+07:00",
@@ -1375,7 +1895,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "139C1",
-    "__row": 143
+    "__row": 145
   },
   {
     "timestamp": "2026-09-29T11:01:31+07:00",
@@ -1427,7 +1947,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "132D",
-    "__row": 142
+    "__row": 144
   },
   {
     "timestamp": "2026-09-29T10:43:59+07:00",
@@ -1531,7 +2051,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "107F",
-    "__row": 141
+    "__row": 143
   },
   {
     "timestamp": "2026-09-29T09:09:25+07:00",
@@ -1557,7 +2077,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "136D",
-    "__row": 140
+    "__row": 142
   },
   {
     "timestamp": "2026-09-29T09:07:14+07:00",
@@ -1583,7 +2103,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "118L",
-    "__row": 139
+    "__row": 141
   },
   {
     "timestamp": "2026-09-29T09:06:34+07:00",
@@ -1609,7 +2129,7 @@
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "117C1",
-    "__row": 138
+    "__row": 140
   },
   {
     "timestamp": "2026-09-28T10:41:52+07:00",
@@ -1687,7 +2207,7 @@
     "__rawTgl": "28/09/2026",
     "__yearFixed": false,
     "unit": "172F",
-    "__row": 137
+    "__row": 139
   },
   {
     "timestamp": "2026-09-28T08:19:53+07:00",
