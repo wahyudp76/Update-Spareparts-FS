@@ -329,7 +329,7 @@ function renderSparepartsTab(rebuildCharts=true){
 function spBarOpts(extra){
     const base = mkOpts(true,{indexAxis:'y'});
     base.plugins.legend = {display:true,position:'top',labels:{boxWidth:10,font:{size:10}}};
-    base.scales = {x:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true},
+    base.scales = {x:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'12%'},
                    y:{stacked:true,grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},autoSkip:false},border:{display:false}}};
     return Object.assign(base, extra||{});
 }
@@ -1198,6 +1198,88 @@ if(typeof Chart !== 'undefined'){
     Chart.defaults.plugins.legend.labels.pointStyle='circle';
     Chart.defaults.elements.bar.borderWidth=0;
     Chart.defaults.elements.line.borderWidth=2;
+
+    // ---- Plugin label angka (tanpa dependensi eksternal) ----
+    // Menulis nilai di ujung batang (total untuk batang bertumpuk, segmen bila cukup lebar)
+    // dan di atas titik grafik garis/timeline. Nonaktifkan per chart: plugins:{valueLabels:false}.
+    const VL_FONT = '600 10px Inter,system-ui,sans-serif';
+    function vlText(ctx, txt, x, y, align, base, color, halo=true){
+        ctx.font = VL_FONT; ctx.textAlign = align; ctx.textBaseline = base;
+        if(halo){ ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineJoin='round'; ctx.strokeText(txt, x, y); }
+        ctx.fillStyle = color; ctx.fillText(txt, x, y);
+    }
+    const fmtVal = v => Number.isInteger(v) ? v.toLocaleString('id-ID') : (Math.round(v*10)/10).toLocaleString('id-ID');
+    Chart.register({
+        id: 'valueLabels',
+        afterDatasetsDraw(chart, args, opts){
+            if(opts === false || (opts && opts.display === false)) return;
+            const {ctx, chartArea} = chart; if(!chartArea) return;
+            const type = chart.config.type;
+            ctx.save();
+            if(type === 'bar'){
+                const horiz = chart.options.indexAxis === 'y';
+                const metas = chart.getSortedVisibleDatasetMetas().filter(m=>m.type==='bar');
+                if(!metas.length){ ctx.restore(); return; }
+                // Total per index per stack & dataset terakhir pada stack tsb
+                const stackTotals = {}, lastInStack = {};
+                metas.forEach(m=>{
+                    const stackKey = m.stack ?? ('__ds'+m.index);
+                    const data = chart.data.datasets[m.index].data;
+                    data.forEach((v,i)=>{ const n=+v||0; const k=stackKey+'|'+i; stackTotals[k]=(stackTotals[k]||0)+n; if(n>0) lastInStack[k]=m.index; });
+                });
+                const anyStacked = metas.some(m=>m.stack!=null) && metas.length>1;
+                metas.forEach(m=>{
+                    const stackKey = m.stack ?? ('__ds'+m.index);
+                    const data = chart.data.datasets[m.index].data;
+                    m.data.forEach((bar,i)=>{
+                        const v = +data[i]||0; if(!v) return;
+                        const k = stackKey+'|'+i;
+                        const props = bar.getProps(['x','y','base','width','height'], true);
+                        const thick = horiz ? props.height : props.width;
+                        if(thick < 8) return; // terlalu rapat → lewati agar tidak berantakan
+                        const len = horiz ? Math.abs(props.x - props.base) : Math.abs(props.y - props.base);
+                        const isLast = anyStacked ? lastInStack[k]===m.index : true;
+                        const total = stackTotals[k];
+                        // Label segmen di dalam batang bertumpuk (hanya jika muat)
+                        if(anyStacked && len >= 18 && v !== total){
+                            const cx = horiz ? (props.x + props.base)/2 : props.x;
+                            const cy = horiz ? props.y : (props.y + props.base)/2;
+                            vlText(ctx, fmtVal(v), cx, cy, 'center', 'middle', '#fff', false);
+                        }
+                        if(!isLast) return;
+                        // Label total/nilai di ujung batang; bila tidak ada ruang di luar, taruh di dalam
+                        const txt = fmtVal(total);
+                        if(horiz){
+                            const w = ctx.measureText(txt).width + 6;
+                            const outside = props.x + 4 + w <= chartArea.right;
+                            vlText(ctx, txt, outside ? props.x + 4 : props.x - 4, props.y, outside ? 'left' : 'right', 'middle', outside ? '#334155' : '#fff', outside);
+                        } else {
+                            const outside = props.y - 14 >= chartArea.top;
+                            vlText(ctx, txt, props.x, outside ? props.y - 3 : props.y + 3, 'center', outside ? 'bottom' : 'top', outside ? '#334155' : '#fff', outside);
+                        }
+                    });
+                });
+            } else if(type === 'line'){
+                chart.getSortedVisibleDatasetMetas().forEach(m=>{
+                    const data = chart.data.datasets[m.index].data; const n = m.data.length; if(!n) return;
+                    const step = Math.max(1, Math.ceil(n * 26 / Math.max(1, chartArea.width)));
+                    // Selalu beri label: titik puncak & titik terakhir; sisanya tiap `step`
+                    let maxI = 0; data.forEach((v,i)=>{ if((+v||0) > (+data[maxI]||0)) maxI=i; });
+                    const color = typeof m.dataset?.options?.borderColor === 'string' ? m.dataset.options.borderColor : '#1e40af';
+                    m.data.forEach((pt,i)=>{
+                        const v = +data[i]||0; if(!v) return;
+                        if(i % step !== 0 && i !== maxI && i !== n-1) return;
+                        const {x,y} = pt.getProps(['x','y'], true);
+                        const outside = y - 14 >= chartArea.top;
+                        ctx.font = VL_FONT; const half = ctx.measureText(fmtVal(v)).width/2;
+                        const lx = Math.min(Math.max(x, chartArea.left + half), chart.width - half - 2); // jangan terpotong di tepi
+                        vlText(ctx, fmtVal(v), lx, outside ? y - 6 : y + 8, 'center', outside ? 'bottom' : 'top', color);
+                    });
+                });
+            }
+            ctx.restore();
+        }
+    });
 }
 function mkOpts(h=false,extra={}){
     return{
@@ -1213,11 +1295,11 @@ function mkOpts(h=false,extra={}){
             }
         },
         scales: h ? {
-            x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false},beginAtZero:true},
+            x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false},beginAtZero:true,grace:'12%'},
             y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false}}
         } : {
             x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:12},border:{display:false}},
-            y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true}
+            y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'10%'}
         },
         layout:{padding:{top:4,right:4,bottom:0,left:0}},
         ...extra
@@ -1316,7 +1398,7 @@ function renderCharts() {
                     pointRadius:showPoints?3:0,pointBackgroundColor:'#2563eb',pointHoverRadius:5,
                     pointHoverBackgroundColor:'#1d4ed8',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2
                 }]},
-                options:mkOpts(false,{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:keys.length<=16?keys.length:12},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true}}})
+                options:mkOpts(false,{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:keys.length<=16?keys.length:12},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'10%'}}})
             });
         }
         const ts = document.getElementById('trendSub');
