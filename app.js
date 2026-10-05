@@ -413,6 +413,10 @@ const STATUS_META = {
 };
 const TINGKAT_ORDER = ['Berat','Sedang','Ringan'];
 function normRepair(v){ v=String(v||'').trim().toLowerCase(); if(!v) return ''; return /^(sudah|selesai|done|ya|yes|y|ok|1|true)/.test(v)?'Sudah':'Belum'; }
+// Nama lama di Google Form → nama baru (data historis di sheet tetap tampil konsisten).
+// Saat baris lama diedit lewat web, nilai baru yang tersimpan ke sheet.
+const DAMAGE_ALIASES = { 'panel': 'Panel Listrik' };
+function normDamageType(v){ v=String(v==null?'':v).replace(/\s+/g,' ').trim(); if(!v) return ''; const a=DAMAGE_ALIASES[v.toLowerCase()]; return a||v; }
 function normTingkat(v){ v=String(v||'').trim().toLowerCase(); if(/berat|tinggi|high|major/.test(v)) return 'Berat'; if(/sedang|medium|moderate/.test(v)) return 'Sedang'; if(/ringan|rendah|low|minor/.test(v)) return 'Ringan'; return ''; }
 function deriveStatus(pr, repair){ if(normRepair(repair)==='Sudah') return 'Selesai'; return pr ? 'Proses' : 'Belum Ditangani'; }
 function isOpen(d){ return d.status!=='Selesai'; }
@@ -569,7 +573,7 @@ function normalizeFromCSV(rows) {
         const tgl = parseDate(get('tglInsp')) || parseDate(get('ts'));
         if (!tgl) continue;
         const lok = get('lok'), et = get('eT'), ec = get('eC'), it = get('iT'), ic = get('iC'), div = get('div');
-        const dt = get('dT'), dn = get('dN'), sp = get('sp'), pr = get('pr');
+        const dt = normDamageType(get('dT')), dn = get('dN'), sp = get('sp'), pr = get('pr');
         const tingkat = normTingkat(get('tk')), repair = normRepair(get('rp'));
         const rawTk = get('tk'), rawRp = get('rp'), rawTgl = get('tglInsp');
         const irrigator = (it && ic && it !== ic) ? `${it} – ${ic}` : (ic || it || '-');
@@ -652,7 +656,7 @@ function normalizeFromJson(json) {
     return json.map((r,i) => {
         const et = r.engineType||'-', ec = r.engineCode||'-';
         const it = r.irrType||'-', ic = r.irrCode||'-';
-        const dt = r.damageType||'-', dn = r.keterangan||r.notes||'';
+        const dt = normDamageType(r.damageType)||'-', dn = r.keterangan||r.notes||'';
         const sp = (r.sparepart||'-');
         const pr = r.prNumber||null;
         const repair = normRepair(r.repairStatus) || 'Belum';
@@ -2922,7 +2926,7 @@ const FORM_OPTIONS = {
     divisi:     ['PG2','FM4','OP2'],
     engineType: ['SPC','DEC','DED','DEM','SPE'],
     irrType:    ['BTI','ITI'],
-    damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel','Ban'],
+    damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel Listrik','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel','Ban'],
     tingkat:    ['Ringan','Sedang','Berat'],
     repair:     ['Sudah','Belum']
 };

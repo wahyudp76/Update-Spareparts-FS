@@ -191,7 +191,8 @@ function mapRows(rows) {
     const it = get('irrType');
     const ic = auditNum(get('irrCode'),'Kode Irrigator',4);
     const divisi = get('divisi');
-    const dt = get('damageType');
+    const DAMAGE_ALIASES = { 'panel': 'Panel Listrik' };
+    const dtRaw = get('damageType'); const dt = DAMAGE_ALIASES[String(dtRaw||'').trim().toLowerCase()] || dtRaw;
     const dn = get('damageNote');
     let sp = get('sparepart');
     const prRaw = get('prNumber');
