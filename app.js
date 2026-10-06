@@ -2918,6 +2918,138 @@ function setEditMode(mode){
     btn.innerHTML = isCreate ? '<i class="fas fa-paper-plane mr-1"></i>Simpan ke Spreadsheet' : '<i class="fas fa-save mr-1"></i>Simpan ke Spreadsheet';
     btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700');
 }
+
+// ======================================================
+// UNIT TERPASANG (spreadsheet "Draft Dashboard") — auto-isi form berdasarkan Lokasi
+// Hanya dibaca (CSV publik), di-cache di localStorage, tidak menyentuh alur sync laporan.
+// ======================================================
+const UNITS_CACHE_KEY = 'pg2_units_cache_v1';
+let unitsByLokasi = null;      // key lokasi (normalisasi) → unit
+let unitsMeta = { loadedAt: 0, count: 0, source: '' };
+let __unitsPromise = null;
+const lokKey = v => String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function splitUnitCode(code){ // "SPC0195" → {type:'SPC', code:'0195'}; "0195" → {type:'', code:'0195'}
+    const m = String(code||'').trim().toUpperCase().match(/^([A-Z]*)\s*-?\s*(\d+)$/);
+    if(!m) return {type:'', code:''};
+    return { type:m[1], code:m[2].padStart(4,'0').slice(-4) };
+}
+function parseUnitsCSV(text){
+    const rows = parseCSV(text); if(!rows || rows.length<2) return null;
+    const head = rows[0].map(h=>String(h||'').trim().toLowerCase());
+    const ci = name => head.findIndex(h=>h===name) >= 0 ? head.findIndex(h=>h===name) : head.findIndex(h=>h.startsWith(name));
+    const iLok=ci('lokasi'), iBkl=ci('bengkel'), iJE=ci('jenis engine'), iKE=ci('kode engine'), iKI=ci('kode irigator')>=0?ci('kode irigator'):ci('kode irrigator');
+    const iWil=ci('wil'), iPow=ci('power'), iAir=ci('sumber air'), iKA=ci('kode air'), iTgl=ci('tanggal'), iNo=ci('no'), iTerp=ci('terpasang'), iKet=ci('keterangan');
+    if(iLok<0) return null;
+    const map = {};
+    rows.slice(1).forEach(r=>{
+        const lok = String(r[iLok]||'').trim(); if(!lok) return;
+        if(iTerp>=0 && r[iTerp] && !/terpasang/i.test(r[iTerp])) return; // hanya unit yang masih terpasang
+        const eng = splitUnitCode(r[iKE]); const irr = splitUnitCode(r[iKI]);
+        const u = {
+            lokasi: lok, divisi: String(r[iBkl]||'').trim().toUpperCase(),
+            engineType: (String(r[iJE]||'').trim().toUpperCase() || eng.type), engineCode: eng.code,
+            irrType: irr.type, irrCode: irr.code,
+            wil: iWil>=0?String(r[iWil]||'').trim():'', power: iPow>=0?String(r[iPow]||'').trim():'',
+            sumberAir: iAir>=0?String(r[iAir]||'').trim():'', kodeAir: iKA>=0?String(r[iKA]||'').trim():'',
+            keterangan: iKet>=0?String(r[iKet]||'').trim():'',
+            tanggal: iTgl>=0?(parseDate(r[iTgl])||null):null, no: iNo>=0?(parseInt(r[iNo])||0):0
+        };
+        const k = lokKey(lok); const prev = map[k];
+        // Lokasi yang tercatat >1× → ambil catatan terbaru (tanggal, lalu nomor urut)
+        if(!prev || ((u.tanggal?u.tanggal.getTime():0) > (prev.tanggal?prev.tanggal.getTime():0)) || (((u.tanggal?u.tanggal.getTime():0) === (prev.tanggal?prev.tanggal.getTime():0)) && u.no>=prev.no)) map[k]=u;
+    });
+    return map;
+}
+async function loadUnits(force=false){
+    const cfg = window.PG2_CONFIG||{};
+    if(!cfg.UNITS_SHEET_ID) return null;
+    if(unitsByLokasi && !force) return unitsByLokasi;
+    if(__unitsPromise && !force) return __unitsPromise;
+    // 1) cache lokal (instan), 2) segarkan dari Sheets di latar belakang
+    if(!unitsByLokasi){
+        try{ const c=JSON.parse(localStorage.getItem(UNITS_CACHE_KEY)||'null');
+            if(c && c.map && Object.keys(c.map).length){ unitsByLokasi=c.map; Object.values(unitsByLokasi).forEach(u=>{ if(u.tanggal) u.tanggal=new Date(u.tanggal); }); unitsMeta={loadedAt:c.ts,count:Object.keys(c.map).length,source:'cache'}; }
+        }catch(e){}
+    }
+    const fresh = (Date.now()-unitsMeta.loadedAt) < 6*3600*1000; // segar < 6 jam
+    if(unitsByLokasi && fresh && !force) return unitsByLokasi;
+    __unitsPromise = (async()=>{
+        try{
+            const url=`https://docs.google.com/spreadsheets/d/${cfg.UNITS_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(cfg.UNITS_SHEET_GID||'0')}&t=${Date.now()}`;
+            const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),12000);
+            const res=await fetch(url,{signal:ctrl.signal,cache:'no-store'}); clearTimeout(tid);
+            if(!res.ok) throw new Error('HTTP '+res.status);
+            const txt=await res.text(); if(txt.length<30 || /^<!doctype|^<html/i.test(txt.trim())) throw new Error('bukan CSV');
+            const map=parseUnitsCSV(txt); if(!map || !Object.keys(map).length) throw new Error('kosong');
+            unitsByLokasi=map; unitsMeta={loadedAt:Date.now(),count:Object.keys(map).length,source:'live'};
+            try{ localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({ts:Date.now(), map})); }catch(e){}
+            fillDatalists();
+        }catch(e){ console.warn('Unit terpasang: gagal memuat —', e.message); }
+        finally{ __unitsPromise=null; }
+        return unitsByLokasi;
+    })();
+    return unitsByLokasi || __unitsPromise;
+}
+function findUnit(lokasi){ if(!unitsByLokasi) return null; return unitsByLokasi[lokKey(lokasi)] || null; }
+function unitSummary(u){
+    const parts=[];
+    if(u.engineType||u.engineCode) parts.push(`Engine ${[u.engineType,u.engineCode].filter(Boolean).join(' ')}`);
+    if(u.irrType||u.irrCode) parts.push(`Irigator ${[u.irrType,u.irrCode].filter(Boolean).join(' ')}`);
+    if(u.wil) parts.push(u.wil); if(u.sumberAir) parts.push(u.sumberAir+(u.kodeAir?` ${u.kodeAir}`:'')); if(u.power) parts.push(`${u.power} HP`);
+    return parts.join(' · ');
+}
+// Terapkan data unit ke form. overwrite=false → hanya isi kolom yang masih kosong.
+function applyUnitToForm(u, overwrite){
+    const setSel=(id,val,opts)=>{ const el=document.getElementById(id); if(!el) return false; if(!val) return false; if(!overwrite && el.value) return false; fillSelect(id, opts, val, el.options[0]&&el.options[0].value===''?el.options[0].textContent:undefined); return el.value===val; };
+    const setTxt=(id,val)=>{ const el=document.getElementById(id); if(!el||!val) return false; if(!overwrite && el.value.trim()) return false; el.value=val; el.classList.remove('border-red-400'); return true; };
+    let n=0;
+    if(FORM_OPTIONS.divisi.includes(u.divisi) && setSel('f_divisi', u.divisi, FORM_OPTIONS.divisi)) n++;
+    if(setSel('f_engineType', u.engineType, FORM_OPTIONS.engineType)) n++;
+    if(setTxt('f_engineCode', u.engineCode)) n++;
+    if(setSel('f_irrType', u.irrType, FORM_OPTIONS.irrType)) n++;
+    if(setTxt('f_irrCode', u.irrCode)) n++;
+    return n;
+}
+let __lokT=null;
+function onLokasiInput(val, commit=false){
+    clearTimeout(__lokT);
+    __lokT = setTimeout(()=>renderLokasiInfo(val, commit), commit?0:120);
+}
+function renderLokasiInfo(val, commit){
+    const info=document.getElementById('lokasiUnitInfo'); if(!info) return;
+    const v=String(val||'').trim();
+    if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis</span>` : ''; return; }
+    if(!unitsByLokasi){ info.innerHTML='<span class="text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</span>'; loadUnits().then(()=>renderLokasiInfo(val, commit)); return; }
+    const u=findUnit(v);
+    if(!u){
+        // saran lokasi mirip
+        const k=lokKey(v); const sug=Object.values(unitsByLokasi).filter(x=>lokKey(x.lokasi).startsWith(k)).slice(0,6);
+        info.innerHTML = sug.length
+            ? `<span class="text-slate-500">Lokasi mirip: ${sug.map(x=>`<button type="button" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-700 font-semibold" onclick="pickLokasi('${escapeHtml(x.lokasi)}')">${escapeHtml(x.lokasi)}</button>`).join(' ')}</span>`
+            : `<span class="text-amber-700"><i class="fas fa-circle-question mr-1"></i>Lokasi "${escapeHtml(v)}" tidak ada di data unit terpasang — isi kode engine/irrigator manual.</span>`;
+        return;
+    }
+    const isCreate = document.getElementById('editMode').value==='create';
+    // Mode tambah: kolom kosong diisi otomatis. Mode edit: tidak mengubah apa pun diam-diam,
+    // hanya menampilkan perbedaan + tombol untuk menyamakan.
+    const filled = isCreate ? applyUnitToForm(u, false) : 0;
+    // deteksi perbedaan dengan isian saat ini
+    const g=id=>document.getElementById(id).value.trim();
+    const diffs=[];
+    const show=v=>v||'kosong';
+    if(u.engineType && g('f_engineType')!==u.engineType) diffs.push(`jenis engine ${show(g('f_engineType'))}→${u.engineType}`);
+    if(u.engineCode && g('f_engineCode')!==u.engineCode) diffs.push(`kode engine ${show(g('f_engineCode'))}→${u.engineCode}`);
+    if(u.irrType && g('f_irrType')!==u.irrType) diffs.push(`jenis irrigator ${show(g('f_irrType'))}→${u.irrType}`);
+    if(u.irrCode && g('f_irrCode')!==u.irrCode) diffs.push(`kode irrigator ${show(g('f_irrCode'))}→${u.irrCode}`);
+    if(FORM_OPTIONS.divisi.includes(u.divisi) && g('f_divisi')!==u.divisi) diffs.push(`divisi ${g('f_divisi')}→${u.divisi}`);
+    const tgl = u.tanggal ? ` · dicatat ${fmtDateShort(u.tanggal)}` : '';
+    const divNote = !FORM_OPTIONS.divisi.includes(u.divisi) && u.divisi ? ` · bengkel ${escapeHtml(u.divisi)} (bukan pilihan divisi form)` : '';
+    info.innerHTML = `<span class="text-emerald-700"><i class="fas fa-circle-check mr-1"></i><b>Unit terpasang:</b> ${escapeHtml(unitSummary(u))}${divNote}<span class="text-slate-400">${tgl}</span></span>`
+        + (filled ? ` <span class="text-slate-500">— ${filled} kolom terisi otomatis</span>` : '')
+        + (diffs.length ? ` <span class="text-amber-700 block mt-0.5"><i class="fas fa-triangle-exclamation mr-1"></i>Berbeda dari isian saat ini (${escapeHtml(diffs.join(', '))}). <button type="button" class="px-1.5 py-0.5 rounded bg-amber-600 text-white font-semibold" onclick="applyUnitToForm(findUnit(document.getElementById('f_lokasi').value), true); renderLokasiInfo(document.getElementById('f_lokasi').value, true)">Samakan dengan unit terpasang</button></span>` : '');
+}
+function pickLokasi(lok){ const el=document.getElementById('f_lokasi'); el.value=lok; renderLokasiInfo(lok, true); }
+
 // Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2".
 // Daftar bawaan di bawah ini adalah cadangan; saat dimuat, dashboard menimpanya dengan
 // form-options.json yang diperbarui otomatis oleh GitHub Actions dari Google Form
@@ -2961,7 +3093,8 @@ function fillFormSelects(d){
 function fillDatalists(){
     const uniq = (f)=>[...new Set(rawData.map(d=>d[f]).filter(v=>v&&v!=='-'))].sort();
     const set=(id,vals)=>{ const el=document.getElementById(id); if(el) el.innerHTML = vals.map(v=>`<option value="${escapeHtml(v)}">`).join(''); };
-    set('dl_lokasi', uniq('lokasi'));
+    const lokSet = new Set(uniq('lokasi')); if(unitsByLokasi) Object.values(unitsByLokasi).forEach(u=>lokSet.add(u.lokasi));
+    set('dl_lokasi', [...lokSet].sort());
 }
 // Validasi angka di sisi web (sebelum dikirim) — cegah titik/koma & digit salah masuk ke sheet
 function validateFormNumbers(){
@@ -2994,6 +3127,7 @@ function openCreateModal(){
     document.getElementById('editMsg').innerHTML='';
     document.getElementById('editSaveBtn').disabled=false;
     submitCreate._opId = null;
+    loadUnits().then(()=>{ fillDatalists(); renderLokasiInfo('', false); }); renderLokasiInfo('', false);
     openModal('editModal');
     setTimeout(()=>document.getElementById('f_lokasi').focus(),150);
 }
@@ -3090,6 +3224,8 @@ function openEditModalRaw(rawi){
         document.getElementById('editMsg').innerHTML = `<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(d.__issues[0].msg)}${d.__issues.length>1?` (+${d.__issues.length-1} lainnya)`:''} — form sudah berisi nilai yang dinormalkan; klik Simpan untuk menulisnya ke spreadsheet.</span>`;
     }
     document.getElementById('editSaveBtn').disabled=false;
+    const li=document.getElementById('lokasiUnitInfo'); if(li) li.innerHTML='';
+    loadUnits().then(()=>{ if(document.getElementById('editMode').value==='update') renderLokasiInfo(document.getElementById('f_lokasi').value, true); });
     openModal('editModal');
 }
 
@@ -3356,6 +3492,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Setup banner edit/hapus
     initWriteSetup();
     loadFormOptions(); // sinkron pilihan dropdown dengan Google Form (latar belakang)
+    setTimeout(()=>{ if(getWriteUrl()) loadUnits(); }, 4000); // prefetch unit terpasang saat idle
     // Cek versi write-proxy di latar belakang: peringatkan bila kode lama masih terpasang
     (async()=>{
         const u=getWriteUrl(); if(!u) return;

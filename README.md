@@ -243,3 +243,11 @@ Dibangun murni dari `filteredData` (mengikuti filter global) — tidak menyentuh
 - **Kebutuhan teratas per divisi**, **per jenis aset** (engine/irigator), **matriks sparepart × jenis kerusakan**, **kebutuhan berulang di lokasi yang sama**.
 - **Katalog** (urut total/terbuka/skor/terbaru/nama, pencarian, "hanya yang terbuka"), klik baris → daftar laporan terkait + tombol edit.
 - **Unduh ringkasan CSV** dan peringatan jumlah laporan terbuka yang belum mencantumkan sparepart.
+
+## Auto-isi dari spreadsheet "Unit Terpasang" (Draft Dashboard)
+
+`config.js` → `UNITS_SHEET_ID` / `UNITS_SHEET_GID` menunjuk sheet unit terpasang (kolom Lokasi, Bengkel, Jenis Engine, Kode Engine `SPC0195`, Kode Irigator `ITI0200`, Wil, Power, Sumber Air, Kode Air, Terpasang, Tanggal). Saat form **Tambah Laporan** dibuka, data dibaca (CSV publik, cache localStorage 6 jam). Mengetik **Lokasi** akan:
+- mengisi otomatis Divisi, Jenis/Kode Engine, Jenis/Kode Irrigator yang masih kosong (mode tambah), dan menampilkan ringkasan unit (wilayah, sumber air, power, tanggal pencatatan);
+- jika isian berbeda dari unit terpasang (atau pada mode edit), menampilkan perbedaan + tombol **Samakan dengan unit terpasang** — tidak pernah mengubah isian diam-diam;
+- menyarankan lokasi mirip saat diketik sebagian, dan memberi tahu bila lokasi tidak ada di data unit.
+Lokasi yang tercatat lebih dari sekali diambil catatan terbarunya; baris dengan status selain "Terpasang" diabaikan. Sheet unit harus dapat dibaca "Siapa saja yang memiliki link".
