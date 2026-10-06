@@ -788,6 +788,9 @@ async function refreshData(forceLive=false, opts={}) {
             if (c && Array.isArray(c.data) && c.data.length && (Date.now()-c.ts) < 7*86400000) paintInterim(normalizeFromJson(c.data), 'local');
         } catch(e) {}
     }
+    // Unit terpasang (spreadsheet Draft Dashboard) ikut disegarkan pada SETIAP refresh —
+    // tombol Refresh, muat/refresh browser, auto-refresh, dan saat kembali online.
+    if(window.PG2_CONFIG && window.PG2_CONFIG.UNITS_SHEET_ID) loadUnits(true).catch(()=>{});
     const run = (async () => {
         let data=null, source='empty', note='';
         // 1) Live Sheets — pada muat pertama tanpa cache lokal, data.json (GitHub, origin
@@ -2964,7 +2967,7 @@ async function loadUnits(force=false){
     const cfg = window.PG2_CONFIG||{};
     if(!cfg.UNITS_SHEET_ID) return null;
     if(unitsByLokasi && !force) return unitsByLokasi;
-    if(__unitsPromise && !force) return __unitsPromise;
+    if(__unitsPromise) return __unitsPromise; // sudah ada permintaan berjalan → pakai itu
     // 1) cache lokal (instan), 2) segarkan dari Sheets di latar belakang
     if(!unitsByLokasi){
         try{ const c=JSON.parse(localStorage.getItem(UNITS_CACHE_KEY)||'null');
@@ -2984,6 +2987,7 @@ async function loadUnits(force=false){
             unitsByLokasi=map; unitsMeta={loadedAt:Date.now(),count:Object.keys(map).length,source:'live'};
             try{ localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({ts:Date.now(), map})); }catch(e){}
             fillDatalists();
+            const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true);
         }catch(e){ console.warn('Unit terpasang: gagal memuat —', e.message); }
         finally{ __unitsPromise=null; }
         return unitsByLokasi;
@@ -3018,7 +3022,7 @@ function onLokasiInput(val, commit=false){
 function renderLokasiInfo(val, commit){
     const info=document.getElementById('lokasiUnitInfo'); if(!info) return;
     const v=String(val||'').trim();
-    if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis</span>` : ''; return; }
+    if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis · ${unitsMeta.source==='live'?'disinkron':'cache'} ${new Date(unitsMeta.loadedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>` : ''; return; }
     if(!unitsByLokasi){ info.innerHTML='<span class="text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</span>'; loadUnits().then(()=>renderLokasiInfo(val, commit)); return; }
     const u=findUnit(v);
     if(!u){
@@ -3492,7 +3496,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Setup banner edit/hapus
     initWriteSetup();
     loadFormOptions(); // sinkron pilihan dropdown dengan Google Form (latar belakang)
-    setTimeout(()=>{ if(getWriteUrl()) loadUnits(); }, 4000); // prefetch unit terpasang saat idle
     // Cek versi write-proxy di latar belakang: peringatkan bila kode lama masih terpasang
     (async()=>{
         const u=getWriteUrl(); if(!u) return;
