@@ -228,6 +228,13 @@
                             <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
                         </div>
                     </div>
+                    <div class="ms-wrap" id="damageFilter" data-state-key="damage" data-ph="Semua Kerusakan">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[150px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Kerusakan</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-56">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-64 overflow-y-auto py-1"></div>
+                        </div>
+                    </div>
                     <div class="relative">
                         <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
                         <input type="text" id="searchInput" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -872,7 +879,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v18').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v19').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

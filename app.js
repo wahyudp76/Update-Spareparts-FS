@@ -445,6 +445,7 @@ const state = {
     divisi: [],
     status: [],
     tingkat: [],
+    damage: [],
     lokasi: [],
     search: '',
     page: 1,
@@ -778,6 +779,7 @@ async function refreshData(forceLive=false, opts={}) {
         populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
         populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
         populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
+        populateMultiSelect('damageFilter', damageOptions(), state.damage);
         applyFilters();
         if(ls) ls.classList.add('hidden');
         const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `${label==='github-cache'?'Cache GitHub':'Cache lokal'} · ${rawData.length} record · memperbarui…`;
@@ -867,11 +869,13 @@ async function refreshData(forceLive=false, opts={}) {
         populateMultiSelect('lokasiFilter', [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(), state.lokasi);
         populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
         populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
+        populateMultiSelect('damageFilter', damageOptions(), state.damage);
 
         state.divisi = state.divisi.filter(v => rawData.some(d => d.divisi === v));
         state.lokasi = state.lokasi.filter(v => rawData.some(d => d.lokasi === v));
         state.status = state.status.filter(v => STATUS_ORDER.includes(v));
         state.tingkat = state.tingkat.filter(v => TINGKAT_ORDER.includes(v));
+        state.damage = state.damage.filter(v => rawData.some(d => d.damageType === v));
 
         // Jangan reset halaman saat auto-refresh diam-diam (user mungkin sedang di halaman 3)
         if (!silent) state.page = 1;
@@ -1046,6 +1050,7 @@ function applyFilters() {
         if (state.lokasi.length && !state.lokasi.includes(d.lokasi)) return false;
         if (state.status.length && !state.status.includes(d.status)) return false;
         if (state.tingkat.length && !state.tingkat.includes(effectiveTingkat(d))) return false;
+        if (state.damage.length && !state.damage.includes(d.damageType)) return false;
         if (q) {
             // Blob utama + blob "padat" (BTI0032 / BTI 0032 / BTI-0032 semuanya ketemu) — sudah dipra-hitung
             if(d.__blob===undefined) indexRecords([d]);
@@ -1097,6 +1102,7 @@ function renderActiveChips() {
     state.lokasi.forEach(v => chips.push({label:`Lok: ${v}`, clear:()=>{state.lokasi=state.lokasi.filter(x=>x!==v);repop('lokasiFilter','lokasi');}}));
     state.status.forEach(v => chips.push({label:`Status: ${v}`, clear:()=>{state.status=state.status.filter(x=>x!==v);repop('statusFilter','status');}}));
     state.tingkat.forEach(v => chips.push({label:`Tingkat: ${v}`, clear:()=>{state.tingkat=state.tingkat.filter(x=>x!==v);repop('tingkatFilter','tingkat');}}));
+    state.damage.forEach(v => chips.push({label:`Kerusakan: ${v}`, clear:()=>{state.damage=state.damage.filter(x=>x!==v);repop('damageFilter','damage');}}));
     if (state.selectedDate) chips.push({label:`Tgl: ${fmtDate(state.selectedDate)}`, clear:()=>clearSelectedDate()});
     else if (state.period==='custom') chips.push({label:'Custom date', clear:()=>{state.period='all';state.dateFrom='';state.dateTo='';const df=document.getElementById('dateFrom');if(df)df.value='';const dt=document.getElementById('dateTo');if(dt)dt.value='';setPeriodUI('all');applyFilters();}});
 
@@ -1112,10 +1118,17 @@ function renderActiveChips() {
     window.__chipActions = chips.map(c=>c.clear);
     window.__chipAction = i => { window.__chipActions[i](); applyFilters(); };
 }
+function damageOptions(){
+    const cnt={}; rawData.forEach(d=>{ const v=d.damageType; if(v&&v!=='-') cnt[v]=(cnt[v]||0)+1; });
+    const fromData=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
+    const extra=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.damageType||[]).filter(v=>!cnt[v]).sort();
+    return fromData.concat(extra);
+}
 function repop(id,key){
     const allOpts = key==='divisi' ? [...new Set(rawData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort()
                    : key==='lokasi' ? [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort()
                    : key==='tingkat' ? TINGKAT_ORDER
+                   : key==='damage' ? damageOptions()
                    : STATUS_ORDER;
     populateMultiSelect(id, allOpts, state[key]);
 }
@@ -1126,7 +1139,7 @@ function setPeriodUI(p){
     });
 }
 function clearAllFilters() {
-    state.divisi = []; state.lokasi = []; state.status = []; state.tingkat = [];
+    state.divisi = []; state.lokasi = []; state.status = []; state.tingkat = []; state.damage = [];
     state.search = '';
     const si=document.getElementById('searchInput'); if(si) si.value = '';
     state.selectedDate = null;
@@ -1139,6 +1152,7 @@ function clearAllFilters() {
     populateMultiSelect('lokasiFilter',[...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort(),[]);
     populateMultiSelect('statusFilter',STATUS_ORDER,[]);
     populateMultiSelect('tingkatFilter',TINGKAT_ORDER,[]);
+    populateMultiSelect('damageFilter',damageOptions(),[]);
     state.page = 1;
     applyFilters();
 }
