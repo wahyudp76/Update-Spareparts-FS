@@ -235,6 +235,13 @@
                             <div class="ms-list max-h-64 overflow-y-auto py-1"></div>
                         </div>
                     </div>
+                    <div class="ms-wrap" id="picFilter" data-state-key="pic" data-ph="Semua PIC">
+                        <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[120px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua PIC</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
+                        <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-48">
+                            <label class="ms-opt-all flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-checked="0"><span class="ms-check"></span><span>Semua</span></label>
+                            <div class="ms-list max-h-56 overflow-y-auto py-1"></div>
+                        </div>
+                    </div>
                     <div class="relative">
                         <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
                         <input type="text" id="searchInput" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -734,6 +741,7 @@
                                 <th class="px-3.5 py-2.5 text-left font-semibold">Keterangan</th>
                                 <th class="px-3.5 py-2.5 text-left font-semibold">Sparepart</th>
                                 <th class="px-3.5 py-2.5 text-left font-semibold">No PR</th>
+                                <th class="px-3.5 py-2.5 text-left font-semibold">PIC</th>
                             <th class="px-3.5 py-2.5 text-left font-semibold">Tingkat</th>
                             <th class="px-3.5 py-2.5 text-left font-semibold">Status</th>
                             <th class="px-3.5 py-2.5 text-center font-semibold w-[70px]">Aksi</th>
@@ -821,6 +829,7 @@
                 <div><label class="form-label">Status Perbaikan</label>
                     <select id="f_repair" class="form-input"><option value="Belum">Belum diperbaiki</option><option value="Sudah">Sudah diperbaiki</option></select>
                 </div>
+                <div><label class="form-label">PIC <span class="text-red-500">*</span></label><select id="f_pic" class="form-input"></select></div>
                 <div><label class="form-label">Tingkat Kerusakan <span class="text-red-500">*</span></label>
                     <select id="f_tingkat" class="form-input"><option value="">— pilih tingkat —</option><option>Ringan</option><option>Sedang</option><option>Berat</option></select>
                 </div>
@@ -879,7 +888,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v20').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v21').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

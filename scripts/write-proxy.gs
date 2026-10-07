@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v6 — idempoten via opId, tulis batch, lebih cepat & tahan retry)
+ * PG2 Irrigation Dashboard — Write Proxy  (v7 — + kolom PIC; idempoten via opId, tulis batch, tahan retry)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v6';
+var VERSION    = 'v7';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -114,7 +114,8 @@ function doPost(e) {
       { key: 'Spareparts Yang Dibutuhkan',  prop: 'sparepart' },
       { key: 'Nomor PR / Notifikasi',       prop: 'prNumber',    type: 'code', digits: 8 },
       { key: 'Tingkat Kerusakan',           prop: 'tingkat' },
-      { key: 'Status Perbaikan',            prop: 'repairStatus' }
+      { key: 'Status Perbaikan',            prop: 'repairStatus' },
+      { key: 'PIC',                         prop: 'pic' }
     ];
     // Validasi angka: tolak titik/koma sebagai pemisah agar angka tidak normal tidak masuk sheet
     function checkCode(f, v) {

@@ -16,7 +16,7 @@ const LOCAL_CACHE_KEY = 'pg2_data_cache_v1';
 function indexRecords(arr){
     arr.forEach(d=>{
         d.__t = new Date(d.timestamp).getTime();
-        const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.status} ${d.tingkat||''}`.toLowerCase();
+        const blob = `${d.lokasi} ${d.divisi} ${d.engine} ${d.engineCode} ${d.engineType} ${d.irrigator} ${d.irrCode} ${d.irrType} ${d.damageType} ${d.keterangan} ${d.sparepart} ${d.prNumber||''} ${d.pic||''} ${d.status} ${d.tingkat||''}`.toLowerCase();
         d.__blob = blob; d.__flat = blob.replace(/[^a-z0-9]/g,'');
     });
     return arr;
@@ -446,6 +446,7 @@ const state = {
     status: [],
     tingkat: [],
     damage: [],
+    pic: [],
     lokasi: [],
     search: '',
     page: 1,
@@ -547,10 +548,11 @@ function localIsoDate(d){
 function normalizeFromCSV(rows) {
     if (!rows.length) return [];
     const headers = rows[0].map(h => String(h||'').trim());
-    const hi = {ts:-1,tglInsp:-1,lok:-1,div:-1,eT:-1,eC:-1,iT:-1,iC:-1,dT:-1,dN:-1,sp:-1,pr:-1,tk:-1,rp:-1};
+    const hi = {ts:-1,tglInsp:-1,lok:-1,div:-1,eT:-1,eC:-1,iT:-1,iC:-1,dT:-1,dN:-1,sp:-1,pr:-1,tk:-1,rp:-1,pic:-1};
     headers.forEach((name,i) => {
         const k = String(name).toLowerCase().trim();
         if (k === 'timestamp') hi.ts = i;
+        else if (k === 'pic' || k.startsWith('pic ') || k.includes('penanggung jawab')) hi.pic = i;
         else if (k.includes('tanggal inspeksi')) hi.tglInsp = i;
         else if (k.includes('lokasi')) hi.lok = i;
         else if (k.includes('divisi')) hi.div = i;
@@ -598,7 +600,7 @@ function normalizeFromCSV(rows) {
             engineType: et || '-', engineCode: ec || '-', engine: engine || '-',
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
-            sparepart: spNorm, prNumber: pr || null, status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
+            sparepart: spNorm, prNumber: pr || null, pic: get('pic') || '-', status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
             __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
             __row: i+2 // baris spreadsheet (header=1, data mulai 2)
         });
@@ -679,6 +681,7 @@ function normalizeFromJson(json) {
             damage: dn?(dt?`${dt} — ${dn}`:dn):(dt||'-'),
             sparepart: sp,
             prNumber: pr,
+            pic: (r.pic && r.pic!=='-') ? String(r.pic).trim() : '-',
             repairStatus: repair, tingkat,
             status: deriveStatus(pr, repair),
             unit: r.lokasi || r.unit || '-',
@@ -714,7 +717,7 @@ let __refreshInFlight = null;
 const PENDING_TTL = 60*1000;
 const __pendingWrites = []; // {kind:'update'|'create'|'delete', ts, row, rec, key}
 const _wkey = d => `${d.lokasi}|${d.damageType}|${d.tanggalInspeksi}`;
-const _sameFields = (a,b) => ['lokasi','divisi','damageType','keterangan','sparepart','prNumber','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','tanggalInspeksi']
+const _sameFields = (a,b) => ['lokasi','divisi','damageType','keterangan','sparepart','prNumber','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','tanggalInspeksi','pic']
     .every(f => String(a[f]==null?'':a[f]) === String(b[f]==null?'':b[f]));
 function notePendingWrite(kind, rec, row){
     __pendingWrites.push({kind, ts:Date.now(), row: (typeof row==='number'?row:rec&&rec.__row), rec, key: rec?_wkey(rec):null});
@@ -780,6 +783,7 @@ async function refreshData(forceLive=false, opts={}) {
         populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
         populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
         populateMultiSelect('damageFilter', damageOptions(), state.damage);
+        populateMultiSelect('picFilter', picOptions(), state.pic);
         applyFilters();
         if(ls) ls.classList.add('hidden');
         const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `${label==='github-cache'?'Cache GitHub':'Cache lokal'} · ${rawData.length} record · memperbarui…`;
@@ -870,12 +874,14 @@ async function refreshData(forceLive=false, opts={}) {
         populateMultiSelect('statusFilter', STATUS_ORDER, state.status);
         populateMultiSelect('tingkatFilter', TINGKAT_ORDER, state.tingkat);
         populateMultiSelect('damageFilter', damageOptions(), state.damage);
+        populateMultiSelect('picFilter', picOptions(), state.pic);
 
         state.divisi = state.divisi.filter(v => rawData.some(d => d.divisi === v));
         state.lokasi = state.lokasi.filter(v => rawData.some(d => d.lokasi === v));
         state.status = state.status.filter(v => STATUS_ORDER.includes(v));
         state.tingkat = state.tingkat.filter(v => TINGKAT_ORDER.includes(v));
         state.damage = state.damage.filter(v => rawData.some(d => d.damageType === v));
+        state.pic = state.pic.filter(v => picOptions().includes(v));
 
         // Jangan reset halaman saat auto-refresh diam-diam (user mungkin sedang di halaman 3)
         if (!silent) state.page = 1;
@@ -1070,6 +1076,7 @@ function applyFilters() {
         if (state.status.length && !state.status.includes(d.status)) return false;
         if (state.tingkat.length && !state.tingkat.includes(effectiveTingkat(d))) return false;
         if (state.damage.length && !state.damage.includes(d.damageType)) return false;
+        if (state.pic.length && !state.pic.includes(picOf(d))) return false;
         if (q) {
             // Blob utama + blob "padat" (BTI0032 / BTI 0032 / BTI-0032 semuanya ketemu) — sudah dipra-hitung
             if(d.__blob===undefined) indexRecords([d]);
@@ -1122,6 +1129,7 @@ function renderActiveChips() {
     state.status.forEach(v => chips.push({label:`Status: ${v}`, clear:()=>{state.status=state.status.filter(x=>x!==v);repop('statusFilter','status');}}));
     state.tingkat.forEach(v => chips.push({label:`Tingkat: ${v}`, clear:()=>{state.tingkat=state.tingkat.filter(x=>x!==v);repop('tingkatFilter','tingkat');}}));
     state.damage.forEach(v => chips.push({label:`Kerusakan: ${v}`, clear:()=>{state.damage=state.damage.filter(x=>x!==v);repop('damageFilter','damage');}}));
+    state.pic.forEach(v => chips.push({label:`PIC: ${v}`, clear:()=>{state.pic=state.pic.filter(x=>x!==v);repop('picFilter','pic');}}));
     if (state.selectedDate) chips.push({label:`Tgl: ${fmtDate(state.selectedDate)}`, clear:()=>clearSelectedDate()});
     else if (state.period==='custom') chips.push({label:'Custom date', clear:()=>{state.period='all';state.dateFrom='';state.dateTo='';const df=document.getElementById('dateFrom');if(df)df.value='';const dt=document.getElementById('dateTo');if(dt)dt.value='';setPeriodUI('all');applyFilters();}});
 
@@ -1137,6 +1145,17 @@ function renderActiveChips() {
     window.__chipActions = chips.map(c=>c.clear);
     window.__chipAction = i => { window.__chipActions[i](); applyFilters(); };
 }
+// PIC (penanggung jawab perbaikan) — kolom baru di Google Form. Laporan lama tanpa PIC
+// dikelompokkan sebagai "Belum diisi" agar tetap bisa difilter.
+const PIC_EMPTY = 'Belum diisi';
+function picOf(d){ return d.pic && d.pic!=='-' ? d.pic : PIC_EMPTY; }
+function picOptions(){
+    const cnt={}; rawData.forEach(d=>{ const v=picOf(d); cnt[v]=(cnt[v]||0)+1; });
+    const form=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.pic)||[];
+    const vals=[...new Set([...form, ...Object.keys(cnt).filter(v=>v!==PIC_EMPTY)])];
+    if(cnt[PIC_EMPTY]) vals.push(PIC_EMPTY);
+    return vals;
+}
 function damageOptions(){
     const cnt={}; rawData.forEach(d=>{ const v=d.damageType; if(v&&v!=='-') cnt[v]=(cnt[v]||0)+1; });
     const fromData=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
@@ -1148,6 +1167,7 @@ function repop(id,key){
                    : key==='lokasi' ? [...new Set(rawData.map(d=>d.lokasi).filter(v=>v&&v!=='-'))].sort()
                    : key==='tingkat' ? TINGKAT_ORDER
                    : key==='damage' ? damageOptions()
+                   : key==='pic' ? picOptions()
                    : STATUS_ORDER;
     populateMultiSelect(id, allOpts, state[key]);
 }
@@ -1158,7 +1178,7 @@ function setPeriodUI(p){
     });
 }
 function clearAllFilters() {
-    state.divisi = []; state.lokasi = []; state.status = []; state.tingkat = []; state.damage = [];
+    state.divisi = []; state.lokasi = []; state.status = []; state.tingkat = []; state.damage = []; state.pic = [];
     state.search = '';
     const si=document.getElementById('searchInput'); if(si) si.value = '';
     state.selectedDate = null;
@@ -1172,6 +1192,7 @@ function clearAllFilters() {
     populateMultiSelect('statusFilter',STATUS_ORDER,[]);
     populateMultiSelect('tingkatFilter',TINGKAT_ORDER,[]);
     populateMultiSelect('damageFilter',damageOptions(),[]);
+    populateMultiSelect('picFilter',picOptions(),[]);
     state.page = 1;
     applyFilters();
 }
@@ -2544,6 +2565,7 @@ function renderTable(){
             <td class="px-4 py-3 text-xs text-slate-600 max-w-[200px]">${d.keterangan?escapeHtml(d.keterangan):'<span class="text-slate-400 italic">-</span>'}</td>
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
             <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
+            <td class="px-4 py-3 text-xs whitespace-nowrap">${d.pic&&d.pic!=='-'?`<span class="inline-flex items-center gap-1 text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-medium"><i class="fas fa-user-gear text-[9px]"></i>${escapeHtml(d.pic)}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}${d.__issues&&d.__issues.length?` <i class="fas fa-triangle-exclamation text-amber-500 ml-1 cursor-help" title="${escapeHtml(d.__issues.map(i=>i.msg).join('\n'))}"></i>`:''}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
             <td class="px-3 py-3">
@@ -2801,8 +2823,8 @@ function onSearchInput(v){
 
 // ---------- Export ----------
 function exportCSV(){
-    const headers=['Timestamp','Tanggal Inspeksi','Lokasi','Divisi','Jenis Engine','Kode Engine','Jenis Irrigator','Kode Irrigator','Jenis Kerusakan','Keterangan Kerusakan','Spareparts Yang Dibutuhkan','Nomor PR / Notifikasi','Status','Tingkat Kerusakan','Status Perbaikan'];
-    const rows=filteredData.map(d=>[new Date(d.timestamp).toISOString(),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status,effectiveTingkat(d),d.repairStatus||'Belum']);
+    const headers=['Timestamp','Tanggal Inspeksi','Lokasi','Divisi','Jenis Engine','Kode Engine','Jenis Irrigator','Kode Irrigator','Jenis Kerusakan','Keterangan Kerusakan','Spareparts Yang Dibutuhkan','Nomor PR / Notifikasi','Status','Tingkat Kerusakan','Status Perbaikan','PIC'];
+    const rows=filteredData.map(d=>[new Date(d.timestamp).toISOString(),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status,effectiveTingkat(d),d.repairStatus||'Belum',d.pic&&d.pic!=='-'?d.pic:'']);
     const csv=[headers.join(','),...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n');
     const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a');
@@ -3097,7 +3119,8 @@ const FORM_OPTIONS = {
     irrType:    ['BTI','ITI'],
     damageType: ['Blok Mesin','Pompa Ebara','Gearbox','Turbin','Pompa Sumur Bor','Transmisi','Dinamo','Prodo','Gun','HM','RPM','Flowmeter','Hidrolik','Pipa PE','Filter','Selang','Rantai','Impeler','Radiator','Panel Listrik','Electromotor','Tangki Solar','Sproket','Knalpot','Aki','Box Panel','Ban'],
     tingkat:    ['Ringan','Sedang','Berat'],
-    repair:     ['Sudah','Belum']
+    repair:     ['Sudah','Belum'],
+    pic:        ['Internal','Maintenance','Cogen','Engineering','Sumur Bor']
 };
 // Isi <select> dari daftar form; nilai lama yang tidak ada di daftar (data historis) tetap
 // ditampilkan sebagai opsi agar edit tidak diam-diam mengubah data.
@@ -3126,6 +3149,7 @@ function fillFormSelects(d){
     fillSelect('f_engineType', FORM_OPTIONS.engineType, d.engineType, '— tidak ada —');
     fillSelect('f_irrType', FORM_OPTIONS.irrType, d.irrType, '— tidak ada —');
     fillSelect('f_damageType', FORM_OPTIONS.damageType, d.damageType, '— pilih jenis kerusakan —');
+    fillSelect('f_pic', FORM_OPTIONS.pic, d.pic, '— pilih PIC —');
 }
 function fillDatalists(){
     const uniq = (f)=>[...new Set(rawData.map(d=>d[f]).filter(v=>v&&v!=='-'))].sort();
@@ -3177,6 +3201,7 @@ async function submitCreate(){
     if(!g('f_tanggal')) errs.unshift('Tanggal Inspeksi wajib diisi.');
     if(!g('f_keterangan')) errs.push('Keterangan Kerusakan wajib diisi (sesuai Google Form).');
     if(!g('f_tingkat')) errs.push('Tingkat Kerusakan wajib dipilih (Ringan/Sedang/Berat).');
+    if(!g('f_pic')) errs.push('PIC wajib dipilih (sesuai Google Form).');
     if(errs.length){ msg.innerHTML=`<span class="text-red-600"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(errs[0])}</span>`; return; }
     const payload={
         action:'create',
@@ -3185,7 +3210,7 @@ async function submitCreate(){
         engineType:g('f_engineType')||'-', engineCode:g('f_engineCode')||'-',
         irrType:g('f_irrType')||'-', irrCode:g('f_irrCode')||'-',
         damageType:g('f_damageType'), keterangan:g('f_keterangan'),
-        sparepart:g('f_sparepart')||'-', prNumber:g('f_prNumber')||null
+        sparepart:g('f_sparepart')||'-', prNumber:g('f_prNumber')||null, pic:g('f_pic')
     };
     const setStatus = t => { msg.innerHTML=`<span class="text-emerald-700"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
     setStatus('Menambahkan ke spreadsheet…');
@@ -3214,7 +3239,7 @@ async function submitCreate(){
             timestamp: ts, tanggalInspeksi: payload.tanggalInspeksi, lokasi: payload.lokasi, divisi: payload.divisi,
             engineType: payload.engineType, engineCode: payload.engineCode, irrType: payload.irrType, irrCode: payload.irrCode,
             damageType: payload.damageType, keterangan: payload.keterangan, sparepart: payload.sparepart,
-            prNumber: payload.prNumber, repairStatus: payload.repairStatus, tingkat: payload.tingkat, __row: newRow
+            prNumber: payload.prNumber, pic: payload.pic||'-', repairStatus: payload.repairStatus, tingkat: payload.tingkat, __row: newRow
         }])[0];
         revalidateAfterWrite(rec);
         rawData.unshift(indexRecords([rec])[0]);
@@ -3370,7 +3395,8 @@ async function submitEdit(){
         damageType: document.getElementById('f_damageType').value.trim() || '-',
         keterangan: document.getElementById('f_keterangan').value.trim(),
         sparepart: document.getElementById('f_sparepart').value.trim() || '-',
-        prNumber: document.getElementById('f_prNumber').value.trim() || null
+        prNumber: document.getElementById('f_prNumber').value.trim() || null,
+        pic: document.getElementById('f_pic').value || '-'
     };
     const msg=document.getElementById('editMsg');
     const btn=document.getElementById('editSaveBtn');
@@ -3401,7 +3427,7 @@ async function submitEdit(){
             engineType:payload.engineType, engineCode:payload.engineCode,
             irrType:payload.irrType, irrCode:payload.irrCode,
             damageType:payload.damageType, keterangan:payload.keterangan,
-            sparepart:payload.sparepart, prNumber:payload.prNumber,
+            sparepart:payload.sparepart, prNumber:payload.prNumber, pic:payload.pic,
         });
         if(payload.tanggalInspeksi){
             const [y,m,day]=payload.tanggalInspeksi.split('-').map(Number);
@@ -3543,8 +3569,8 @@ document.addEventListener('DOMContentLoaded',()=>{
             const m=t.match(/\bv(\d+)\b/); const ver=m?+m[1]:0;
             if(!/^ok:/i.test(t) || ver<3){
                 showToast('Write-proxy Apps Script versi lama/tidak valid ('+(t.slice(0,40)||'no response')+'). Edit Tingkat/Status Perbaikan tidak akan tersimpan — deploy ulang scripts/write-proxy.gs (lihat SETUP-EDIT.md).','warning');
-            } else if(ver<6){
-                showToast('Write-proxy masih v'+ver+'. Versi terbaru (v6) lebih cepat & tahan gangguan/timeout — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
+            } else if(ver<7){
+                showToast('Write-proxy masih v'+ver+'. Versi terbaru (v7) menyimpan kolom PIC — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
             }
             window.__proxyVersion = ver;
         }catch(e){}

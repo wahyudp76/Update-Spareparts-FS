@@ -9,7 +9,7 @@ const path = require('path');
 const FORM_ID = process.env.FORM_ID || '19vA7xX0ggR3lIihGI_X4c1QpqBNaUCoEGK_Tv4swOBM';
 const OUT = path.join(__dirname, '..', 'form-options.json');
 // Judul pertanyaan di form → kunci yang dipakai dashboard
-const MAP = { 'divisi':'divisi', 'jenis engine':'engineType', 'jenis irrigator':'irrType', 'jenis kerusakan':'damageType', 'tingkat kerusakan':'tingkat', 'status perbaikan':'repair' };
+const MAP = { 'divisi':'divisi', 'jenis engine':'engineType', 'jenis irrigator':'irrType', 'jenis kerusakan':'damageType', 'tingkat kerusakan':'tingkat', 'status perbaikan':'repair', 'pic':'pic' };
 
 (async () => {
   try {

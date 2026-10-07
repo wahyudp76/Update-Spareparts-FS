@@ -134,12 +134,13 @@ function mapRows(rows) {
   const hi = {
     timestamp:-1, tanggalInspeksi:-1, lokasi:-1, divisi:-1,
     engineType:-1, engineCode:-1, irrType:-1, irrCode:-1,
-    damageType:-1, damageNote:-1, sparepart:-1, prNumber:-1, tingkat:-1, repair:-1
+    damageType:-1, damageNote:-1, sparepart:-1, prNumber:-1, tingkat:-1, repair:-1, pic:-1
   };
 
   headers.forEach((name, i) => {
     const k = String(name).toLowerCase().trim();
     if (k === 'timestamp') hi.timestamp = i;
+    else if (k === 'pic' || k.startsWith('pic ') || k.includes('penanggung jawab')) hi.pic = i;
     else if (k.includes('tanggal inspeksi')) hi.tanggalInspeksi = i;
     else if (k.includes('lokasi')) hi.lokasi = i;
     else if (k.includes('divisi')) hi.divisi = i;
@@ -238,6 +239,7 @@ function mapRows(rows) {
       damage,
       sparepart: sp,
       prNumber: pr || null,
+      pic: get('pic') || '-',
       status,
       repairStatus: repair,
       tingkat,

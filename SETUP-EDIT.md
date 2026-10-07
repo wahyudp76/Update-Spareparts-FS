@@ -1,5 +1,7 @@
 # Panduan Mengaktifkan Fitur Edit/Hapus untuk SEMUA User
 
+> **Update v7 (kolom PIC):** Google Form kini punya pertanyaan **PIC** (Internal/Maintenance/Cogen/Engineering/Sumur Bor) → kolom `PIC` di sheet Response. Agar PIC ikut tersimpan saat Tambah/Edit dari web, salin `scripts/write-proxy.gs` terbaru (v7) ke Apps Script lalu **Deploy → Manage deployments → Edit → New version**. Dashboard akan menampilkan peringatan selama proxy masih < v7.
+>
 > **Update v3 (kolom baru):** proxy versi terbaru juga menulis kolom **Tingkat Kerusakan** dan **Status Perbaikan**. Bila kedua kolom itu tidak ikut tersimpan saat edit dari web, ulangi langkah deploy di bawah dengan kode `scripts/write-proxy.gs` terbaru.
 
 > ## ⚠️ Edit/Hapus error "Sorry, unable to open the file" / "Page Not Found"?

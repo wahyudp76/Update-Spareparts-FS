@@ -1,7 +1,7 @@
 {
   "formId": "19vA7xX0ggR3lIihGI_X4c1QpqBNaUCoEGK_Tv4swOBM",
   "title": "Update Service / Maintenance FS PG2",
-  "fetchedAt": "2026-10-05T10:25:26.363Z",
+  "fetchedAt": "2026-10-07T01:15:13.922Z",
   "options": {
     "divisi": [
       "PG2",
@@ -56,6 +56,13 @@
     "repair": [
       "Sudah",
       "Belum"
+    ],
+    "pic": [
+      "Internal",
+      "Maintenance",
+      "Cogen",
+      "Engineering",
+      "Sumur Bor"
     ]
   }
 }
