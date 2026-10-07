@@ -1379,7 +1379,7 @@ function mkDoughnutOpts(opts={}){
 
 function renderCharts() {
     // Destroy dulu semua
-    ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType'].forEach(k=>dk(k));
+    ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType','pic'].forEach(k=>dk(k));
     renderSeverityCharts();
     renderSparepartCharts();
 
@@ -1518,6 +1518,37 @@ function renderCharts() {
                 options:mkDoughnutOpts()
             });
         }
+    }
+
+    // ==== PIC: BEBAN KERJA (overview) — kerusakan belum selesai per penanggung jawab ====
+    const picEl = document.getElementById('picChart');
+    if(picEl && isElVisible(picEl)){
+        const st = picStats();
+        const rows = st.filter(r=>r.open>0);
+        const ctx=picEl.getContext('2d');
+        if(ctx && rows.length){
+            charts.pic = new Chart(ctx,{
+                type:'bar',
+                data:{labels:rows.map(r=>r.pic),datasets:[
+                    {label:'Belum Ditangani',data:rows.map(r=>r.pending),backgroundColor:'#94a3b8',borderRadius:{topLeft:4,bottomLeft:4,topRight:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:30},
+                    {label:'Proses',data:rows.map(r=>r.proses),backgroundColor:'#f59e0b',borderRadius:{topLeft:0,bottomLeft:0,topRight:4,bottomRight:4},borderSkipped:false,stack:'s',maxBarThickness:30}
+                ]},
+                options:mkOpts(true,{
+                    indexAxis:'y',
+                    onClick:(e,els)=>{ if(!els.length) return; const pic=rows[els[0].index].pic; focusPic(pic); },
+                    plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f172a',padding:10,cornerRadius:8,titleFont:{size:11,weight:'600'},bodyFont:{size:11},footerFont:{size:10,weight:'400'},callbacks:{footer:(items)=>{ const r=rows[items[0].dataIndex]; return `Total belum selesai: ${r.open} · Selesai: ${r.done} (${r.pctDone}%)`+(r.oldestDays!=null?` · Terlama ${r.oldestDays} hari`:''); }}}},
+                    scales:{
+                        x:{stacked:true,grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'12%'},
+                        y:{stacked:true,grid:{display:false},ticks:{color:TICK_COLOR,font:{size:11,weight:'600'}},border:{display:false}}
+                    }
+                })
+            });
+        } else if(ctx){
+            ctx.clearRect(0,0,picEl.width,picEl.height);
+            ctx.font='12px Inter, sans-serif'; ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
+            ctx.fillText('Semua kerusakan pada filter ini sudah selesai 🎉', picEl.width/2/(window.devicePixelRatio||1), picEl.height/2/(window.devicePixelRatio||1));
+        }
+        renderPicSummary(st);
     }
 
     // ==== JENIS BAR (damage tab) ====
@@ -1725,6 +1756,48 @@ function isElVisible(el){
 }
 
 // ---------- Overview render ----------
+// Statistik per PIC (dari filteredData): pending (Belum Ditangani), proses, selesai, umur terlama.
+function picStats(){
+    const now=Date.now(), m={};
+    filteredData.forEach(d=>{
+        const k=picOf(d); const r=m[k]||(m[k]={pic:k,pending:0,proses:0,done:0,open:0,total:0,oldest:null});
+        r.total++;
+        if(d.status==='Selesai'){ r.done++; return; }
+        r.open++; if(d.status==='Proses') r.proses++; else r.pending++;
+        const t=d.__t!==undefined?d.__t:new Date(d.timestamp).getTime();
+        if(r.oldest==null||t<r.oldest) r.oldest=t;
+    });
+    return Object.values(m).map(r=>({...r, pctDone: r.total?Math.round(r.done/r.total*100):0, oldestDays: r.oldest!=null?Math.max(0,Math.floor((now-r.oldest)/86400000)):null}))
+        .sort((a,b)=>b.open-a.open||b.pending-a.pending||a.pic.localeCompare(b.pic));
+}
+function focusPic(pic){
+    state.pic = state.pic.length===1 && state.pic[0]===pic ? [] : [pic];
+    repop('picFilter','pic'); state.page=1; applyFilters();
+    showToast(state.pic.length?`Filter PIC: ${pic}`:'Filter PIC dihapus','info');
+}
+function renderPicSummary(st){
+    const c=document.getElementById('picSummary'); if(!c) return;
+    if(!st.length){ c.innerHTML='<div class="text-xs text-slate-400 py-4 text-center italic">Tidak ada data</div>'; return; }
+    const totOpen=st.reduce((a,r)=>a+r.open,0);
+    const row=r=>{
+        const active = state.pic.length===1 && state.pic[0]===r.pic;
+        const share = totOpen?Math.round(r.open/totOpen*100):0;
+        const warn = r.oldestDays!=null && r.oldestDays>=14;
+        return `<tr class="border-t border-slate-100 hover:bg-violet-50/60 cursor-pointer ${active?'bg-violet-50':''}" onclick="focusPic('${escapeHtml(r.pic).replace(/'/g,"\\'")}')" title="Klik untuk fokus/lepas filter PIC ini">
+            <td class="py-1.5 pr-2 text-xs font-semibold text-slate-700 whitespace-nowrap">${r.pic===PIC_EMPTY?`<span class="text-slate-400 italic">${escapeHtml(r.pic)}</span>`:escapeHtml(r.pic)}</td>
+            <td class="py-1.5 px-1 text-center"><span class="inline-block min-w-[26px] px-1.5 py-0.5 rounded text-[11px] font-bold ${r.open?'bg-red-50 text-red-700':'bg-slate-50 text-slate-400'}">${r.open}</span></td>
+            <td class="py-1.5 px-1 text-center text-[11px] text-slate-500">${r.pending}</td>
+            <td class="py-1.5 px-1 text-center text-[11px] text-amber-700">${r.proses}</td>
+            <td class="py-1.5 px-1 text-center text-[11px] text-emerald-700">${r.done}</td>
+            <td class="py-1.5 px-1 text-center text-[11px] ${warn?'text-red-600 font-semibold':'text-slate-500'}">${r.oldestDays!=null?r.oldestDays+' hr':'—'}</td>
+            <td class="py-1.5 pl-1 w-[70px]"><div class="top-bar"><span style="width:${share}%;background:#7c3aed"></span></div></td>
+        </tr>`;
+    };
+    c.innerHTML=`<table class="w-full text-left"><thead><tr class="text-[10px] uppercase tracking-wider text-slate-400">
+        <th class="pb-1.5 pr-2 font-semibold">PIC</th><th class="pb-1.5 px-1 font-semibold text-center">Belum selesai</th><th class="pb-1.5 px-1 font-semibold text-center">Belum</th><th class="pb-1.5 px-1 font-semibold text-center">Proses</th><th class="pb-1.5 px-1 font-semibold text-center">Selesai</th><th class="pb-1.5 px-1 font-semibold text-center">Terlama</th><th class="pb-1.5 pl-1 font-semibold">Porsi</th></tr></thead>
+        <tbody>${st.map(row).join('')}</tbody></table>
+        <div class="mt-2 text-[10.5px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>${totOpen} kerusakan belum selesai pada filter aktif. "Terlama" = umur laporan terbuka tertua. Klik baris/batang untuk memfilter per PIC.</div>`;
+}
 function renderOverview(){
     if(!document.getElementById('topLokasi')) return;
 

@@ -374,6 +374,24 @@
                 </div>
             </div>
 
+            <!-- PIC: kerusakan belum ditangani per penanggung jawab -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4">
+                <div class="card p-4 lg:col-span-7">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-violet-600"><i class="fas fa-user-gear text-[11px]"></i></span>Beban Kerja PIC</h3>
+                            <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Kerusakan yang belum selesai per penanggung jawab perbaikan</p>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap"><i class="fas fa-circle text-slate-400 mr-1 text-[6px]"></i>Belum ditangani <i class="fas fa-circle text-amber-500 ml-2 mr-1 text-[6px]"></i>Proses (ada PR)</span>
+                    </div>
+                    <div class="chart-wrap h-[220px]"><canvas id="picChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-5">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-violet-500 w-7 h-7 text-[11px]"><i class="fas fa-list-check"></i></span>Ringkasan per PIC</h3>
+                    <div id="picSummary" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
             <!-- Top lists: Lokasi, Sparepart, Kerusakan -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
                 <div class="card p-4">
@@ -888,7 +906,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v21').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v22').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
