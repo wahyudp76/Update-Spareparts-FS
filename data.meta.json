@@ -1,9 +1,9 @@
 {
   "sheetId": "1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk",
   "sheetName": "Response",
-  "lastFetchSuccess": true,
-  "lastFetchAttempt": "2026-10-07T01:15:15.285Z",
-  "lastFetchError": null,
+  "lastFetchSuccess": false,
+  "lastFetchAttempt": "2026-10-07T01:17:13.051Z",
+  "lastFetchError": "Timeout",
   "recordCount": 276,
   "headers": [
     "Timestamp",
