@@ -963,6 +963,25 @@ function msToggleOption(label) {
     state.page = 1;
     applyFilters();
 }
+// Posisikan menu dropdown agar tidak keluar layar (penting di HP: menu lebih lebar dari
+// tombolnya sehingga, dengan rata-kanan, sisi kirinya terpotong — terutama "Jenis Kerusakan").
+function msPlaceMenu(w){
+    const menu = w.querySelector('.ms-menu'); if(!menu) return;
+    menu.style.left=''; menu.style.right=''; menu.style.maxWidth='';
+    menu.style.maxWidth = Math.max(160, window.innerWidth - 24) + 'px';
+    const r = menu.getBoundingClientRect();
+    if (r.left < 8) {                        // terpotong di kiri → rata kiri dengan tombol
+        menu.style.right='auto'; menu.style.left='0';
+        const r2 = menu.getBoundingClientRect();
+        if (r2.right > window.innerWidth - 8)  // masih lewat kanan → geser ke dalam layar
+            menu.style.left = Math.round(-(r2.right - (window.innerWidth - 8))) + 'px';
+    } else if (r.right > window.innerWidth - 8) {
+        menu.style.left='auto'; menu.style.right='0';
+    }
+    // batasi tinggi daftar agar muat di layar
+    const list = menu.querySelector('.ms-list');
+    if (list) { const top = list.getBoundingClientRect().top; list.style.maxHeight = Math.max(120, window.innerHeight - top - 16) + 'px'; }
+}
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.ms-wrap')) {
         document.querySelectorAll('.ms-wrap').forEach(w => w.classList.remove('open'));
@@ -3481,7 +3500,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
     document.querySelectorAll('.ms-wrap').forEach(w => {
         const btn=w.querySelector('.ms-btn');
-        if(btn) btn.addEventListener('click', e => { e.stopPropagation(); w.classList.toggle('open'); });
+        if(btn) btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const willOpen = !w.classList.contains('open');
+            document.querySelectorAll('.ms-wrap.open').forEach(o => { if(o!==w) o.classList.remove('open'); });
+            w.classList.toggle('open', willOpen);
+            if(willOpen) msPlaceMenu(w);
+        });
         const all=w.querySelector('.ms-opt-all');
         if(all) all.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); msToggleAll(e.currentTarget); });
         const list=w.querySelector('.ms-list');
