@@ -96,7 +96,7 @@ function validateRecord(d){
     }
     if(!d.keterangan || d.keterangan.trim().length<3) issues.push({field:'keterangan',col:'Keterangan',type:'missing',msg:'Keterangan kerusakan kosong/terlalu pendek (wajib di Google Form).'});
     if(!d.tingkat) issues.push({field:'tingkat',col:'Tingkat Kerusakan',type:'missing',msg:'Tingkat Kerusakan kosong — dashboard menebak dari kata kunci; sebaiknya diisi.'});
-    if((!d.pic||d.pic==='-') && typeof __picSince==='number' && new Date(d.timestamp).getTime()>=__picSince) issues.push({field:'pic',col:'PIC',type:'missing',msg:'PIC kosong (wajib di Google Form sejak kolom PIC ditambahkan).'});
+    if(!d.pic||d.pic==='-') issues.push({field:'pic',col:'PIC',type:'missing',msg:'PIC kosong — lengkapi lewat Edit.'});
     if(d.engineCode && d.engineCode!=='-' && d.irrCode && d.irrCode!=='-' && d.engineCode===d.irrCode && d.engineType===d.irrType) issues.push({field:'irrCode',col:'Kode Irrigator',type:'suspect',msg:`Kode Engine dan Kode Irrigator sama (${d.engineCode}) — salah satu kemungkinan salah isi.`});
     // Tanggal inspeksi vs waktu kirim form
     if(d.__rawTgl){ const tt=parseDate(d.__rawTgl); const ts=d.__rawTs?parseDate(d.__rawTs):null;
@@ -114,12 +114,8 @@ function validateRecord(d){
 let __picSince = null; // sejak kapan PIC dianggap wajib (dihitung dari data)
 let __lokFreq = {};   // frekuensi lokasi di laporan (lokasi yang sering dipakai dianggap valid)
 function validateAll(arr){
-    // PIC dianggap wajib sejak TANGGAL TETAP (kolom PIC ditambahkan ke Google Form), bisa diatur
-    // lewat config.js → PIC_REQUIRED_SINCE: 'YYYY-MM-DD'. Dulu dihitung dari data (≥70% laporan
-    // berisi PIC) — itu "target bergerak": setiap kali PIC diisi, batasnya mundur dan laporan lama
-    // ikut ditandai, sehingga jumlah anomali malah BERTAMBAH setelah diperbaiki.
-    const cfgSince = (window.PG2_CONFIG && window.PG2_CONFIG.PIC_REQUIRED_SINCE) || '2026-10-03';
-    const ps = new Date(cfgSince+'T00:00:00'); __picSince = isNaN(ps) ? null : ps.getTime();
+    // PIC kosong diperiksa untuk SELURUH data tanpa patokan tanggal (permintaan pengguna).
+    __picSince = null;
     __lokFreq = {}; arr.forEach(d=>{ if(d.lokasi&&d.lokasi!=='-') __lokFreq[lokKey(d.lokasi)]=(__lokFreq[lokKey(d.lokasi)]||0)+1; });
     let n=0; arr.forEach(d=>{ n += validateRecord(d).length ? 1 : 0; });
     // Duplikat: timestamp + lokasi + jenis kerusakan sama persis

@@ -269,4 +269,4 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 
 > **Catatan (Okt 2026):** perbedaan kode engine/irrigator/divisi dengan data *unit terpasang* (Draft Dashboard) **tidak lagi dihitung sebagai anomali** — posisi engine sering berpindah dermaga, sehingga laporan di suatu lokasi wajar memakai unit yang tercatat di lokasi lain. Lokasi yang tidak ada di daftar unit terpasang juga **tidak** ditandai. Data unit terpasang tetap dipakai untuk isi otomatis form dan petunjuk "Berbeda dari isian saat ini" (informatif, tidak memblokir).
 
-> **Hitungan anomali (Okt 2026):** batas "PIC wajib" kini **tanggal tetap** (`config.js` → `PIC_REQUIRED_SINCE`, default 2026-10-03), bukan lagi dihitung dari persentase data — cara lama membuat batasnya mundur setiap kali PIC diisi sehingga jumlah anomali bertambah setelah diperbaiki. Lokasi bernama (Bengkel PG2, Guava, Banana) tidak lagi dicek sebagai kode lokasi.
+> **Hitungan anomali (Okt 2026):** PIC kosong ditandai untuk **seluruh data** (tanpa patokan tanggal) — jumlahnya turun setiap kali PIC dilengkapi. Lokasi bernama (Bengkel PG2, Guava, Banana) tidak dicek sebagai kode lokasi.
