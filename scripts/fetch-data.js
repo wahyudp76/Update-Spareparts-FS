@@ -247,7 +247,7 @@ function mapRows(rows) {
       __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(get('tanggalInspeksi')),
       __issues_sync: issues,
       unit: lokasi || '-',
-      __row: i + 2 // baris spreadsheet (header=1, data mulai baris 2)
+      __row: i + 1 // baris spreadsheet: rows[0]=header (baris 1), rows[1]=baris 2, dst.
     });
   }
   // Laporan kualitas data untuk log GitHub Actions + data.quality.json

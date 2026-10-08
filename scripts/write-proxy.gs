@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v7 — + kolom PIC; idempoten via opId, tulis batch, tahan retry)
+ * PG2 Irrigation Dashboard — Write Proxy  (v8 — tolak baris ambigu; + kolom PIC; idempoten via opId, tulis batch, tahan retry)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v7';
+var VERSION    = 'v8';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -192,12 +192,15 @@ function doPost(e) {
       for (var i = 0; i < data.length; i++) if (rowMatches(data[i], p)) found.push(i + 2);
       if (found.length === 1) return found[0];
       if (found.length > 1 && sr >= 2 && found.indexOf(sr) >= 0) return sr;
-      if (found.length > 1) return found[found.length - 1];
+      // >1 kandidat dan nomor baris tidak cocok → JANGAN menebak (bisa mengubah/menghapus
+      // baris lain yang mirip, mis. laporan duplikat). Minta pengguna refresh lalu ulangi.
+      if (found.length > 1) return -2;
       return -1;
     }
 
     if (action === 'update') {
       var r = findRow(body);
+      if (r === -2) return _text('error: Ada beberapa baris serupa di sheet dan nomor baris tidak cocok (data dashboard mungkin basi). Klik Refresh lalu coba lagi.');
       if (r < 0) return _text('error: Baris tidak ditemukan di sheet (mungkin sudah dihapus/berubah). Klik Refresh lalu coba lagi.');
       // Tulis satu baris sekaligus (1 setValues) — jauh lebih cepat daripada 13 setValue terpisah
       var rowRange = sheet.getRange(r, 1, 1, lastCol);
@@ -219,6 +222,7 @@ function doPost(e) {
 
     if (action === 'delete') {
       var rd = findRow(body);
+      if (rd === -2) return _text('error: Ada beberapa baris serupa di sheet dan nomor baris tidak cocok (data dashboard mungkin basi). Klik Refresh lalu coba lagi.');
       if (rd < 0) return _text('error: Baris tidak ditemukan di sheet (mungkin sudah dihapus). Klik Refresh lalu coba lagi.');
       sheet.deleteRow(rd);
       SpreadsheetApp.flush();

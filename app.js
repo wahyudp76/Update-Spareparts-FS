@@ -84,6 +84,25 @@ function validateAll(arr){
     // Duplikat: timestamp + lokasi + jenis kerusakan sama persis
     const seen={}; arr.forEach(d=>{ const k=`${d.timestamp}|${d.lokasi}|${d.damageType}`; (seen[k]=seen[k]||[]).push(d); });
     Object.values(seen).filter(v=>v.length>1).forEach(v=>v.slice(1).forEach(d=>{ d.__issues.push({field:'dup',col:'—',type:'duplicate',msg:`Kemungkinan duplikat dari baris ${v[0].__row}.`}); }));
+    // Duplikat "kiriman ganda": tanggal inspeksi + lokasi + jenis + keterangan sama walau
+    // timestamp berbeda (umumnya form dikirim 2x, mis. untuk menambah PIC). Baris yang paling
+    // lengkap (ada PIC, status Sudah) dianggap asli; sisanya ditandai agar bisa dihapus.
+    const seen2={}; arr.forEach(d=>{
+        if(!d.lokasi||d.lokasi==='-'||!d.damageType||d.damageType==='-') return;
+        const k=`${d.tanggalInspeksi}|${lokKey(d.lokasi)}|${d.damageType.toLowerCase()}|${String(d.keterangan||'').toLowerCase().replace(/\s+/g,' ').trim()}`;
+        (seen2[k]=seen2[k]||[]).push(d);
+    });
+    const score=d=>(d.pic&&d.pic!=='-'?2:0)+(d.repairStatus==='Sudah'?1:0)+(d.prNumber?1:0)+(d.sparepart&&d.sparepart!=='-'?1:0);
+    Object.values(seen2).filter(v=>v.length>1).forEach(v=>{
+        v.sort((a,b)=>score(b)-score(a)||(b.__row||0)-(a.__row||0));
+        v.slice(1).forEach(d=>{
+            if(d.__issues.some(i=>i.type==='duplicate')) return;
+            const keep=v[0]; const diff=[];
+            if(keep.repairStatus!==d.repairStatus) diff.push(`status ${d.repairStatus}→${keep.repairStatus}`);
+            if((keep.pic||'-')!==(d.pic||'-')) diff.push(`PIC ${d.pic&&d.pic!=='-'?d.pic:'kosong'}→${keep.pic&&keep.pic!=='-'?keep.pic:'kosong'}`);
+            d.__issues.push({field:'dup',col:'Duplikat',type:'duplicate',msg:`Laporan yang sama dengan baris ${keep.__row} (tanggal, lokasi, jenis & keterangan identik; dikirim 2×${diff.length?' — '+diff.join(', '):''}). Baris ini menggandakan hitungan; sebaiknya dihapus.`});
+        });
+    });
     return arr.filter(d=>d.__issues.length);
 }
 // Setelah baris ditulis ke sheet (edit/tambah), nilai di sheet = nilai form (sudah normal),
@@ -100,6 +119,7 @@ function renderQualityBanner(){
     const bad = rawData.filter(d=>d.__issues && d.__issues.length);
     const el = document.getElementById('qualityBanner'); if(!el) return;
     const sepCount = bad.reduce((a,d)=>a+d.__issues.filter(i=>i.type==='separator'||i.type==='scientific').length,0);
+    const dupCount = bad.filter(d=>d.__issues.some(i=>i.type==='duplicate')).length;
     if(!bad.length){ el.classList.add('hidden'); el.innerHTML=''; __lastQualityKey=''; return; }
     el.classList.remove('hidden');
     el.innerHTML = `<div class="flex items-center justify-between gap-3 flex-wrap">
@@ -107,6 +127,7 @@ function renderQualityBanner(){
             <i class="fas fa-triangle-exclamation text-amber-600"></i>
             <b>${bad.length} baris spreadsheet perlu diperiksa</b>
             ${sepCount?`<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">${sepCount} angka memakai titik/koma</span>`:''}
+            ${dupCount?`<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">${dupCount} laporan terkirim ganda</span>`:''}
             <span class="text-amber-700 hidden sm:inline">— nilai sudah dinormalkan di dashboard, tetapi sumber di spreadsheet sebaiknya diperbaiki.</span>
         </div>
         <button onclick="openQualityModal()" class="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg"><i class="fas fa-list-check mr-1"></i>Lihat detail</button>
@@ -116,6 +137,7 @@ function renderQualityBanner(){
     if(key!==__lastQualityKey){
         __lastQualityKey = key;
         if(sepCount) showToast(`${sepCount} angka di spreadsheet ditulis dengan titik/koma sebagai pemisah (mis. Nomor PR). Periksa panel "Kualitas Data".`,'warning');
+        else if(dupCount) showToast(`${dupCount} laporan tampaknya terkirim 2× (duplikat) sehingga menggandakan hitungan. Buka "Lihat detail" untuk menghapus.`,'warning');
         else showToast(`${bad.length} baris spreadsheet memiliki data yang perlu diperiksa.`,'warning');
     }
 }
@@ -126,7 +148,7 @@ function openQualityModal(){
         <td class="py-2 pr-2 font-mono text-slate-500">${d.__row||'—'}</td>
         <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-blue-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
         <td class="py-2 pr-2">${d.__issues.map(i=>`<div class="mb-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${i.type==='separator'||i.type==='scientific'?'bg-red-100 text-red-700':i.type==='duplicate'?'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-800'}">${escapeHtml(i.col)}</span> <span class="text-slate-700">${escapeHtml(i.msg)}</span>${i.fixed&&i.fixed!==i.raw?` <span class="text-emerald-700 text-[10px]">→ ditampilkan sebagai <b>${escapeHtml(i.fixed)}</b></span>`:''}</div>`).join('')}</td>
-        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>`:''}</td>
+        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>${d.__issues.some(i=>i.type==='duplicate')?` <button onclick="closeModal('typeDetailModal');openDeleteModalRaw(${rawData.indexOf(d)})" class="act-btn del" title="Hapus baris duplikat"><i class="fas fa-trash"></i></button>`:''}`:''}</td>
     </tr>`).join('');
     modal.querySelector('.modal').innerHTML = `
         <div class="p-5 text-white" style="background:linear-gradient(135deg,#d97706,#b45309)">
@@ -602,7 +624,7 @@ function normalizeFromCSV(rows) {
             damageType: dt || '-', keterangan: dn || '', damage,
             sparepart: spNorm, prNumber: pr || null, pic: get('pic') || '-', status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
             __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
-            __row: i+2 // baris spreadsheet (header=1, data mulai 2)
+            __row: i+1 // baris spreadsheet: rows[0]=header (baris 1), rows[1]=baris 2, dst.
         });
     }
     return out.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -688,7 +710,7 @@ function normalizeFromJson(json) {
             timestamp: mergedTs.toISOString(),
             tanggalInspeksi: localIsoDate(tglObj),
             __rawTingkat: r.__rawTingkat||'', __rawRepair: r.__rawRepair||'', __rawTgl: r.__rawTgl||'', __yearFixed: !!r.__yearFixed,
-            __row: typeof r.__row==='number'?r.__row:(i+2)
+            __row: typeof r.__row==='number'?r.__row:(i+1)
         };
     }).filter(Boolean).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
@@ -3525,11 +3547,11 @@ async function submitEdit(){
     }
 }
 
-function openDeleteModal(globalIdx){
+function openDeleteModal(globalIdx){ return openDeleteModalRaw(rawData.indexOf(filteredData[globalIdx])); }
+function openDeleteModalRaw(rawi){
     if(!requireWriteEndpoint()) return;
-    const d = filteredData[globalIdx];
+    const d = rawData[rawi];
     if(!d) return;
-    const rawi = rawData.indexOf(d);
     document.getElementById('delRowIdx').value = rawi;
     document.getElementById('delSheetRow').value = d.__row || '';
     document.getElementById('deleteRowLabel').textContent = `${d.lokasi} · ${d.divisi} · ${d.damageType||'-'} · ${fmtDateShort(d.timestamp)}`;
