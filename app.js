@@ -188,7 +188,15 @@ function toggleNotifPanel(force){
     const p=document.getElementById('notifPanel'); if(!p) return;
     const show = force!==undefined ? force : p.classList.contains('hidden');
     p.classList.toggle('hidden', !show);
-    if(show) renderNotifPanel();
+    if(show){
+        renderNotifPanel();
+        // Di layar sempit: panel menempel di bawah header selebar layar (position fixed),
+        // supaya tidak terpotong di tepi kiri.
+        if(window.innerWidth < 520){
+            const hb=document.querySelector('header'); const top=hb?Math.round(hb.getBoundingClientRect().bottom)+6:60;
+            Object.assign(p.style,{position:'fixed',left:'8px',right:'8px',top:top+'px',width:'auto',marginTop:'0'});
+        } else { Object.assign(p.style,{position:'',left:'',right:'',top:'',width:'',marginTop:''}); }
+    }
 }
 document.addEventListener('click', e=>{ const w=document.getElementById('notifWrap'); if(w && !w.contains(e.target)) { const p=document.getElementById('notifPanel'); if(p) p.classList.add('hidden'); } });
 function renderNotifPanel(){
