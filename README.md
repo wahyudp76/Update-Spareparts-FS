@@ -260,3 +260,9 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 - Respons Apps Script yang tidak dikenal diperlakukan sebagai "belum pasti" lalu diverifikasi ke sheet (opId sama) — tidak lagi memicu baris ganda saat klik ulang.
 - Verifikasi hasil tulis diulang hingga 4× (CSV publik Google bisa tertinggal 10–20 detik).
 - Hasil tulis yang setelah 1 menit masih berbeda dengan sheet ditandai sebagai anomali "Sinkron".
+
+## Anti-duplikasi saat Tambah/Edit (v9)
+- **Pra-cek di web**: sebelum mengirim, Tambah Laporan membandingkan lokasi (dinormalkan, mis. `101 b` = `101B`), jenis kerusakan, tanggal, dan keterangan dengan data yang ada. Jika identik → muncul panel kuning dengan pilihan **Edit laporan yang ada** atau **Tetap tambah sebagai laporan baru**.
+- **Cek di server (proxy v9)**: Apps Script memindai ±600 baris terakhir; jika baris identik sudah ada dan tidak ada konfirmasi `allowDuplicate`, ia menjawab `ok: exists row N` dan web tidak menambah baris lokal.
+- **Kunci klik ganda**: `__writeBusy` memastikan hanya satu operasi tulis (tambah/edit/hapus) yang berjalan sekaligus; opId tetap sama untuk retry.
+- **Rekonsiliasi**: pencocokan baris pending memakai kunci yang dinormalkan + nomor baris sheet, dan refresh tambahan di detik ke-20 agar web ↔ spreadsheet cepat konvergen.

@@ -859,9 +859,13 @@ let __refreshInFlight = null;
 const PENDING_TTL = 60*1000;
 const __pendingWrites = []; // {kind:'update'|'create'|'delete', ts, row, rec, key}
 const __syncMismatch = {}; // key → {rec, ts}: hasil edit web yang belum sama dengan sheet
-const _wkey = d => `${d.lokasi}|${d.damageType}|${d.tanggalInspeksi}`;
+const _wkey = d => `${lokKey(d.lokasi)}|${String(d.damageType||'').trim().toLowerCase()}|${d.tanggalInspeksi}`;
+const _ketKey = v => String(v||'').toLowerCase().replace(/\s+/g,' ').trim();
+// Laporan "sama": tanggal + lokasi + jenis + keterangan identik (abaikan spasi/huruf besar)
+const _dupKey = d => `${_wkey(d)}|${_ketKey(d.keterangan)}`;
+const _normF = (f,v) => { v = (v==null||v==='-') ? '' : String(v).trim(); return f==='lokasi' ? lokKey(v) : (f==='keterangan'||f==='sparepart') ? _ketKey(v) : v; };
 const _sameFields = (a,b) => ['lokasi','divisi','damageType','keterangan','sparepart','prNumber','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','tanggalInspeksi','pic']
-    .every(f => String(a[f]==null?'':a[f]) === String(b[f]==null?'':b[f]));
+    .every(f => _normF(f,a[f]) === _normF(f,b[f]));
 function notePendingWrite(kind, rec, row){
     __pendingWrites.push({kind, ts:Date.now(), row: (typeof row==='number'?row:rec&&rec.__row), rec, key: rec?_wkey(rec):null});
 }
@@ -888,7 +892,7 @@ function reconcilePendingWrites(data){
             if(!srv || _sameFields(srv,pw.rec)) resolved=true;
             else { const idx=data.indexOf(srv); data[idx]=Object.assign({}, pw.rec, {__row: srv.__row}); }
         } else if(pw.kind==='create'){
-            if(data.some(d=>_wkey(d)===pw.key)) resolved=true;
+            if(data.some(d=>_wkey(d)===pw.key) || (pw.row && data.some(d=>d.__row===pw.row && lokKey(d.lokasi)===lokKey(pw.rec.lokasi)))) resolved=true;
             else data.unshift(pw.rec);
         } else if(pw.kind==='delete'){
             const idx = data.findIndex(d=>_wkey(d)===pw.key && (pw.row==null || d.__row===pw.row));
@@ -3417,7 +3421,7 @@ function openCreateModal(){
     document.getElementById('f_tingkat').value = '';
     document.getElementById('editMsg').innerHTML='';
     document.getElementById('editSaveBtn').disabled=false;
-    submitCreate._opId = null;
+    submitCreate._opId = null; submitCreate._dupConfirmed = false;
     loadUnits().then(()=>{ fillDatalists(); renderLokasiInfo('', false); }); renderLokasiInfo('', false);
     openModal('editModal');
     setTimeout(()=>document.getElementById('f_lokasi').focus(),150);
@@ -3433,9 +3437,10 @@ async function submitCreate(){
     if(!g('f_tingkat')) errs.push('Tingkat Kerusakan wajib dipilih (Ringan/Sedang/Berat).');
     if(!g('f_pic')) errs.push('PIC wajib dipilih (sesuai Google Form).');
     if(errs.length){ msg.innerHTML=`<span class="text-red-600"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(errs[0])}</span>`; return; }
+    if(window.__writeBusy){ return; } // cegah klik ganda / Enter dua kali
     const payload={
         action:'create',
-        tanggalInspeksi:g('f_tanggal'), lokasi:g('f_lokasi'), divisi:g('f_divisi'),
+        tanggalInspeksi:g('f_tanggal'), lokasi:lokKey(g('f_lokasi')), divisi:g('f_divisi'),
         repairStatus:g('f_repair'), tingkat:g('f_tingkat'),
         engineType:g('f_engineType')||'-', engineCode:g('f_engineCode')||'-',
         irrType:g('f_irrType')||'-', irrCode:g('f_irrCode')||'-',
@@ -3443,8 +3448,26 @@ async function submitCreate(){
         sparepart:g('f_sparepart')||'-', prNumber:g('f_prNumber')||null, pic:g('f_pic')
     };
     const setStatus = t => { msg.innerHTML=`<span class="text-emerald-700"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    // Cegah duplikat dari web: laporan dengan tanggal + lokasi + jenis (+ keterangan) sama sudah ada?
+    if(!submitCreate._dupConfirmed){
+        const same = rawData.filter(d=>_wkey(d)===_wkey(payload));
+        const exact = same.filter(d=>_ketKey(d.keterangan)===_ketKey(payload.keterangan));
+        if(same.length){
+            const list = (exact.length?exact:same).slice(0,3).map(d=>`baris ${d.__row||'?'} · ${escapeHtml(d.keterangan||'-')} · ${escapeHtml(d.repairStatus||'')}${d.pic&&d.pic!=='-'?' · PIC '+escapeHtml(d.pic):''}`).join('<br>');
+            msg.innerHTML=`<div class="text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+                <div class="font-semibold"><i class="fas fa-clone mr-1"></i>${exact.length?'Laporan yang SAMA PERSIS sudah ada':'Sudah ada laporan '+escapeHtml(payload.damageType)+' di '+escapeHtml(payload.lokasi)+' pada tanggal ini'}:</div>
+                <div class="text-[11px] my-1">${list}</div>
+                <div class="text-[11px] mb-1.5">Jika maksudnya memperbarui laporan itu (mis. menambah PIC / status), gunakan <b>Edit</b> — jangan menambah baris baru.</div>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" onclick="closeModal('editModal');openEditModalRaw(${rawData.indexOf((exact[0]||same[0]))})" class="px-2.5 py-1 rounded-md bg-slate-900 text-white text-[11px] font-semibold"><i class="fas fa-pen mr-1"></i>Edit laporan yang ada</button>
+                    <button type="button" onclick="submitCreate._dupConfirmed=true;submitCreate()" class="px-2.5 py-1 rounded-md bg-amber-600 text-white text-[11px] font-semibold"><i class="fas fa-plus mr-1"></i>Tetap tambah sebagai laporan baru</button>
+                </div></div>`;
+            return;
+        }
+    }
+    if(submitCreate._dupConfirmed) payload.allowDuplicate = true;
     setStatus('Menambahkan ke spreadsheet…');
-    btn.disabled=true;
+    btn.disabled=true; window.__writeBusy=true;
     if(submitCreate._opId) payload.opId = submitCreate._opId; // "Coba lagi" memakai opId yang sama → tidak dobel
     try{
         let res;
@@ -3456,13 +3479,21 @@ async function submitCreate(){
             submitCreate._opId = e.opId;
             setStatus('Tidak ada respons — memeriksa apakah laporan sudah masuk ke spreadsheet…');
             let found=null;
-            const ok = await verifyWriteApplied(fresh => (found = fresh.find(x => x.lokasi===payload.lokasi && x.damageType===payload.damageType && x.tanggalInspeksi===payload.tanggalInspeksi && (x.keterangan||'')===(payload.keterangan||''))));
+            const ok = await verifyWriteApplied(fresh => (found = fresh.find(x => _dupKey(x)===_dupKey(payload))));
             if(!ok) throw e;
             submitCreate._opId = null;
             res = 'ok: created row ' + (found && found.__row ? found.__row : '');
             showToast('Apps Script lambat merespons, tetapi laporan terverifikasi sudah masuk ke spreadsheet.','success');
         }
         const m = res.match(/row\s+(\d+)/i); const newRow = m ? parseInt(m[1]) : null;
+        if(/exists/i.test(res)){
+            // Proxy (v9+) menemukan baris identik yang sudah ada → tidak ditambah lagi
+            window.__writeBusy=false; submitCreate._dupConfirmed=false;
+            closeModal('editModal');
+            showToast(`Laporan identik sudah ada di spreadsheet (baris ${newRow||'?'}) — tidak ditambahkan lagi.`,'info');
+            setTimeout(()=>refreshData(true,{silent:true}), 1500);
+            return;
+        }
         const [y,mo,day]=payload.tanggalInspeksi.split('-').map(Number);
         const ts=new Date(y,mo-1,day,12,0,0).toISOString();
         const rec = normalizeFromJson([{
@@ -3477,11 +3508,13 @@ async function submitCreate(){
         closeModal('editModal');
         showToast(newRow?`Laporan tersimpan di spreadsheet (baris ${newRow}).`:'Laporan tersimpan di spreadsheet.','success');
         applyFilters(); renderQualityBanner();
+        submitCreate._dupConfirmed=false;
         setTimeout(()=>refreshData(true,{silent:true}), 2500);
+        setTimeout(()=>refreshData(true,{silent:true}), 20000); // CSV publik Google bisa tertinggal
     }catch(e){
         msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitCreate()':null);
         btn.disabled=false;
-    }
+    } finally { window.__writeBusy=false; }
 }
 
 function openEditModal(globalIdx){
@@ -3644,7 +3677,7 @@ async function submitEdit(){
         matchDamage: d.damageType,
         // Field-field baru
         tanggalInspeksi: document.getElementById('f_tanggal').value,
-        lokasi: document.getElementById('f_lokasi').value.trim() || '-',
+        lokasi: lokKey(document.getElementById('f_lokasi').value) || '-',
         divisi: document.getElementById('f_divisi').value,
         repairStatus: document.getElementById('f_repair').value,
         tingkat: document.getElementById('f_tingkat').value,
@@ -3661,6 +3694,7 @@ async function submitEdit(){
     const msg=document.getElementById('editMsg');
     const btn=document.getElementById('editSaveBtn');
     const setStatus = t => { msg.innerHTML=`<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    if(window.__writeBusy) return;
     btn.disabled=true;
     if(!openEditModalRaw._conflictChecked){
         setStatus('Memeriksa perubahan terbaru di spreadsheet…');
@@ -3684,7 +3718,7 @@ async function submitEdit(){
         }
         openEditModalRaw._conflictChecked = true;
     }
-    setStatus('Menyimpan ke spreadsheet…');
+    setStatus('Menyimpan ke spreadsheet…'); window.__writeBusy=true;
     // opId dipertahankan antar klik "Coba lagi" agar proxy tidak menulis dua kali
     submitEdit._opId = submitEdit._opId && submitEdit._opKey===rawi ? submitEdit._opId : null; submitEdit._opKey = rawi;
     try{
@@ -3728,10 +3762,11 @@ async function submitEdit(){
         // refreshData kini SELALU membaca Sheets langsung (bukan cache) → aman untuk
         // menyelaraskan ulang dari sumber kebenaran, termasuk nomor baris (__row).
         setTimeout(()=>refreshData(true,{silent:true}), 2500);
+        setTimeout(()=>refreshData(true,{silent:true}), 20000);
     }catch(e){
         msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitEdit()':null);
         btn.disabled=false;
-    }
+    } finally { window.__writeBusy=false; }
 }
 
 function openDeleteModal(globalIdx){ return openDeleteModalRaw(rawData.indexOf(filteredData[globalIdx])); }
@@ -3752,6 +3787,8 @@ async function submitDelete(){
     const sheetRow = document.getElementById('delSheetRow').value;
     const d = rawData[rawi];
     if(!d) return;
+    if(window.__writeBusy) return;           // cegah klik ganda / operasi tulis bersamaan
+    window.__writeBusy=true;
     const msg=document.getElementById('delMsg');
     const btn=document.getElementById('delConfirmBtn');
     const setStatus = t => { msg.innerHTML=`<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
@@ -3792,6 +3829,7 @@ async function submitDelete(){
         msg.innerHTML=_writeFailHtml(e, e.uncertain?'submitDelete()':null);
         btn.disabled=false;
     }
+    finally{ window.__writeBusy=false; }
 }
 
 // ---------- Utils ----------

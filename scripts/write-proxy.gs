@@ -1,5 +1,5 @@
 /**
- * PG2 Irrigation Dashboard — Write Proxy  (v8 — tolak baris ambigu; + kolom PIC; idempoten via opId, tulis batch, tahan retry)
+ * PG2 Irrigation Dashboard — Write Proxy  (v9 — anti-duplikat create di server; tolak baris ambigu; + kolom PIC; idempoten via opId, tulis batch, tahan retry)
  * -----------------------------------------------------------
  * Web App Apps Script yang menerima perintah EDIT/DELETE dari dashboard
  * statis (GitHub Pages) dan menerapkannya ke Google Spreadsheet sumber.
@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v8';
+var VERSION    = 'v9';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -140,6 +140,24 @@ function doPost(e) {
     if (action === 'create') {
       if (!body.lokasi || body.lokasi === '-') return _text('error: Lokasi wajib diisi');
       if (!body.damageType || body.damageType === '-') return _text('error: Jenis Kerusakan wajib diisi');
+      // Anti-duplikat sisi server: bila sudah ada baris dengan tanggal inspeksi + lokasi + jenis +
+      // keterangan yang sama, jangan tambah lagi (kecuali dashboard menyatakan allowDuplicate).
+      if (!body.allowDuplicate && lastRow >= 2) {
+        var ketCol = col('Keterangan Kerusakan');
+        var scanFrom = Math.max(2, lastRow - 600), scanN = lastRow - scanFrom + 1;
+        var recent = sheet.getRange(scanFrom, 1, scanN, lastCol).getValues();
+        var wantT = _ts(toCell({ type: 'date' }, body.tanggalInspeksi));
+        var wantK = _norm(body.keterangan).replace(/\s+/g, ' ');
+        for (var ri = recent.length - 1; ri >= 0; ri--) {
+          var rv = recent[ri];
+          if (_norm(rv[lokCol]).replace(/[^a-z0-9]/g, '') !== _norm(body.lokasi).replace(/[^a-z0-9]/g, '')) continue;
+          if (dmgCol >= 0 && _norm(rv[dmgCol]) !== _norm(body.damageType)) continue;
+          var haveT = _ts(tglCol >= 0 ? rv[tglCol] : null);
+          if (wantT && haveT && Math.abs(haveT - wantT) > 36 * 3600000) continue;
+          if (ketCol >= 0 && _norm(rv[ketCol]).replace(/\s+/g, ' ') !== wantK) continue;
+          return _done('ok: exists row ' + (scanFrom + ri));
+        }
+      }
       var errs = [];
       FIELDS.forEach(function (f) { if (f.type === 'code') { var er = checkCode(f, body[f.prop]); if (er) errs.push(er); } });
       if (errs.length) return _text('error: ' + errs.join('; '));

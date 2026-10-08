@@ -1,5 +1,7 @@
 # Panduan Mengaktifkan Fitur Edit/Hapus untuk SEMUA User
 
+> **Update v9 (anti-duplikat):** proxy kini menolak `create` yang identik (lokasi + jenis kerusakan + keterangan sama, tanggal inspeksi ±36 jam) dan menjawab `ok: exists row N`, kecuali web mengirim `allowDuplicate:true` (setelah pengguna mengonfirmasi). Salin `scripts/write-proxy.gs` terbaru ke Apps Script → **Deploy → Manage deployments → Edit → New version**.
+
 > **Update v7 (kolom PIC):** Google Form kini punya pertanyaan **PIC** (Internal/Maintenance/Cogen/Engineering/Sumur Bor) → kolom `PIC` di sheet Response. Agar PIC ikut tersimpan saat Tambah/Edit dari web, salin `scripts/write-proxy.gs` terbaru (v7) ke Apps Script lalu **Deploy → Manage deployments → Edit → New version**. Dashboard akan menampilkan peringatan selama proxy masih < v7.
 >
 > **Update v3 (kolom baru):** proxy versi terbaru juga menulis kolom **Tingkat Kerusakan** dan **Status Perbaikan**. Bila kedua kolom itu tidak ikut tersimpan saat edit dari web, ulangi langkah deploy di bawah dengan kode `scripts/write-proxy.gs` terbaru.
