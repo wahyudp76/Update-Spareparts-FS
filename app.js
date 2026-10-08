@@ -532,12 +532,11 @@ function spExportCsv(){
 // ---------- Model status (3 tahap) ----------
 // Sheet punya 2 kolom terpisah: "Status Perbaikan" (Sudah/Belum) dan "Nomor PR".
 //   Selesai         = Status Perbaikan "Sudah"
-//   Proses          = belum diperbaiki tapi sudah ada Nomor PR / Notifikasi
+//   (Tidak ada status 'Proses' — Nomor PR hanya informasi tambahan, bukan status.)
 //   Belum Ditangani = belum diperbaiki dan belum ada PR
-const STATUS_ORDER = ['Belum Ditangani','Proses','Selesai'];
+const STATUS_ORDER = ['Belum Ditangani','Selesai'];
 const STATUS_META = {
     'Belum Ditangani': {color:'#94a3b8', bg:'bg-slate-100',   text:'text-slate-700',   icon:'fa-hourglass-half', short:'Belum'},
-    'Proses':          {color:'#f59e0b', bg:'bg-amber-100',   text:'text-amber-700',   icon:'fa-cogs',           short:'Proses'},
     'Selesai':         {color:'#10b981', bg:'bg-emerald-100', text:'text-emerald-700', icon:'fa-circle-check',   short:'Selesai'}
 };
 const TINGKAT_ORDER = ['Berat','Sedang','Ringan'];
@@ -547,11 +546,11 @@ function normRepair(v){ v=String(v||'').trim().toLowerCase(); if(!v) return ''; 
 const DAMAGE_ALIASES = { 'panel': 'Panel Listrik' };
 function normDamageType(v){ v=String(v==null?'':v).replace(/\s+/g,' ').trim(); if(!v) return ''; const a=DAMAGE_ALIASES[v.toLowerCase()]; return a||v; }
 function normTingkat(v){ v=String(v||'').trim().toLowerCase(); if(/berat|tinggi|high|major/.test(v)) return 'Berat'; if(/sedang|medium|moderate/.test(v)) return 'Sedang'; if(/ringan|rendah|low|minor/.test(v)) return 'Ringan'; return ''; }
-function deriveStatus(pr, repair){ if(normRepair(repair)==='Sudah') return 'Selesai'; return pr ? 'Proses' : 'Belum Ditangani'; }
+function deriveStatus(pr, repair){ return normRepair(repair)==='Sudah' ? 'Selesai' : 'Belum Ditangani'; }
 function isOpen(d){ return d.status!=='Selesai'; }
 function statusBadge(d, withPr=true){
     const m = STATUS_META[d.status] || STATUS_META['Belum Ditangani'];
-    const extra = d.status==='Proses' && withPr && d.prNumber ? ` · ${escapeHtml(d.prNumber)}` : '';
+    const extra = d.status!=='Selesai' && withPr && d.prNumber ? ` · PR ${escapeHtml(d.prNumber)}` : '';
     return `<span class="status-badge ${m.bg} ${m.text}"><i class="fas ${m.icon} text-[9px]"></i>${d.status}${extra}</span>`;
 }
 function tingkatBadge(t){
@@ -759,7 +758,7 @@ function generateDemo() {
             irrigator:'',damageType:dc[0],keterangan:note,damage:`${dc[0]} — ${note}`,
             sparepart:sp[Math.floor(Math.random()*sp.length)],
             prNumber:hasPr?String(Math.floor(Math.random()*9000000)+1000000):null,
-            status:hasPr?'Proses':'Belum Ditangani',repairStatus:'Belum',tingkat:['Berat','Sedang','Ringan'][Math.floor(Math.random()*3)],unit:''
+            status:'Belum Ditangani',repairStatus:'Belum',tingkat:['Berat','Sedang','Ringan'][Math.floor(Math.random()*3)],unit:''
         });
         const last=data[data.length-1];
         last.engine=`${last.engineType} – ${last.engineCode}`;
@@ -1357,21 +1356,21 @@ function clearSelectedDate() {
 function updateStats() {
     const t=filteredData.length;
     const loc=new Set(filteredData.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
-    const proses=filteredData.filter(d=>d.status==='Proses').length;
     const pending=filteredData.filter(d=>d.status==='Belum Ditangani').length;
+    const berat=filteredData.filter(d=>d.status==='Belum Ditangani'&&d.tingkat==='Berat').length;
     const done=filteredData.filter(d=>d.status==='Selesai').length;
     animateNumber('statTotal',t);
     const sd = document.getElementById('statDone'); if(sd) animateNumberEl(sd,done);
     const sds = document.getElementById('statDoneSub'); if(sds) sds.textContent = `${t?Math.round(done/t*100):0}% sudah diperbaiki`;
     const su = document.getElementById('statUnits'); if(su) animateNumberEl(su,loc);
-    const sp = document.getElementById('statProses'); if(sp) animateNumberEl(sp,proses);
+    const sp = document.getElementById('statBerat'); if(sp) animateNumberEl(sp,berat);
     const spe = document.getElementById('statPending'); if(spe) animateNumberEl(spe,pending);
     // Subtitles
     const pctP = t?Math.round(pending/t*100):0;
-    const pctPr = t?Math.round(proses/t*100):0;
+    const pctBr = pending?Math.round(berat/pending*100):0;
     const ts = document.getElementById('statTotalSub'); if(ts) ts.textContent = state.selectedDate?fmtDateShort(state.selectedDate):`${rawData.length} total di dataset`;
     const us = document.getElementById('statUnitsSub'); if(us) us.textContent = `${loc} area berbeda`;
-    const prs = document.getElementById('statProsesSub'); if(prs) prs.textContent = `${pctPr}% dari total`;
+    const prs = document.getElementById('statBeratSub'); if(prs) prs.textContent = `${pctBr}% dari yang belum ditangani`;
     const pes = document.getElementById('statPendingSub'); if(pes) pes.textContent = `${pctP}% dari total`;
 }
 function animateNumber(id,tgt){const el=document.getElementById(id);if(!el)return;animateNumberEl(el,tgt);}
@@ -1619,7 +1618,7 @@ function renderCharts() {
     // ==== STATUS DONUT (overview) ====
     const statusEl = document.getElementById('statusChart');
     if(statusEl && isElVisible(statusEl)){
-        const sg={'Belum Ditangani':0,'Proses':0,'Selesai':0};
+        const sg={'Belum Ditangani':0,'Selesai':0};
         filteredData.forEach(d=>{if(sg[d.status]!==undefined)sg[d.status]++;});
         const ctx=statusEl.getContext('2d');
         if(ctx){
@@ -1634,7 +1633,7 @@ function renderCharts() {
         }
         const ins = document.getElementById('statusInsight');
         if(ins){
-            const tot=sg['Belum Ditangani']+sg['Proses']+sg['Selesai'];
+            const tot=sg['Belum Ditangani']+sg['Selesai'];
             const pct=tot?Math.round(sg['Belum Ditangani']/tot*100):0;
             const pctDone=tot?Math.round(sg['Selesai']/tot*100):0;
             ins.innerHTML = (pct>50
@@ -1676,8 +1675,7 @@ function renderCharts() {
             charts.pic = new Chart(ctx,{
                 type:'bar',
                 data:{labels:rows.map(r=>r.pic),datasets:[
-                    {label:'Belum Ditangani',data:rows.map(r=>r.pending),backgroundColor:'#94a3b8',borderRadius:{topLeft:4,bottomLeft:4,topRight:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:30},
-                    {label:'Proses',data:rows.map(r=>r.proses),backgroundColor:'#f59e0b',borderRadius:{topLeft:0,bottomLeft:0,topRight:4,bottomRight:4},borderSkipped:false,stack:'s',maxBarThickness:30}
+                    {label:'Belum Ditangani',data:rows.map(r=>r.open),backgroundColor:'#94a3b8',borderRadius:4,borderSkipped:false,stack:'s',maxBarThickness:30}
                 ]},
                 options:mkOpts(true,{
                     indexAxis:'y',
@@ -1766,7 +1764,6 @@ function renderCharts() {
     if(stackEl && isElVisible(stackEl)){
         const divs = [...new Set(filteredData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort();
         const pending = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Belum Ditangani').length);
-        const proses = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Proses').length);
         const done = divs.map(dv=>filteredData.filter(d=>d.divisi===dv&&d.status==='Selesai').length);
         const ctx=stackEl.getContext('2d');
         if(ctx){
@@ -1774,7 +1771,6 @@ function renderCharts() {
                 type:'bar',
                 data:{labels:divs,datasets:[
                     {label:'Belum Ditangani',data:pending,backgroundColor:'#94a3b8',borderRadius:{topLeft:0,topRight:0,bottomLeft:4,bottomRight:4},borderSkipped:false,stack:'s',maxBarThickness:56},
-                    {label:'Proses',data:proses,backgroundColor:'#f59e0b',borderRadius:0,borderSkipped:false,stack:'s',maxBarThickness:56},
                     {label:'Selesai',data:done,backgroundColor:'#10b981',borderRadius:{topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:56}
                 ]},
                 options:mkOpts(false,{
@@ -1902,14 +1898,14 @@ function isElVisible(el){
 }
 
 // ---------- Overview render ----------
-// Statistik per PIC (dari filteredData): pending (Belum Ditangani), proses, selesai, umur terlama.
+// Statistik per PIC (dari filteredData): belum ditangani (open), selesai, umur terlama.
 function picStats(){
     const now=Date.now(), m={};
     filteredData.forEach(d=>{
-        const k=picOf(d); const r=m[k]||(m[k]={pic:k,pending:0,proses:0,done:0,open:0,total:0,oldest:null});
+        const k=picOf(d); const r=m[k]||(m[k]={pic:k,pending:0,withPr:0,done:0,open:0,total:0,oldest:null});
         r.total++;
         if(d.status==='Selesai'){ r.done++; return; }
-        r.open++; if(d.status==='Proses') r.proses++; else r.pending++;
+        r.open++; r.pending++; if(d.prNumber) r.withPr++;
         const t=d.__t!==undefined?d.__t:new Date(d.timestamp).getTime();
         if(r.oldest==null||t<r.oldest) r.oldest=t;
     });
@@ -1932,15 +1928,14 @@ function renderPicSummary(st){
         return `<tr class="border-t border-slate-100 hover:bg-violet-50/60 cursor-pointer ${active?'bg-violet-50':''}" onclick="focusPic('${escapeHtml(r.pic).replace(/'/g,"\\'")}')" title="Klik untuk fokus/lepas filter PIC ini">
             <td class="py-1.5 pr-2 text-xs font-semibold text-slate-700 whitespace-nowrap">${r.pic===PIC_EMPTY?`<span class="text-slate-400 italic">${escapeHtml(r.pic)}</span>`:escapeHtml(r.pic)}</td>
             <td class="py-1.5 px-1 text-center"><span class="inline-block min-w-[26px] px-1.5 py-0.5 rounded text-[11px] font-bold ${r.open?'bg-red-50 text-red-700':'bg-slate-50 text-slate-400'}">${r.open}</span></td>
-            <td class="py-1.5 px-1 text-center text-[11px] text-slate-500">${r.pending}</td>
-            <td class="py-1.5 px-1 text-center text-[11px] text-amber-700">${r.proses}</td>
+            <td class="py-1.5 px-1 text-center text-[11px] text-slate-500">${r.withPr}</td>
             <td class="py-1.5 px-1 text-center text-[11px] text-emerald-700">${r.done}</td>
             <td class="py-1.5 px-1 text-center text-[11px] ${warn?'text-red-600 font-semibold':'text-slate-500'}">${r.oldestDays!=null?r.oldestDays+' hr':'—'}</td>
             <td class="py-1.5 pl-1 w-[70px]"><div class="top-bar"><span style="width:${share}%;background:#7c3aed"></span></div></td>
         </tr>`;
     };
     c.innerHTML=`<table class="w-full text-left"><thead><tr class="text-[10px] uppercase tracking-wider text-slate-400">
-        <th class="pb-1.5 pr-2 font-semibold">PIC</th><th class="pb-1.5 px-1 font-semibold text-center">Belum selesai</th><th class="pb-1.5 px-1 font-semibold text-center">Belum</th><th class="pb-1.5 px-1 font-semibold text-center">Proses</th><th class="pb-1.5 px-1 font-semibold text-center">Selesai</th><th class="pb-1.5 px-1 font-semibold text-center">Terlama</th><th class="pb-1.5 pl-1 font-semibold">Porsi</th></tr></thead>
+        <th class="pb-1.5 pr-2 font-semibold">PIC</th><th class="pb-1.5 px-1 font-semibold text-center">Belum selesai</th><th class="pb-1.5 px-1 font-semibold text-center" title="Dari yang belum selesai, berapa yang sudah punya Nomor PR">Ada PR</th><th class="pb-1.5 px-1 font-semibold text-center">Selesai</th><th class="pb-1.5 px-1 font-semibold text-center">Terlama</th><th class="pb-1.5 pl-1 font-semibold">Porsi</th></tr></thead>
         <tbody>${st.map(row).join('')}</tbody></table>
         <div class="mt-2 text-[10.5px] text-slate-400"><i class="fas fa-circle-info mr-1"></i>${totOpen} kerusakan belum selesai pada filter aktif. "Terlama" = umur laporan terbuka tertua. Klik baris/batang untuk memfilter per PIC.</div>`;
 }
@@ -1989,7 +1984,8 @@ function renderOverview(){
     if(qi){
         const total = filteredData.length;
         const pending = filteredData.filter(d=>d.status==='Belum Ditangani').length;
-        const proses = total - pending;
+        const done = filteredData.filter(d=>d.status==='Selesai').length;
+        const withPr = filteredData.filter(d=>d.status==='Belum Ditangani'&&d.prNumber).length;
         const locCount = new Set(filteredData.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
         const spCount = new Set();
         filteredData.forEach(d=>{ if(d.sparepart&&d.sparepart!=='-') d.sparepart.split(/;\s*/).forEach(s=>{if(s.trim())spCount.add(s.trim());}); });
@@ -2002,8 +1998,8 @@ function renderOverview(){
         if(topLoc && topLoc[1]>0){
             cards.push({color:'red',icon:'fa-fire',title:`Hotspot utama`,text:`<b>${topLoc[0]}</b> dengan ${topLoc[1]} laporan (${total?Math.round(topLoc[1]/total*100):0}% dari total)`});
         }
-        cards.push({color:'slate',icon:'fa-hourglass-half',title:'Belum ditangani',text:`<b>${pending}</b> laporan (${total?Math.round(pending/total*100):0}%) belum memiliki nomor PR`});
-        cards.push({color:'amber',icon:'fa-file-invoice',title:'Sedang diproses',text:`<b>${proses}</b> laporan sudah memiliki PR aktif (${total?Math.round(proses/total*100):0}%)`});
+        cards.push({color:'slate',icon:'fa-hourglass-half',title:'Belum ditangani',text:`<b>${pending}</b> laporan (${total?Math.round(pending/total*100):0}%) — ${withPr} di antaranya sudah punya nomor PR`});
+        cards.push({color:'emerald',icon:'fa-circle-check',title:'Selesai ditangani',text:`<b>${done}</b> laporan sudah diperbaiki (${total?Math.round(done/total*100):0}%)`});
         cards.push({color:'indigo',icon:'fa-box-open',title:'Variasi sparepart',text:`<b>${spCount.size}</b> jenis sparepart berbeda dibutuhkan dalam periode ini`});
         cards.push({color:'blue',icon:'fa-location-dot',title:'Cakupan area',text:`${locCount} lokasi/unit berbeda mengalami kerusakan`});
         qi.innerHTML = cards.map(c=>`
@@ -2062,7 +2058,7 @@ function renderDamageTab(){
     const maxV = entries[0][1].length;
     grid.innerHTML = entries.map(([name,items],idx)=>{
         const pending = items.filter(x=>x.status==='Belum Ditangani').length;
-        const proses = items.length - pending;
+        const done = items.length - pending;
         // Top lokasi
         const lokMap = {}; items.forEach(x=>{if(x.lokasi&&x.lokasi!=='-')lokMap[x.lokasi]=(lokMap[x.lokasi]||0)+1;});
         const topLok = Object.entries(lokMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
@@ -2090,7 +2086,7 @@ function renderDamageTab(){
             <!-- Progress status -->
             <div class="mb-3">
                 <div class="flex justify-between text-[10px] text-slate-500 mb-1 font-semibold">
-                    <span><i class="fas fa-hourglass-half mr-1"></i>${pending} belum · ${proses} proses</span>
+                    <span><i class="fas fa-hourglass-half mr-1"></i>${pending} belum · ${done} selesai</span>
                     <span>${pctPending}% tertunda</span>
                 </div>
                 <div class="pbar"><span style="width:${pctPending}%;background:${pctPending>60?'#ef4444':pctPending>30?'#f59e0b':'#10b981'}"></span></div>
@@ -2147,7 +2143,7 @@ function renderDivisiTab(){
         const items = filteredData.filter(d=>d.divisi===dv);
         const total = items.length;
         const pending = items.filter(d=>d.status==='Belum Ditangani').length;
-        const proses = total - pending;
+        const done = total - pending;
         const locCount = new Set(items.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
         const pctP = total?Math.round(pending/total*100):0;
         const active = items.length>0 || !state.divisi.length || state.divisi.includes(dv);
@@ -2167,7 +2163,7 @@ function renderDivisiTab(){
             <div class="p-4">
                 <div class="grid grid-cols-3 gap-2 mb-3 text-center">
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Belum</div><div class="text-lg font-bold text-slate-700">${pending}</div></div>
-                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Proses</div><div class="text-lg font-bold text-amber-600">${proses}</div></div>
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Selesai</div><div class="text-lg font-bold text-emerald-600">${done}</div></div>
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Lokasi</div><div class="text-lg font-bold text-blue-600">${locCount}</div></div>
                 </div>
                 <div class="mb-1 flex justify-between text-[10px] font-semibold">
@@ -2188,7 +2184,7 @@ function renderDivisiTab(){
         const items = filteredData.filter(d=>d.divisi===dv);
         const total = items.length;
         const pending = items.filter(d=>d.status==='Belum Ditangani').length;
-        const proses = total - pending;
+        const done = total - pending;
         // Top lokasi
         const locMap={}; items.forEach(x=>{if(x.lokasi&&x.lokasi!=='-')locMap[x.lokasi]=(locMap[x.lokasi]||0)+1;});
         const topLoc = Object.entries(locMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -2265,7 +2261,7 @@ function renderDivisiTab(){
             <div class="mt-4 p-3 rounded-lg bg-slate-50 flex items-center justify-between gap-3 flex-wrap">
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400"></span><span class="text-[11px] text-slate-600">Belum: <b>${pending}</b></span></div>
-                    <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-[11px] text-slate-600">Proses: <b>${proses}</b></span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-[11px] text-slate-600">Selesai: <b>${done}</b></span></div>
                 </div>
                 <button onclick="showDivisiDetails('${dv}')" class="text-[10px] font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90 transition" style="background:${color}"><i class="fas fa-list-check mr-1"></i>Lihat ${latest.length} laporan terbaru</button>
             </div>
@@ -2299,7 +2295,7 @@ function showDivisiDetails(dv){
 
 // ---------- Unit Tab (Engine & Irigator) builder ----------
 // unitKey: misal "DEM 0032" = type + " " + code
-// Returns object per-unit: { key, type, code, items, total, pending, proses, locMap, dmgMap, spMap, divMap, latest }
+// Returns object per-unit: { key, type, code, items, total, pending, done, locMap, dmgMap, spMap, divMap, latest }
 function aggregateByUnit(typeField, codeField, data) {
     const byKey = {};
     data.forEach(d=>{
@@ -2312,7 +2308,7 @@ function aggregateByUnit(typeField, codeField, data) {
     Object.values(byKey).forEach(u=>{
         u.total = u.items.length;
         u.pending = u.items.filter(x=>x.status==='Belum Ditangani').length;
-        u.proses = u.total - u.pending;
+        u.done = u.total - u.pending;
         u.locMap = {}; u.dmgMap = {}; u.spMap = {}; u.divMap = {};
         u.items.forEach(x=>{
             if(x.lokasi&&x.lokasi!=='-') u.locMap[x.lokasi]=(u.locMap[x.lokasi]||0)+1;
@@ -2377,7 +2373,7 @@ function renderUnitTypeCards(cardsContainerId, data, typeField, colorMap, defaul
                 <div class="grid grid-cols-3 gap-2 mb-2 text-center">
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Unit</div><div class="text-base font-bold text-slate-700">${units}</div></div>
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Belum</div><div class="text-base font-bold text-slate-700">${pending}</div></div>
-                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Proses</div><div class="text-base font-bold text-amber-600">${total-pending}</div></div>
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Selesai</div><div class="text-base font-bold text-emerald-600">${total-pending}</div></div>
                 </div>
                 <div class="text-[10px] text-slate-600 space-y-0.5">
                     ${topDmg?`<div><i class="fas fa-triangle-exclamation text-red-400 mr-1"></i>Kerusakan: <b>${escapeHtml(topDmg[0])}</b> (${topDmg[1]}×)</div>`:''}
@@ -2439,7 +2435,7 @@ function openTypeDetail(kind, type){
             + `. `
             + (topDmg?`Kerusakan paling sering: <b>${escapeHtml(topDmg[0])}</b> (${topDmg[1]}×${total>1?`, ${Math.round(topDmg[1]/total*100)}%`:''})`:'')
             + (topLok?`; lokasi paling sering: <b>${escapeHtml(topLok[0])}</b> (${topLok[1]}×)`:'') + `. `
-            + `<b>${pending}</b> laporan belum ditangani, <b>${total-pending}</b> dalam proses (sudah ada nomor PR)`
+            + `<b>${pending}</b> laporan belum ditangani, <b>${total-pending}</b> sudah selesai diperbaiki`
             + (bySp.length?`. Sparepart yang paling dibutuhkan: <b>${escapeHtml(bySp[0][0])}</b>`:'') + `.`
             + (dates.length?` Rentang laporan: ${fmtDateShort(dates[0])}${dates.length>1?` – ${fmtDateShort(dates[dates.length-1])}`:''}.`:'');
     }
@@ -2547,7 +2543,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
             <!-- Progress -->
             <div class="mb-3">
                 <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
-                    <span>${u.pending} belum · ${u.proses} proses</span>
+                    <span>${u.pending} belum · ${u.done} selesai</span>
                     <span>${pctP}% tertunda</span>
                 </div>
                 <div class="pbar"><span style="width:${pctP}%;background:${pctP>60?'#ef4444':pctP>30?'#f59e0b':'#10b981'}"></span></div>
@@ -2879,7 +2875,7 @@ function priorityScore(d, recurCount){
     const agePts = Math.min(25, age*2.5);              // +2.5/hari maks 25
     score += d.status==='Belum Ditangani' ? agePts : agePts*0.4;
     score += Math.min(15, Math.max(0,(recurCount||1)-1)*7.5);
-    if(d.status==='Proses') score -= 10;               // sudah ada PR
+    if(d.status!=='Selesai' && d.prNumber) score -= 10;  // sudah ada nomor PR (sparepart sedang diajukan)
     if(d.status==='Selesai') score = Math.round(score*0.15); // sudah diperbaiki → prioritas sangat rendah
     return Math.round(Math.max(0,Math.min(100,score)));
 }

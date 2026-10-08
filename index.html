@@ -19,8 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v30";</script>
-    <script src="config.js?v=30"></script>
+    <script>window.APP_VERSION="v31";</script>
+    <script src="config.js?v=31"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -330,9 +330,9 @@
                 <div class="card card-hover p-4 bg-gradient-to-br from-white to-amber-50/40">
                     <div class="flex items-start justify-between">
                         <div>
-                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-file-invoice text-amber-500"></i>Dalam Proses</div>
-                            <div class="stat-number text-3xl text-amber-600 mt-1" id="statProses">0</div>
-                            <div class="text-[11px] text-slate-500 mt-0.5" id="statProsesSub">PR aktif, belum diperbaiki</div>
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"><i class="fas fa-triangle-exclamation text-amber-500"></i>Berat Belum Ditangani</div>
+                            <div class="stat-number text-3xl text-amber-600 mt-1" id="statBerat">0</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5" id="statBeratSub">Tingkat Berat, belum diperbaiki</div>
                         </div>
                         <div class="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="fas fa-cogs"></i></div>
                     </div>
@@ -390,7 +390,7 @@
                             <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-violet-600"><i class="fas fa-user-gear text-[11px]"></i></span>Beban Kerja PIC</h3>
                             <p class="text-[11px] text-slate-500 -mt-0.5 ml-[34px]">Kerusakan yang belum selesai per penanggung jawab perbaikan</p>
                         </div>
-                        <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap"><i class="fas fa-circle text-slate-400 mr-1 text-[6px]"></i>Belum ditangani <i class="fas fa-circle text-amber-500 ml-2 mr-1 text-[6px]"></i>Proses (ada PR)</span>
+                        <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap"><i class="fas fa-circle text-slate-400 mr-1 text-[6px]"></i>Belum ditangani</span>
                     </div>
                     <div class="chart-wrap h-[220px]"><canvas id="picChart"></canvas></div>
                 </div>
@@ -903,7 +903,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=30"></script>
+    <script src="app.js?v=31"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -914,7 +914,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v30').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v31').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

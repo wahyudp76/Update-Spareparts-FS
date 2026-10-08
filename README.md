@@ -10,8 +10,8 @@ Dashboard interaktif untuk memonitor kerusakan unit irigasi dan kebutuhan sparep
 
 - 📊 **7 Visualisasi Interaktif** — Tren kerusakan, distribusi status (doughnut), top unit (horizontal bar), sparepart needs, top irrigator, dan kategori kerusakan (polar area).
 - 🗓️ **Filter Periode** — **Harian**, **Mingguan**, **Bulanan**, **Semua data**, plus custom date range.
-- 🔍 **Filter Lanjutan** — Filter Unit, Status (Belum Ditangani / Proses / Selesai), dan pencarian keyword global.
-- ⚠️ **Status Badge** — 🔴 Merah = Belum Ditangani, 🟡 Kuning = Proses Perbaikan, 🟢 Hijau = Selesai.
+- 🔍 **Filter Lanjutan** — Filter Unit, Status (Belum Ditangani / Selesai), dan pencarian keyword global.
+- ⚠️ **Status Badge** — ⚪ Abu = Belum Ditangani, 🟢 Hijau = Selesai (Nomor PR ditampilkan sebagai info tambahan, bukan status).
 - 📋 **Tabel Detail** — Sortable columns, pagination (15 data per halaman), pencarian real-time.
 - 📥 **Export CSV** — Download laporan yang sudah difilter dalam 1 klik.
 - 🔄 **Auto Sync** — GitHub Actions menarik data baru tiap **15 menit** dan auto-deploy ulang.
@@ -99,7 +99,7 @@ Jika nanti ingin mengganti spreadsheet/sheet target:
   - Fetch CSV dari Google Sheets
   - Parse CSV (handle quoted fields, tanggal format ID/US/ISO)
   - Normalisasi field (mencari kolom Timestamp/Unit/Irrigator/Kerusakan/Sparepart/QTY/Status/Pelapor secara fleksibel)
-  - Normalisasi nilai status (Selesai / Proses / Belum Ditangani)
+  - Normalisasi nilai status (Selesai / Belum Ditangani)
   - Tulis hasil ke `data.json`
 - Workflow kemudian:
   - Commit `data.json` yang baru jika ada perubahan
@@ -143,10 +143,9 @@ Mapping kolom **otomatis / fuzzy** — header row pertama tidak harus persis, cu
 | Pelapor | `pelapor`, `nama`, `reporter`, `petugas`, `teknisi` |
 | Catatan | `catatan`, `note`, `keterangan`, `deskripsi` |
 
-Nilai status juga dinormalisasi otomatis:
-- Mengandung `selesai / done / fixed / beres` → **Selesai** (hijau)
-- Mengandung `proses / progres / dikerjakan / on progress` → **Proses** (kuning)
-- Selainnya → **Belum Ditangani** (merah)
+Status hanya ada **dua** dan diturunkan dari kolom *Status Perbaikan*:
+- `Sudah` → **Selesai** (hijau)
+- Selainnya → **Belum Ditangani** (abu). Nomor PR/Notifikasi tidak membuat status "Proses" — hanya ditampilkan sebagai informasi.
 
 ---
 
