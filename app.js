@@ -103,15 +103,9 @@ function validateRecord(d){
     // Tanggal inspeksi vs waktu kirim form
     if(d.__rawTgl){ const tt=parseDate(d.__rawTgl); const ts=d.__rawTs?parseDate(d.__rawTs):null;
         if(tt && ts){ const diff=(ts-tt)/86400000; if(diff>60) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'date',msg:`Tanggal Inspeksi ${d.tanggalInspeksi} ${Math.round(diff)} hari lebih awal dari waktu kirim form (${fmtDateShort(ts)}) — periksa bulan/tahun.`}); else if(diff<-1.5) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'date',msg:`Tanggal Inspeksi ${d.tanggalInspeksi} lebih baru dari waktu kirim form (${fmtDateShort(ts)}).`}); } }
-    // Cocokkan dengan unit terpasang (hanya jika laporan dibuat setelah unit tercatat terpasang)
-    if(typeof unitsByLokasi!=='undefined' && unitsByLokasi && d.lokasi && d.lokasi!=='-'){
-        const u=unitsByLokasi[lokKey(d.lokasi)];
-        if(u && (!u.tanggal || new Date(d.timestamp).getTime() >= u.tanggal.getTime())){
-            if(u.divisi && FO && FO.divisi.includes(u.divisi) && d.divisi && d.divisi!=='-' && d.divisi!==u.divisi) issues.push({field:'divisi',col:'Divisi',type:'unit',msg:`Divisi ${d.divisi} berbeda dengan bengkel unit terpasang di ${u.lokasi} (${u.divisi}).`,fixed:u.divisi});
-            if(d.engineCode && d.engineCode!=='-' && u.engineCode && (d.engineCode!==u.engineCode || (d.engineType&&d.engineType!=='-'&&u.engineType&&d.engineType!==u.engineType))) issues.push({field:'engineCode',col:'Kode Engine',type:'unit',msg:`Engine ${d.engineType||''} ${d.engineCode} berbeda dengan unit terpasang di ${u.lokasi} (${u.engineType} ${u.engineCode}).`,fixed:u.engineCode});
-            if(d.irrCode && d.irrCode!=='-' && u.irrCode && (d.irrCode!==u.irrCode || (d.irrType&&d.irrType!=='-'&&u.irrType&&d.irrType!==u.irrType))) issues.push({field:'irrCode',col:'Kode Irrigator',type:'unit',msg:`Irrigator ${d.irrType||''} ${d.irrCode} berbeda dengan unit terpasang di ${u.lokasi} (${u.irrType} ${u.irrCode}).`,fixed:u.irrCode});
-        }
-    }
+    // CATATAN: perbedaan kode engine/irrigator/divisi dengan data "unit terpasang" TIDAK lagi dianggap anomali —
+    // posisi engine sering berpindah dermaga, sehingga laporan di lokasi X wajar memakai unit yang tercatat di lokasi lain.
+    // (Data unit terpasang tetap dipakai untuk isi otomatis di form Tambah Laporan.)
     // Hasil edit dari web yang (setelah 1 menit) masih berbeda dengan spreadsheet
     const sm = __syncMismatch[_wkey(d)];
     if(sm){ if(Date.now()-sm.ts > 15*60*1000 || _sameFields(d, sm.rec)) delete __syncMismatch[_wkey(d)];
