@@ -80,11 +80,8 @@ function validateRecord(d){
         const lk=String(d.lokasi).trim();
         if(/\s/.test(lk) || lk!==lk.toUpperCase()) { issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" mengandung spasi/huruf kecil — ditampilkan sebagai ${lokKey(lk)}.`,raw:lk,fixed:lokKey(lk)}); d.lokasi=lokKey(lk); d.unit=d.lokasi; }
         else if(!/^\d{3}[A-Z]{1,2}\d{0,2}$/.test(lk) && !/^(GUAVA|BANANA)/i.test(lk)) issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" tidak sesuai pola kode lokasi (contoh 104I, 111C9).`});
-        else if(typeof unitsByLokasi!=='undefined' && unitsByLokasi && Object.keys(unitsByLokasi).length && !unitsByLokasi[lokKey(lk)] && (__lokFreq[lokKey(lk)]||0)<=2){
-            // Lokasi jarang dipakai & tidak ada di daftar unit → kemungkinan salah ketik; tawarkan lokasi mirip
-            const near=Object.keys(unitsByLokasi).filter(k=>k.length>=3 && (k.startsWith(lokKey(lk).slice(0,3)))).slice(0,4);
-            issues.push({field:'lokasi',col:'Lokasi',type:'unknown',msg:`Lokasi "${lk}" hanya muncul ${__lokFreq[lokKey(lk)]||1}× dan tidak ada di daftar unit terpasang — salah ketik?${near.length?` Mirip: ${near.join(', ')}.`:''}`});
-        }
+        // CATATAN: lokasi yang tidak ada di daftar unit terpasang TIDAK dianggap anomali (unit/dermaga bisa berubah;
+        // daftar unit terpasang tidak selalu lengkap). Hanya format kode lokasi yang diperiksa.
     }
     // Pilihan harus sama dengan Google Form
     const FO = typeof FORM_OPTIONS!=='undefined' ? FORM_OPTIONS : null;
