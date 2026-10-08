@@ -166,6 +166,13 @@
                         <i class="far fa-clock"></i>
                         <span id="syncTime">--:--</span>
                     </div>
+                    <div class="relative" id="notifWrap">
+                        <button onclick="toggleNotifPanel()" id="notifBtn" title="Notifikasi anomali data" class="relative w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500">
+                            <i class="fas fa-bell text-sm"></i>
+                            <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 rounded-full text-[10px] font-bold text-white bg-red-600 flex items-center justify-center shadow"></span>
+                        </button>
+                        <div id="notifPanel" class="hidden absolute right-0 top-full mt-2 w-[min(94vw,420px)] bg-white border border-slate-200 rounded-xl shadow-2xl z-[70] overflow-hidden"></div>
+                    </div>
                     <button onclick="openSetupModal()" id="settingsBtn" title="Pengaturan Write Endpoint" class="hidden w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500"><i class="fas fa-plug text-xs"></i></button>
                     <button onclick="openCreateModal()" id="addBtn" title="Catat laporan kerusakan baru" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
                         <i class="fas fa-plus text-[11px]"></i>
@@ -906,7 +913,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v23').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v24').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

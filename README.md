@@ -251,3 +251,12 @@ Dibangun murni dari `filteredData` (mengikuti filter global) — tidak menyentuh
 - jika isian berbeda dari unit terpasang (atau pada mode edit), menampilkan perbedaan + tombol **Samakan dengan unit terpasang** — tidak pernah mengubah isian diam-diam;
 - menyarankan lokasi mirip saat diketik sebagian, dan memberi tahu bila lokasi tidak ada di data unit.
 Lokasi yang tercatat lebih dari sekali diambil catatan terbarunya; baris dengan status selain "Terpasang" diabaikan. Sheet unit harus dapat dibaca "Siapa saja yang memiliki link".
+
+## Notifikasi anomali data (ikon lonceng)
+Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): angka dengan titik/koma/notasi ilmiah, kode tidak 4/8 digit, nilai di luar pilihan Google Form (Divisi/Jenis/PIC), lokasi salah format/tidak dikenal, laporan terkirim ganda, tanggal tidak wajar, data tidak sesuai unit terpasang (Draft Dashboard), kolom wajib kosong (Keterangan, Tingkat, PIC), dan hasil edit web yang belum sama dengan sheet. Ikon lonceng di header menampilkan jumlah & daftar (merah = salah/duplikat, kuning = perlu dicek, abu = belum lengkap) dengan tombol **Perbaiki** (buka form edit berisi nilai yang sudah dinormalkan) dan **Hapus** untuk duplikat. Notifikasi bisa diabaikan per item (tersimpan di browser) dan dipulihkan.
+
+## Keandalan edit web ↔ spreadsheet
+- Sebelum menyimpan edit, dashboard membaca ulang baris di sheet; bila berubah sejak dimuat (diedit di Sheets/orang lain) ditampilkan perbedaannya dengan pilihan **Muat nilai terbaru** atau **Tetap simpan**.
+- Respons Apps Script yang tidak dikenal diperlakukan sebagai "belum pasti" lalu diverifikasi ke sheet (opId sama) — tidak lagi memicu baris ganda saat klik ulang.
+- Verifikasi hasil tulis diulang hingga 4× (CSV publik Google bisa tertinggal 10–20 detik).
+- Hasil tulis yang setelah 1 menit masih berbeda dengan sheet ditandai sebagai anomali "Sinkron".

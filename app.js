@@ -76,10 +76,60 @@ function validateRecord(d){
     if(d.__rawTgl && d.__yearFixed) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'year',msg:`Tanggal Inspeksi "${d.__rawTgl}" memiliki tahun tidak wajar — dibaca sebagai ${d.tanggalInspeksi}.`});
     const t=new Date(d.timestamp); if(!isNaN(t) && t.getTime() > Date.now()+86400000) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'future',msg:`Tanggal ${d.tanggalInspeksi} berada di masa depan.`});
     if(!d.lokasi || d.lokasi==='-') issues.push({field:'lokasi',col:'Lokasi',type:'missing',msg:'Lokasi kosong.'});
+    else {
+        const lk=String(d.lokasi).trim();
+        if(/\s/.test(lk) || lk!==lk.toUpperCase()) { issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" mengandung spasi/huruf kecil — ditampilkan sebagai ${lokKey(lk)}.`,raw:lk,fixed:lokKey(lk)}); d.lokasi=lokKey(lk); d.unit=d.lokasi; }
+        else if(!/^\d{3}[A-Z]{1,2}\d{0,2}$/.test(lk) && !/^(GUAVA|BANANA)/i.test(lk)) issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" tidak sesuai pola kode lokasi (contoh 104I, 111C9).`});
+        else if(typeof unitsByLokasi!=='undefined' && unitsByLokasi && Object.keys(unitsByLokasi).length && !unitsByLokasi[lokKey(lk)] && (__lokFreq[lokKey(lk)]||0)<=2){
+            // Lokasi jarang dipakai & tidak ada di daftar unit → kemungkinan salah ketik; tawarkan lokasi mirip
+            const near=Object.keys(unitsByLokasi).filter(k=>k.length>=3 && (k.startsWith(lokKey(lk).slice(0,3)))).slice(0,4);
+            issues.push({field:'lokasi',col:'Lokasi',type:'unknown',msg:`Lokasi "${lk}" hanya muncul ${__lokFreq[lokKey(lk)]||1}× dan tidak ada di daftar unit terpasang — salah ketik?${near.length?` Mirip: ${near.join(', ')}.`:''}`});
+        }
+    }
+    // Pilihan harus sama dengan Google Form
+    const FO = typeof FORM_OPTIONS!=='undefined' ? FORM_OPTIONS : null;
+    if(FO){
+        if(!d.damageType || d.damageType==='-') issues.push({field:'damageType',col:'Jenis Kerusakan',type:'missing',msg:'Jenis Kerusakan kosong (wajib di Google Form).'});
+        else if(FO.damageType.length && !FO.damageType.includes(d.damageType)) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'enum',msg:`Jenis Kerusakan "${d.damageType}" tidak ada di pilihan Google Form.`});
+        if(d.divisi && d.divisi!=='-' && FO.divisi.length && !FO.divisi.includes(d.divisi)) issues.push({field:'divisi',col:'Divisi',type:'enum',msg:`Divisi "${d.divisi}" tidak ada di pilihan form (${FO.divisi.join('/')}).`});
+        if(d.engineType && d.engineType!=='-' && FO.engineType.length && !FO.engineType.includes(d.engineType)) issues.push({field:'engineType',col:'Jenis Engine',type:'enum',msg:`Jenis Engine "${d.engineType}" tidak ada di pilihan form.`});
+        if(d.irrType && d.irrType!=='-' && FO.irrType.length && !FO.irrType.includes(d.irrType)) issues.push({field:'irrType',col:'Jenis Irrigator',type:'enum',msg:`Jenis Irrigator "${d.irrType}" tidak ada di pilihan form.`});
+        if(d.pic && d.pic!=='-' && FO.pic && FO.pic.length && !FO.pic.includes(d.pic)) issues.push({field:'pic',col:'PIC',type:'enum',msg:`PIC "${d.pic}" tidak ada di pilihan form (${FO.pic.join('/')}).`});
+    }
+    if(!d.keterangan || d.keterangan.trim().length<3) issues.push({field:'keterangan',col:'Keterangan',type:'missing',msg:'Keterangan kerusakan kosong/terlalu pendek (wajib di Google Form).'});
+    if(!d.tingkat) issues.push({field:'tingkat',col:'Tingkat Kerusakan',type:'missing',msg:'Tingkat Kerusakan kosong — dashboard menebak dari kata kunci; sebaiknya diisi.'});
+    if((!d.pic||d.pic==='-') && typeof __picSince==='number' && new Date(d.timestamp).getTime()>=__picSince) issues.push({field:'pic',col:'PIC',type:'missing',msg:'PIC kosong (wajib di Google Form sejak kolom PIC ditambahkan).'});
+    if(d.engineCode && d.engineCode!=='-' && d.irrCode && d.irrCode!=='-' && d.engineCode===d.irrCode && d.engineType===d.irrType) issues.push({field:'irrCode',col:'Kode Irrigator',type:'suspect',msg:`Kode Engine dan Kode Irrigator sama (${d.engineCode}) — salah satu kemungkinan salah isi.`});
+    // Tanggal inspeksi vs waktu kirim form
+    if(d.__rawTgl){ const tt=parseDate(d.__rawTgl); const ts=d.__rawTs?parseDate(d.__rawTs):null;
+        if(tt && ts){ const diff=(ts-tt)/86400000; if(diff>60) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'date',msg:`Tanggal Inspeksi ${d.tanggalInspeksi} ${Math.round(diff)} hari lebih awal dari waktu kirim form (${fmtDateShort(ts)}) — periksa bulan/tahun.`}); else if(diff<-1.5) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'date',msg:`Tanggal Inspeksi ${d.tanggalInspeksi} lebih baru dari waktu kirim form (${fmtDateShort(ts)}).`}); } }
+    // Cocokkan dengan unit terpasang (hanya jika laporan dibuat setelah unit tercatat terpasang)
+    if(typeof unitsByLokasi!=='undefined' && unitsByLokasi && d.lokasi && d.lokasi!=='-'){
+        const u=unitsByLokasi[lokKey(d.lokasi)];
+        if(u && (!u.tanggal || new Date(d.timestamp).getTime() >= u.tanggal.getTime())){
+            if(u.divisi && FO && FO.divisi.includes(u.divisi) && d.divisi && d.divisi!=='-' && d.divisi!==u.divisi) issues.push({field:'divisi',col:'Divisi',type:'unit',msg:`Divisi ${d.divisi} berbeda dengan bengkel unit terpasang di ${u.lokasi} (${u.divisi}).`,fixed:u.divisi});
+            if(d.engineCode && d.engineCode!=='-' && u.engineCode && (d.engineCode!==u.engineCode || (d.engineType&&d.engineType!=='-'&&u.engineType&&d.engineType!==u.engineType))) issues.push({field:'engineCode',col:'Kode Engine',type:'unit',msg:`Engine ${d.engineType||''} ${d.engineCode} berbeda dengan unit terpasang di ${u.lokasi} (${u.engineType} ${u.engineCode}).`,fixed:u.engineCode});
+            if(d.irrCode && d.irrCode!=='-' && u.irrCode && (d.irrCode!==u.irrCode || (d.irrType&&d.irrType!=='-'&&u.irrType&&d.irrType!==u.irrType))) issues.push({field:'irrCode',col:'Kode Irrigator',type:'unit',msg:`Irrigator ${d.irrType||''} ${d.irrCode} berbeda dengan unit terpasang di ${u.lokasi} (${u.irrType} ${u.irrCode}).`,fixed:u.irrCode});
+        }
+    }
+    // Hasil edit dari web yang (setelah 1 menit) masih berbeda dengan spreadsheet
+    const sm = __syncMismatch[_wkey(d)];
+    if(sm){ if(Date.now()-sm.ts > 15*60*1000 || _sameFields(d, sm.rec)) delete __syncMismatch[_wkey(d)];
+            else issues.push({field:'sync',col:'Sinkron',type:'sync',msg:`Hasil edit dari web (${new Date(sm.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}) berbeda dengan isi spreadsheet saat ini — buka, periksa, lalu simpan ulang.`}); }
     d.__issues = issues;
     return issues;
 }
+let __picSince = null; // sejak kapan PIC dianggap wajib (dihitung dari data)
+let __lokFreq = {};   // frekuensi lokasi di laporan (lokasi yang sering dipakai dianggap valid)
 function validateAll(arr){
+    // PIC dianggap wajib sejak titik waktu di mana ≥70% laporan sesudahnya sudah berisi PIC
+    // (bukan sejak PIC pertama muncul — laporan lama yang dikirim ulang bisa mengecoh).
+    const byT = arr.map(d=>({t:new Date(d.timestamp).getTime(), p:!!(d.pic&&d.pic!=='-')})).filter(x=>!isNaN(x.t)).sort((a,b)=>a.t-b.t);
+    __picSince = null;
+    if(byT.some(x=>x.p)){
+        let withP=0; for(let i=byT.length-1;i>=0;i--){ if(byT[i].p) withP++; const n=byT.length-i; if(n>=5 && withP/n>=0.7) __picSince=byT[i].t; else if(n>=5 && withP/n<0.5) break; }
+    }
+    __lokFreq = {}; arr.forEach(d=>{ if(d.lokasi&&d.lokasi!=='-') __lokFreq[lokKey(d.lokasi)]=(__lokFreq[lokKey(d.lokasi)]||0)+1; });
     let n=0; arr.forEach(d=>{ n += validateRecord(d).length ? 1 : 0; });
     // Duplikat: timestamp + lokasi + jenis kerusakan sama persis
     const seen={}; arr.forEach(d=>{ const k=`${d.timestamp}|${d.lokasi}|${d.damageType}`; (seen[k]=seen[k]||[]).push(d); });
@@ -115,40 +165,102 @@ function revalidateAfterWrite(rec){
     return rec;
 }
 let __lastQualityKey = '';
+// Tingkat keparahan isu: 'error' = angka/nilai salah atau duplikat (mengubah hitungan),
+// 'warn' = kemungkinan salah (perlu dicek), 'info' = kelengkapan.
+const ISSUE_LEVEL = { separator:'error', scientific:'error', nonnumeric:'error', length:'error', space:'error', duplicate:'error', enum:'error', year:'error', future:'error', sync:'error',
+                      unit:'warn', date:'warn', format:'warn', unknown:'warn', suspect:'warn', missing:'info' };
+const issueLevel = i => ISSUE_LEVEL[i.type] || 'warn';
+const NOTIF_DISMISS_KEY = 'pg2_notif_dismissed_v1';
+function _dismissed(){ try{ return JSON.parse(localStorage.getItem(NOTIF_DISMISS_KEY)||'{}'); }catch(e){ return {}; } }
+const _issueKey = (d,i) => `${d.tanggalInspeksi}|${d.lokasi}|${d.damageType}|${i.field}|${i.type}`;
+function dismissIssue(rawi, idx){ const d=rawData[rawi]; if(!d) return; const i=d.__issues[idx]; if(!i) return; const m=_dismissed(); m[_issueKey(d,i)]=Date.now(); localStorage.setItem(NOTIF_DISMISS_KEY, JSON.stringify(m)); renderQualityBanner(); renderNotifPanel(); }
+function clearDismissed(){ localStorage.removeItem(NOTIF_DISMISS_KEY); renderQualityBanner(); renderNotifPanel(); }
+// Daftar isu aktif (tidak diabaikan), per record
+function activeIssues(){
+    const dm=_dismissed(); const out=[];
+    rawData.forEach((d,ri)=>{ if(!d.__issues||!d.__issues.length) return; const list=d.__issues.map((i,ix)=>({i,ix})).filter(x=>!dm[_issueKey(d,x.i)]); if(list.length) out.push({d,ri,list}); });
+    const rank={error:0,warn:1,info:2};
+    out.forEach(r=>{ r.level = r.list.reduce((a,x)=>rank[issueLevel(x.i)]<rank[a]?issueLevel(x.i):a,'info'); });
+    out.sort((a,b)=>rank[a.level]-rank[b.level]||(new Date(b.d.timestamp)-new Date(a.d.timestamp)));
+    return out;
+}
+function toggleNotifPanel(force){
+    const p=document.getElementById('notifPanel'); if(!p) return;
+    const show = force!==undefined ? force : p.classList.contains('hidden');
+    p.classList.toggle('hidden', !show);
+    if(show) renderNotifPanel();
+}
+document.addEventListener('click', e=>{ const w=document.getElementById('notifWrap'); if(w && !w.contains(e.target)) { const p=document.getElementById('notifPanel'); if(p) p.classList.add('hidden'); } });
+function renderNotifPanel(){
+    const p=document.getElementById('notifPanel'); if(!p) return;
+    const items=activeIssues(); const dmCount=Object.keys(_dismissed()).length;
+    const lvl={error:'bg-red-100 text-red-700',warn:'bg-amber-100 text-amber-800',info:'bg-slate-100 text-slate-600'};
+    const lvlIcon={error:'fa-circle-exclamation text-red-600',warn:'fa-triangle-exclamation text-amber-600',info:'fa-circle-info text-slate-400'};
+    const cnt={error:0,warn:0,info:0}; items.forEach(r=>cnt[r.level]++);
+    const head=`<div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50">
+        <div><div class="text-xs font-bold text-slate-800"><i class="fas fa-bell mr-1 text-slate-500"></i>Anomali data</div>
+        <div class="text-[10.5px] text-slate-500">${items.length?`${cnt.error} salah · ${cnt.warn} perlu dicek · ${cnt.info} belum lengkap`:'Tidak ada anomali pada data saat ini'}</div></div>
+        <div class="flex items-center gap-1">${getWriteUrl()&&items.length?`<button onclick="toggleNotifPanel(false);openQualityModal()" class="text-[10.5px] font-semibold px-2 py-1 rounded-md bg-slate-900 text-white">Tabel lengkap</button>`:''}${dmCount?`<button onclick="clearDismissed()" title="Tampilkan lagi ${dmCount} notifikasi yang diabaikan" class="text-[10.5px] px-2 py-1 rounded-md hover:bg-slate-200 text-slate-500">Pulihkan (${dmCount})</button>`:''}</div></div>`;
+    if(!items.length){ p.innerHTML=head+`<div class="px-4 py-6 text-center text-xs text-slate-400"><i class="fas fa-circle-check text-emerald-500 text-lg block mb-1"></i>Semua laporan lolos pemeriksaan.</div>`; return; }
+    const rows=items.slice(0,60).map(r=>`<div class="px-4 py-2.5 border-b border-slate-100 last:border-0 hover:bg-slate-50">
+        <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+                <div class="text-xs font-semibold text-slate-800 truncate"><i class="fas ${lvlIcon[r.level]} mr-1 text-[10px]"></i>${escapeHtml(r.d.lokasi)} · ${escapeHtml(r.d.damageType||'-')} <span class="text-slate-400 font-normal">· ${fmtDateShort(r.d.timestamp)} · baris ${r.d.__row||'?'}</span></div>
+                ${r.list.map(x=>`<div class="text-[11px] text-slate-600 mt-0.5 flex items-start gap-1"><span class="px-1 rounded text-[9.5px] font-bold ${lvl[issueLevel(x.i)]} shrink-0 mt-[1px]">${escapeHtml(x.i.col)}</span><span>${escapeHtml(x.i.msg)}</span><button onclick="event.stopPropagation();dismissIssue(${r.ri},${x.ix})" title="Abaikan notifikasi ini" class="ml-auto text-slate-300 hover:text-slate-600 shrink-0"><i class="fas fa-xmark text-[10px]"></i></button></div>`).join('')}
+            </div>
+            <div class="flex flex-col gap-1 shrink-0">
+                ${getWriteUrl()?`<button onclick="toggleNotifPanel(false);openEditModalRaw(${r.ri})" class="px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-semibold"><i class="fas fa-pen mr-1"></i>Perbaiki</button>`:''}
+                ${getWriteUrl()&&r.list.some(x=>x.i.type==='duplicate')?`<button onclick="toggleNotifPanel(false);openDeleteModalRaw(${r.ri})" class="px-2 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-[10.5px] font-semibold"><i class="fas fa-trash mr-1"></i>Hapus</button>`:''}
+            </div>
+        </div></div>`).join('');
+    p.innerHTML=head+`<div class="max-h-[70vh] overflow-y-auto">${rows}${items.length>60?`<div class="px-4 py-2 text-[11px] text-slate-400 text-center">+${items.length-60} lainnya — buka "Tabel lengkap"</div>`:''}</div>`;
+}
+function updateNotifBadge(items){
+    const b=document.getElementById('notifBadge'); const btn=document.getElementById('notifBtn'); if(!b) return;
+    const n=items.length; b.textContent=n>99?'99+':n; b.classList.toggle('hidden',!n);
+    const hasErr=items.some(r=>r.level==='error'); b.className=b.className.replace(/bg-(red|amber|slate)-\d+/,'')+' '+(hasErr?'bg-red-600':items.some(r=>r.level==='warn')?'bg-amber-500':'bg-slate-400');
+    if(btn) btn.title = n?`${n} laporan dengan anomali data — klik untuk melihat`:'Tidak ada anomali data';
+}
 function renderQualityBanner(){
-    const bad = rawData.filter(d=>d.__issues && d.__issues.length);
+    const items = activeIssues(); updateNotifBadge(items);
+    const bad = items.map(r=>Object.assign({}, r.d, {__issues:r.list.map(x=>x.i)}));
     const el = document.getElementById('qualityBanner'); if(!el) return;
     const sepCount = bad.reduce((a,d)=>a+d.__issues.filter(i=>i.type==='separator'||i.type==='scientific').length,0);
     const dupCount = bad.filter(d=>d.__issues.some(i=>i.type==='duplicate')).length;
+    const errCount = items.filter(r=>r.level==='error').length, warnCount=items.filter(r=>r.level==='warn').length, infoCount=items.filter(r=>r.level==='info').length;
+    const p=document.getElementById('notifPanel'); if(p && !p.classList.contains('hidden')) renderNotifPanel();
     if(!bad.length){ el.classList.add('hidden'); el.innerHTML=''; __lastQualityKey=''; return; }
     el.classList.remove('hidden');
     el.innerHTML = `<div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-2 text-xs text-amber-900">
             <i class="fas fa-triangle-exclamation text-amber-600"></i>
-            <b>${bad.length} baris spreadsheet perlu diperiksa</b>
-            ${sepCount?`<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">${sepCount} angka memakai titik/koma</span>`:''}
-            ${dupCount?`<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">${dupCount} laporan terkirim ganda</span>`:''}
+            <b>${bad.length} laporan dengan anomali data</b>
+            ${errCount?`<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">${errCount} salah/duplikat</span>`:''}
+            ${warnCount?`<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${warnCount} perlu dicek</span>`:''}
+            ${infoCount?`<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">${infoCount} belum lengkap</span>`:''}
+            ${dupCount?`<span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">${dupCount} terkirim ganda</span>`:''}
             <span class="text-amber-700 hidden sm:inline">— nilai sudah dinormalkan di dashboard, tetapi sumber di spreadsheet sebaiknya diperbaiki.</span>
         </div>
-        <button onclick="openQualityModal()" class="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg"><i class="fas fa-list-check mr-1"></i>Lihat detail</button>
+        <div class="flex items-center gap-1.5"><button onclick="toggleNotifPanel(true)" class="text-xs font-semibold bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 px-3 py-1.5 rounded-lg"><i class="fas fa-bell mr-1"></i>Notifikasi</button><button onclick="openQualityModal()" class="text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg"><i class="fas fa-list-check mr-1"></i>Lihat detail</button></div>
     </div>`;
     // Toast sekali per kombinasi masalah baru (agar tidak spam tiap auto-refresh)
     const key = bad.map(d=>d.__row+':'+d.__issues.map(i=>i.type).join('/')).join(',');
     if(key!==__lastQualityKey){
         __lastQualityKey = key;
         if(sepCount) showToast(`${sepCount} angka di spreadsheet ditulis dengan titik/koma sebagai pemisah (mis. Nomor PR). Periksa panel "Kualitas Data".`,'warning');
-        else if(dupCount) showToast(`${dupCount} laporan tampaknya terkirim 2× (duplikat) sehingga menggandakan hitungan. Buka "Lihat detail" untuk menghapus.`,'warning');
-        else showToast(`${bad.length} baris spreadsheet memiliki data yang perlu diperiksa.`,'warning');
+        else if(dupCount) showToast(`${dupCount} laporan tampaknya terkirim 2× (duplikat) sehingga menggandakan hitungan. Klik ikon lonceng untuk menghapus.`,'warning');
+        else if(errCount) showToast(`${errCount} laporan berisi nilai yang salah — klik ikon lonceng untuk memperbaiki.`,'warning');
+        else showToast(`${bad.length} laporan memiliki anomali data (klik ikon lonceng).`,'info');
     }
 }
 function openQualityModal(){
     const modal=document.getElementById('typeDetailModal'); if(!modal) return;
-    const bad = rawData.filter(d=>d.__issues && d.__issues.length).sort((a,b)=>(a.__row||0)-(b.__row||0));
+    const bad = activeIssues().map(r=>Object.assign({}, r.d, {__issues:r.list.map(x=>x.i), __ri:r.ri})).sort((a,b)=>(a.__row||0)-(b.__row||0));
     const rowsHtml = bad.map(d=>`<tr class="border-b border-slate-100 last:border-0 align-top">
         <td class="py-2 pr-2 font-mono text-slate-500">${d.__row||'—'}</td>
         <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-blue-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
         <td class="py-2 pr-2">${d.__issues.map(i=>`<div class="mb-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${i.type==='separator'||i.type==='scientific'?'bg-red-100 text-red-700':i.type==='duplicate'?'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-800'}">${escapeHtml(i.col)}</span> <span class="text-slate-700">${escapeHtml(i.msg)}</span>${i.fixed&&i.fixed!==i.raw?` <span class="text-emerald-700 text-[10px]">→ ditampilkan sebagai <b>${escapeHtml(i.fixed)}</b></span>`:''}</div>`).join('')}</td>
-        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>${d.__issues.some(i=>i.type==='duplicate')?` <button onclick="closeModal('typeDetailModal');openDeleteModalRaw(${rawData.indexOf(d)})" class="act-btn del" title="Hapus baris duplikat"><i class="fas fa-trash"></i></button>`:''}`:''}</td>
+        <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${d.__ri})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>${d.__issues.some(i=>i.type==='duplicate')?` <button onclick="closeModal('typeDetailModal');openDeleteModalRaw(${d.__ri})" class="act-btn del" title="Hapus baris duplikat"><i class="fas fa-trash"></i></button>`:''}`:''}</td>
     </tr>`).join('');
     modal.querySelector('.modal').innerHTML = `
         <div class="p-5 text-white" style="background:linear-gradient(135deg,#d97706,#b45309)">
@@ -623,7 +735,7 @@ function normalizeFromCSV(rows) {
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
             sparepart: spNorm, prNumber: pr || null, pic: get('pic') || '-', status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
-            __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
+            __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __rawTs: get('ts'), __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
             __row: i+1 // baris spreadsheet: rows[0]=header (baris 1), rows[1]=baris 2, dst.
         });
     }
@@ -738,6 +850,7 @@ let __refreshInFlight = null;
 // data server benar-benar mencerminkannya (maks. 60 detik), lalu sync diulang.
 const PENDING_TTL = 60*1000;
 const __pendingWrites = []; // {kind:'update'|'create'|'delete', ts, row, rec, key}
+const __syncMismatch = {}; // key → {rec, ts}: hasil edit web yang belum sama dengan sheet
 const _wkey = d => `${d.lokasi}|${d.damageType}|${d.tanggalInspeksi}`;
 const _sameFields = (a,b) => ['lokasi','divisi','damageType','keterangan','sparepart','prNumber','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','tanggalInspeksi','pic']
     .every(f => String(a[f]==null?'':a[f]) === String(b[f]==null?'':b[f]));
@@ -748,7 +861,19 @@ function reconcilePendingWrites(data){
     const now=Date.now(); let unresolved=false;
     for(let i=__pendingWrites.length-1;i>=0;i--){
         const pw=__pendingWrites[i];
-        if(now-pw.ts>PENDING_TTL){ __pendingWrites.splice(i,1); continue; }
+        if(now-pw.ts>PENDING_TTL){
+            // Lewat 60 dtk hasil tulis dari web masih belum terlihat sama di spreadsheet → beri tahu
+            if(pw.kind!=='delete' && pw.rec){
+                const srv = data.find(d=>d.__row===pw.row) || data.find(d=>_wkey(d)===pw.key);
+                if(srv && !_sameFields(srv,pw.rec)){
+                    __syncMismatch[pw.key] = {rec:pw.rec, ts:pw.ts}; // ditandai oleh validateRecord sampai cocok / 15 menit
+                    showToast(`Perubahan ${pw.rec.lokasi} · ${pw.rec.damageType} dari web belum sama dengan spreadsheet. Lihat notifikasi.`,'warning');
+                } else if(!srv && pw.kind==='create'){
+                    showToast(`Laporan baru ${pw.rec.lokasi} · ${pw.rec.damageType} belum terlihat di spreadsheet setelah 1 menit — periksa sheet.`,'warning');
+                }
+            }
+            __pendingWrites.splice(i,1); continue;
+        }
         let resolved=false;
         if(pw.kind==='update'){
             const srv = data.find(d=>d.__row===pw.row) || data.find(d=>_wkey(d)===pw.key);
@@ -3135,6 +3260,7 @@ async function loadUnits(force=false){
             const txt=await res.text(); if(txt.length<30 || /^<!doctype|^<html/i.test(txt.trim())) throw new Error('bukan CSV');
             const map=parseUnitsCSV(txt); if(!map || !Object.keys(map).length) throw new Error('kosong');
             unitsByLokasi=map; unitsMeta={loadedAt:Date.now(),count:Object.keys(map).length,source:'live'};
+            if(rawData && rawData.length){ validateAll(rawData); renderQualityBanner(); } // isu "unit terpasang" butuh data unit
             try{ localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({ts:Date.now(), map})); }catch(e){}
             fillDatalists();
             const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true);
@@ -3227,6 +3353,7 @@ async function loadFormOptions(){
         if(!j || !j.options) return;
         Object.entries(j.options).forEach(([k,v])=>{ if(Array.isArray(v) && v.length && FORM_OPTIONS[k]) FORM_OPTIONS[k]=v; });
         window.__formOptionsAt = j.fetchedAt;
+        if(rawData && rawData.length){ validateAll(rawData); renderQualityBanner(); }
     }catch(e){}
 }
 function fillSelect(id, options, current, emptyLabel){
@@ -3378,8 +3505,13 @@ function openEditModalRaw(rawi){
     document.getElementById('f_prNumber').value = d.prNumber || '';
     document.getElementById('editMsg').innerHTML='';
     if(d.__issues && d.__issues.length){
-        document.getElementById('editMsg').innerHTML = `<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>${escapeHtml(d.__issues[0].msg)}${d.__issues.length>1?` (+${d.__issues.length-1} lainnya)`:''} — form sudah berisi nilai yang dinormalkan; klik Simpan untuk menulisnya ke spreadsheet.</span>`;
+        const fixable = d.__issues.filter(i=>i.type==='unit' && i.fixed);
+        document.getElementById('editMsg').innerHTML = `<div class="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <div class="font-semibold mb-1"><i class="fas fa-triangle-exclamation mr-1"></i>${d.__issues.length} anomali pada laporan ini</div>
+            <ul class="list-disc ml-4 space-y-0.5">${d.__issues.map(i=>`<li>${escapeHtml(i.msg)}</li>`).join('')}</ul>
+            <div class="mt-1.5 text-[10.5px] text-amber-700">Nilai angka yang salah format sudah dinormalkan di form. ${fixable.length?`<button type="button" onclick="applyUnitToForm(findUnit(document.getElementById('f_lokasi').value), true); renderLokasiInfo(document.getElementById('f_lokasi').value, true)" class="ml-1 px-2 py-0.5 rounded bg-amber-600 text-white font-semibold">Samakan dengan unit terpasang</button>`:''} Klik <b>Simpan</b> untuk menulis perbaikan ke spreadsheet.</div></div>`;
     }
+    openEditModalRaw._snapshot = JSON.stringify(_fieldsOf(d)); openEditModalRaw._conflictChecked = false;
     document.getElementById('editSaveBtn').disabled=false;
     const li=document.getElementById('lokasiUnitInfo'); if(li) li.innerHTML='';
     loadUnits().then(()=>{ if(document.getElementById('editMode').value==='update') renderLokasiInfo(document.getElementById('f_lokasi').value, true); });
@@ -3438,7 +3570,14 @@ async function callWriteProxy(payload, opts={}){
         }
         if(!r.ok){ lastErr = Object.assign(new Error('HTTP '+r.status+': '+t.slice(0,200)), {transient: r.status>=500 || r.status===404 || r.status===429}); if(lastErr.transient) continue; throw lastErr; }
         if(/^error: server sibuk/i.test(t)){ lastErr = Object.assign(new Error(t), {transient:true}); continue; }
-        if(!/^ok\b/i.test(t)) throw new Error(t.slice(0,300) || 'Respons kosong dari Apps Script');
+        if(/^error:/i.test(t)) throw new Error(t.slice(0,300));
+        if(!/^ok\b/i.test(t)){
+            // Respons bukan "ok:" dan bukan "error:" (mis. teks doGet "pg2-write-proxy ok vN" saat Google
+            // salah mengarahkan redirect POST). Perubahan MUNGKIN sudah tersimpan → verifikasi ke sheet
+            // dengan opId yang sama, jangan dianggap gagal (dulu memicu klik ulang → baris ganda).
+            lastErr = Object.assign(new Error('Respons Apps Script tidak dikenal: "'+t.slice(0,60)+'"'), {transient:true});
+            break;
+        }
         return t;
     }
     // Semua percobaan gagal karena gangguan sementara: perubahan MUNGKIN sudah tersimpan.
@@ -3451,12 +3590,30 @@ async function callWriteProxy(payload, opts={}){
 
 // Setelah kegagalan yang "tidak pasti" (timeout), periksa ke sheet apakah perubahan
 // sebenarnya sudah masuk. Mengembalikan true bila sudah.
-async function verifyWriteApplied(check){
-    try{
-        const fresh = await fetchLiveCSV();
-        if(!fresh || !fresh.length) return false;
-        return !!check(fresh);
-    }catch(e){ return false; }
+async function verifyWriteApplied(check, tries=4){
+    for(let i=0;i<tries;i++){
+        try{
+            if(i) await new Promise(r=>setTimeout(r, 4000));
+            const fresh = await fetchLiveCSV();
+            if(fresh && fresh.length && check(fresh)) return true;
+        }catch(e){}
+    }
+    return false;
+}
+// Snapshot field yang bisa diedit (untuk deteksi konflik edit web vs spreadsheet)
+const _EDIT_FIELDS = ['tanggalInspeksi','lokasi','divisi','repairStatus','tingkat','engineType','engineCode','irrType','irrCode','damageType','keterangan','sparepart','prNumber','pic'];
+function _fieldsOf(d){ const o={}; _EDIT_FIELDS.forEach(f=>{ o[f]=String(d[f]==null?'':d[f]); }); return o; }
+const _FIELD_LABEL = {tanggalInspeksi:'Tanggal',lokasi:'Lokasi',divisi:'Divisi',repairStatus:'Status Perbaikan',tingkat:'Tingkat',engineType:'Jenis Engine',engineCode:'Kode Engine',irrType:'Jenis Irrigator',irrCode:'Kode Irrigator',damageType:'Jenis Kerusakan',keterangan:'Keterangan',sparepart:'Sparepart',prNumber:'No PR',pic:'PIC'};
+// Sebelum menimpa baris: cek apakah baris di spreadsheet berubah sejak dimuat (diedit orang lain /
+// langsung di Sheets). Mengembalikan {fresh, diffs} atau null bila tidak ada konflik / tidak bisa dicek.
+async function detectEditConflict(d){
+    const fresh = await fetchLiveCSV(); if(!fresh || !fresh.length) return null;
+    let srv = fresh.find(x=>x.__row===d.__row && lokKey(x.lokasi)===lokKey(d.lokasi) && x.damageType===d.damageType);
+    if(!srv){ const c=fresh.filter(x=>_wkey(x)===_wkey(d)); if(c.length===1) srv=c[0]; }
+    if(!srv) return {fresh, srv:null, diffs:[], missing:true};
+    const a=JSON.parse(openEditModalRaw._snapshot||'{}'), b=_fieldsOf(srv);
+    const diffs=_EDIT_FIELDS.filter(f=>a[f]!==undefined && a[f]!==b[f]).map(f=>({f,label:_FIELD_LABEL[f],was:a[f],now:b[f]}));
+    return diffs.length ? {fresh, srv, diffs} : null;
 }
 function _writeFailHtml(e, retryFn){
     return `<span class="text-red-600"><i class="fas fa-times-circle mr-1"></i>${escapeHtml(e.message)}</span>`
@@ -3496,8 +3653,30 @@ async function submitEdit(){
     const msg=document.getElementById('editMsg');
     const btn=document.getElementById('editSaveBtn');
     const setStatus = t => { msg.innerHTML=`<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
-    setStatus('Menyimpan ke spreadsheet…');
     btn.disabled=true;
+    if(!openEditModalRaw._conflictChecked){
+        setStatus('Memeriksa perubahan terbaru di spreadsheet…');
+        let conflict=null; try{ conflict = await detectEditConflict(d); }catch(e){}
+        if(conflict){
+            btn.disabled=false; openEditModalRaw._conflictChecked = true; // klik Simpan berikutnya = timpa
+            if(conflict.missing){
+                msg.innerHTML=`<div class="text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"><i class="fas fa-circle-exclamation mr-1"></i>Baris ini tidak ditemukan lagi di spreadsheet (mungkin sudah dihapus atau dipindah). <button type="button" onclick="closeModal('editModal');refreshData(true)" class="ml-1 px-2 py-0.5 rounded bg-slate-900 text-white font-semibold">Refresh data</button></div>`;
+                return;
+            }
+            const srvIdx = rawData.indexOf(d);
+            window.__conflictFresh = conflict.srv;
+            msg.innerHTML=`<div class="text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+                <div class="font-semibold"><i class="fas fa-code-compare mr-1"></i>Baris ini sudah berubah di spreadsheet sejak dimuat:</div>
+                <ul class="list-disc ml-4 my-1">${conflict.diffs.map(x=>`<li><b>${x.label}</b>: "${escapeHtml(x.was||'kosong')}" → "${escapeHtml(x.now||'kosong')}"</li>`).join('')}</ul>
+                <div class="flex flex-wrap gap-1.5 mt-1.5">
+                    <button type="button" onclick="(function(){ const s=window.__conflictFresh; if(!s) return; rawData[${srvIdx}]=indexRecords([s])[0]; validateRecord(rawData[${srvIdx}]); applyFilters(); openEditModalRaw(${srvIdx}); showToast('Form dimuat ulang dengan nilai terbaru dari spreadsheet.','info'); })()" class="px-2.5 py-1 rounded-md bg-slate-900 text-white text-[11px] font-semibold"><i class="fas fa-rotate mr-1"></i>Muat nilai terbaru</button>
+                    <button type="button" onclick="submitEdit()" class="px-2.5 py-1 rounded-md bg-amber-600 text-white text-[11px] font-semibold"><i class="fas fa-pen mr-1"></i>Tetap simpan (timpa perubahan di sheet)</button>
+                </div></div>`;
+            return;
+        }
+        openEditModalRaw._conflictChecked = true;
+    }
+    setStatus('Menyimpan ke spreadsheet…');
     // opId dipertahankan antar klik "Coba lagi" agar proxy tidak menulis dua kali
     submitEdit._opId = submitEdit._opId && submitEdit._opKey===rawi ? submitEdit._opId : null; submitEdit._opKey = rawi;
     try{
