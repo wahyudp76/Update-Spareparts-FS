@@ -78,7 +78,8 @@ function validateRecord(d){
     if(!d.lokasi || d.lokasi==='-') issues.push({field:'lokasi',col:'Lokasi',type:'missing',msg:'Lokasi kosong.'});
     else {
         const lk=String(d.lokasi).trim();
-        if(/\s/.test(lk) || lk!==lk.toUpperCase()) { issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" mengandung spasi/huruf kecil — ditampilkan sebagai ${lokKey(lk)}.`,raw:lk,fixed:lokKey(lk)}); d.lokasi=lokKey(lk); d.unit=d.lokasi; }
+        if(!/^\d/.test(lk)) { /* lokasi bernama (Bengkel PG2, Guava, Banana, …) — bukan kode, tidak dicek format */ const nm=lk.replace(/\s+/g,' '); if(nm!==d.lokasi){ d.lokasi=nm; d.unit=nm; } }
+        else if(/\s/.test(lk) || lk!==lk.toUpperCase()) { issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" mengandung spasi/huruf kecil — ditampilkan sebagai ${lokKey(lk)}.`,raw:lk,fixed:lokKey(lk)}); d.lokasi=lokKey(lk); d.unit=d.lokasi; }
         else if(!/^\d{3}[A-Z]{1,2}\d{0,2}$/.test(lk) && !/^(GUAVA|BANANA)/i.test(lk)) issues.push({field:'lokasi',col:'Lokasi',type:'format',msg:`Lokasi "${lk}" tidak sesuai pola kode lokasi (contoh 104I, 111C9).`});
         // CATATAN: lokasi yang tidak ada di daftar unit terpasang TIDAK dianggap anomali (unit/dermaga bisa berubah;
         // daftar unit terpasang tidak selalu lengkap). Hanya format kode lokasi yang diperiksa.
@@ -113,13 +114,12 @@ function validateRecord(d){
 let __picSince = null; // sejak kapan PIC dianggap wajib (dihitung dari data)
 let __lokFreq = {};   // frekuensi lokasi di laporan (lokasi yang sering dipakai dianggap valid)
 function validateAll(arr){
-    // PIC dianggap wajib sejak titik waktu di mana ≥70% laporan sesudahnya sudah berisi PIC
-    // (bukan sejak PIC pertama muncul — laporan lama yang dikirim ulang bisa mengecoh).
-    const byT = arr.map(d=>({t:new Date(d.timestamp).getTime(), p:!!(d.pic&&d.pic!=='-')})).filter(x=>!isNaN(x.t)).sort((a,b)=>a.t-b.t);
-    __picSince = null;
-    if(byT.some(x=>x.p)){
-        let withP=0; for(let i=byT.length-1;i>=0;i--){ if(byT[i].p) withP++; const n=byT.length-i; if(n>=5 && withP/n>=0.7) __picSince=byT[i].t; else if(n>=5 && withP/n<0.5) break; }
-    }
+    // PIC dianggap wajib sejak TANGGAL TETAP (kolom PIC ditambahkan ke Google Form), bisa diatur
+    // lewat config.js → PIC_REQUIRED_SINCE: 'YYYY-MM-DD'. Dulu dihitung dari data (≥70% laporan
+    // berisi PIC) — itu "target bergerak": setiap kali PIC diisi, batasnya mundur dan laporan lama
+    // ikut ditandai, sehingga jumlah anomali malah BERTAMBAH setelah diperbaiki.
+    const cfgSince = (window.PG2_CONFIG && window.PG2_CONFIG.PIC_REQUIRED_SINCE) || '2026-10-03';
+    const ps = new Date(cfgSince+'T00:00:00'); __picSince = isNaN(ps) ? null : ps.getTime();
     __lokFreq = {}; arr.forEach(d=>{ if(d.lokasi&&d.lokasi!=='-') __lokFreq[lokKey(d.lokasi)]=(__lokFreq[lokKey(d.lokasi)]||0)+1; });
     let n=0; arr.forEach(d=>{ n += validateRecord(d).length ? 1 : 0; });
     // Duplikat: timestamp + lokasi + jenis kerusakan sama persis

@@ -22,5 +22,8 @@ window.PG2_CONFIG = {
     // Divisi / Jenis & Kode Engine / Jenis & Kode Irrigator saat Lokasi diketik di form
     // Tambah/Edit Laporan. Spreadsheet harus bisa dibaca "Siapa saja yang memiliki link".
     UNITS_SHEET_ID: '1WbGTDqC0Anh6O54twsJfiBiWcTri7FHyQjXIFrOoLz4',
-    UNITS_SHEET_GID: '1884963951'
+    UNITS_SHEET_GID: '1884963951',
+    // PIC wajib untuk laporan sejak tanggal ini (saat pertanyaan PIC ditambahkan ke Google Form).
+    // Laporan sebelum tanggal ini tanpa PIC TIDAK dihitung anomali.
+    PIC_REQUIRED_SINCE: '2026-10-03'
 };

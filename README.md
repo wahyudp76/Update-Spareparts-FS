@@ -268,3 +268,5 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 - **Rekonsiliasi**: pencocokan baris pending memakai kunci yang dinormalkan + nomor baris sheet, dan refresh tambahan di detik ke-20 agar web ↔ spreadsheet cepat konvergen.
 
 > **Catatan (Okt 2026):** perbedaan kode engine/irrigator/divisi dengan data *unit terpasang* (Draft Dashboard) **tidak lagi dihitung sebagai anomali** — posisi engine sering berpindah dermaga, sehingga laporan di suatu lokasi wajar memakai unit yang tercatat di lokasi lain. Lokasi yang tidak ada di daftar unit terpasang juga **tidak** ditandai. Data unit terpasang tetap dipakai untuk isi otomatis form dan petunjuk "Berbeda dari isian saat ini" (informatif, tidak memblokir).
+
+> **Hitungan anomali (Okt 2026):** batas "PIC wajib" kini **tanggal tetap** (`config.js` → `PIC_REQUIRED_SINCE`, default 2026-10-03), bukan lagi dihitung dari persentase data — cara lama membuat batasnya mundur setiap kali PIC diisi sehingga jumlah anomali bertambah setelah diperbaiki. Lokasi bernama (Bengkel PG2, Guava, Banana) tidak lagi dicek sebagai kode lokasi.
