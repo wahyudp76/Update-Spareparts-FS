@@ -1,5 +1,86 @@
 [
   {
+    "timestamp": "2026-10-08T18:03:13+07:00",
+    "tanggalInspeksi": "2026-10-08",
+    "lokasi": "101B",
+    "divisi": "PG2",
+    "engineType": "SPC",
+    "engineCode": "0219",
+    "engine": "SPC – 0219",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Prodo",
+    "keterangan": "Ganti prodo",
+    "damage": "Prodo — Ganti prodo",
+    "sparepart": "-",
+    "prNumber": null,
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "08/10/2026",
+    "__yearFixed": false,
+    "unit": "101B",
+    "__row": 321
+  },
+  {
+    "timestamp": "2026-10-08T17:55:31+07:00",
+    "tanggalInspeksi": "2026-10-08",
+    "lokasi": "140E",
+    "divisi": "FM4",
+    "engineType": "SPC",
+    "engineCode": "0114",
+    "engine": "SPC – 0114",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Pompa Ebara",
+    "keterangan": "Baut gland packing minta ganti",
+    "damage": "Pompa Ebara — Baut gland packing minta ganti",
+    "sparepart": "Baut gland packing",
+    "prNumber": null,
+    "pic": "Internal",
+    "status": "Belum Ditangani",
+    "repairStatus": "Belum",
+    "tingkat": "Sedang",
+    "__rawTingkat": "Sedang",
+    "__rawRepair": "Belum",
+    "__rawTgl": "08/10/2026",
+    "__yearFixed": false,
+    "unit": "140E",
+    "__row": 320
+  },
+  {
+    "timestamp": "2026-10-08T17:00:50+07:00",
+    "tanggalInspeksi": "2026-10-08",
+    "lokasi": "Bengkel OP2",
+    "divisi": "FM4",
+    "engineType": "-",
+    "engineCode": "-",
+    "engine": "-",
+    "irrType": "BTI",
+    "irrCode": "0061",
+    "irrigator": "BTI – 0061",
+    "damageType": "Turbin",
+    "keterangan": "Perbaikan as turbin",
+    "damage": "Turbin — Perbaikan as turbin",
+    "sparepart": "-",
+    "prNumber": null,
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Berat",
+    "__rawTingkat": "Berat",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "08/10/2026",
+    "__yearFixed": false,
+    "unit": "Bengkel OP2",
+    "__row": 319
+  },
+  {
     "timestamp": "2026-10-08T14:11:23+07:00",
     "tanggalInspeksi": "2026-10-08",
     "lokasi": "164B",
@@ -24,7 +105,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "164B",
-    "__row": 320
+    "__row": 318
   },
   {
     "timestamp": "2026-10-08T14:09:34+07:00",
@@ -51,7 +132,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "161B",
-    "__row": 319
+    "__row": 317
   },
   {
     "timestamp": "2026-10-08T14:07:26+07:00",
@@ -70,15 +151,15 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 318
+    "__row": 316
   },
   {
     "timestamp": "2026-10-08T14:01:37+07:00",
@@ -105,7 +186,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "152D",
-    "__row": 317
+    "__row": 315
   },
   {
     "timestamp": "2026-10-08T13:58:18+07:00",
@@ -132,7 +213,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "107f",
-    "__row": 316
+    "__row": 314
   },
   {
     "timestamp": "2026-10-08T13:55:43+07:00",
@@ -151,18 +232,18 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "117C1",
-    "__row": 315
+    "__row": 313
   },
   {
-    "timestamp": "2026-10-08T13:51:31+07:00",
+    "timestamp": "2026-10-08T13:50:06+07:00",
     "tanggalInspeksi": "2026-10-08",
     "lokasi": "118K",
     "divisi": "PG2",
@@ -177,33 +258,6 @@
     "damage": "Blok Mesin — bearing dan prodo kopling rusak",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "Maintenance",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
-    "__rawTgl": "08/10/2026",
-    "__yearFixed": false,
-    "unit": "118K",
-    "__row": 314
-  },
-  {
-    "timestamp": "2026-10-08T13:50:06+07:00",
-    "tanggalInspeksi": "2026-10-08",
-    "lokasi": "303D",
-    "divisi": "PG2",
-    "engineType": "-",
-    "engineCode": "-",
-    "engine": "-",
-    "irrType": "BTI",
-    "irrCode": "0056",
-    "irrigator": "BTI – 0056",
-    "damageType": "Hidrolik",
-    "keterangan": "hand pump hyd tidak naik",
-    "damage": "Hidrolik — hand pump hyd tidak naik",
-    "sparepart": "-",
-    "prNumber": null,
     "pic": "Internal",
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
@@ -212,8 +266,8 @@
     "__rawRepair": "Belum",
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
-    "unit": "303D",
-    "__row": 313
+    "unit": "118K",
+    "__row": 312
   },
   {
     "timestamp": "2026-10-08T13:47:41+07:00",
@@ -231,7 +285,7 @@
     "damage": "Blok Mesin — seal crankshaft depan /blkng rusak",
     "sparepart": "seal",
     "prNumber": null,
-    "pic": "Maintenance",
+    "pic": "Internal",
     "status": "Belum Ditangani",
     "repairStatus": "Belum",
     "tingkat": "Sedang",
@@ -240,7 +294,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "118M",
-    "__row": 312
+    "__row": 311
   },
   {
     "timestamp": "2026-10-08T13:07:05+07:00",
@@ -267,7 +321,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "155C",
-    "__row": 311
+    "__row": 310
   },
   {
     "timestamp": "2026-10-08T13:05:07+07:00",
@@ -294,7 +348,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "156D",
-    "__row": 310
+    "__row": 309
   },
   {
     "timestamp": "2026-10-08T13:03:28+07:00",
@@ -321,7 +375,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "123L",
-    "__row": 309
+    "__row": 308
   },
   {
     "timestamp": "2026-10-08T13:01:14+07:00",
@@ -348,7 +402,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "142B",
-    "__row": 308
+    "__row": 307
   },
   {
     "timestamp": "2026-10-08T12:56:58+07:00",
@@ -375,7 +429,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "137A",
-    "__row": 307
+    "__row": 306
   },
   {
     "timestamp": "2026-10-08T12:55:14+07:00",
@@ -402,7 +456,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "140E",
-    "__row": 306
+    "__row": 305
   },
   {
     "timestamp": "2026-10-08T12:52:47+07:00",
@@ -429,7 +483,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "149C",
-    "__row": 305
+    "__row": 304
   },
   {
     "timestamp": "2026-10-08T12:43:11+07:00",
@@ -456,7 +510,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "140E",
-    "__row": 304
+    "__row": 303
   },
   {
     "timestamp": "2026-10-08T12:41:54+07:00",
@@ -483,7 +537,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "133F",
-    "__row": 303
+    "__row": 302
   },
   {
     "timestamp": "2026-10-08T12:38:04+07:00",
@@ -510,7 +564,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "136G",
-    "__row": 302
+    "__row": 301
   },
   {
     "timestamp": "2026-10-08T11:48:18+07:00",
@@ -537,7 +591,7 @@
     "__rawTgl": "08/10/2026",
     "__yearFixed": false,
     "unit": "130I",
-    "__row": 301
+    "__row": 300
   },
   {
     "timestamp": "2026-10-07T11:30:09+07:00",
@@ -556,15 +610,15 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Sumur Bor",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "169B",
-    "__row": 300
+    "__row": 299
   },
   {
     "timestamp": "2026-10-07T11:20:59+07:00",
@@ -583,15 +637,15 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Sedang",
     "__rawTingkat": "Sedang",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "170D",
-    "__row": 299
+    "__row": 298
   },
   {
     "timestamp": "2026-10-07T11:18:35+07:00",
@@ -618,7 +672,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "118K",
-    "__row": 298
+    "__row": 297
   },
   {
     "timestamp": "2026-10-07T11:15:30+07:00",
@@ -645,7 +699,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "103E",
-    "__row": 297
+    "__row": 296
   },
   {
     "timestamp": "2026-10-07T11:12:11+07:00",
@@ -672,7 +726,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "117c",
-    "__row": 296
+    "__row": 295
   },
   {
     "timestamp": "2026-10-07T11:04:06+07:00",
@@ -699,7 +753,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "143C",
-    "__row": 295
+    "__row": 294
   },
   {
     "timestamp": "2026-10-07T10:47:29+07:00",
@@ -726,7 +780,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "146E",
-    "__row": 294
+    "__row": 293
   },
   {
     "timestamp": "2026-10-07T10:45:57+07:00",
@@ -753,7 +807,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "123B",
-    "__row": 293
+    "__row": 292
   },
   {
     "timestamp": "2026-10-07T10:35:24+07:00",
@@ -780,7 +834,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "159D",
-    "__row": 292
+    "__row": 291
   },
   {
     "timestamp": "2026-10-07T10:30:00+07:00",
@@ -807,7 +861,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "158F",
-    "__row": 291
+    "__row": 290
   },
   {
     "timestamp": "2026-10-07T10:27:52+07:00",
@@ -834,7 +888,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "160C",
-    "__row": 290
+    "__row": 289
   },
   {
     "timestamp": "2026-10-07T10:23:24+07:00",
@@ -861,7 +915,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 289
+    "__row": 288
   },
   {
     "timestamp": "2026-10-07T10:18:06+07:00",
@@ -888,7 +942,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "163C",
-    "__row": 288
+    "__row": 287
   },
   {
     "timestamp": "2026-10-07T10:16:32+07:00",
@@ -915,7 +969,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "168d",
-    "__row": 287
+    "__row": 286
   },
   {
     "timestamp": "2026-10-07T10:13:26+07:00",
@@ -942,7 +996,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "163b",
-    "__row": 286
+    "__row": 285
   },
   {
     "timestamp": "2026-10-07T10:12:10+07:00",
@@ -969,7 +1023,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "168D",
-    "__row": 285
+    "__row": 284
   },
   {
     "timestamp": "2026-10-07T09:44:20+07:00",
@@ -996,7 +1050,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "174C1",
-    "__row": 284
+    "__row": 283
   },
   {
     "timestamp": "2026-10-07T09:22:32+07:00",
@@ -1015,15 +1069,15 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "143G",
-    "__row": 283
+    "__row": 282
   },
   {
     "timestamp": "2026-10-07T09:15:10+07:00",
@@ -1050,7 +1104,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "110G",
-    "__row": 282
+    "__row": 281
   },
   {
     "timestamp": "2026-10-07T09:12:38+07:00",
@@ -1077,7 +1131,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "102C",
-    "__row": 281
+    "__row": 280
   },
   {
     "timestamp": "2026-10-07T09:07:24+07:00",
@@ -1104,7 +1158,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "103E",
-    "__row": 280
+    "__row": 279
   },
   {
     "timestamp": "2026-10-07T08:57:48+07:00",
@@ -1131,7 +1185,7 @@
     "__rawTgl": "07/10/2026",
     "__yearFixed": false,
     "unit": "130I",
-    "__row": 279
+    "__row": 278
   },
   {
     "timestamp": "2026-10-06T11:00:54+07:00",
@@ -1158,7 +1212,7 @@
     "__rawTgl": "06/10/2026",
     "__yearFixed": false,
     "unit": "121C",
-    "__row": 277
+    "__row": 276
   },
   {
     "timestamp": "2026-10-06T10:59:40+07:00",
@@ -1174,7 +1228,7 @@
     "damageType": "Aki",
     "keterangan": "Ganti klem aki",
     "damage": "Aki — Ganti klem aki",
-    "sparepart": "Klem",
+    "sparepart": "Klem aki",
     "prNumber": null,
     "pic": "Internal",
     "status": "Selesai",
@@ -1185,7 +1239,7 @@
     "__rawTgl": "06/10/2026",
     "__yearFixed": false,
     "unit": "122A",
-    "__row": 276
+    "__row": 275
   },
   {
     "timestamp": "2026-10-06T10:57:53+07:00",
@@ -1212,33 +1266,6 @@
     "__rawTgl": "06/10/2026",
     "__yearFixed": false,
     "unit": "115B",
-    "__row": 275
-  },
-  {
-    "timestamp": "2026-10-06T10:45:16+07:00",
-    "tanggalInspeksi": "2026-10-06",
-    "lokasi": "302E",
-    "divisi": "PG2",
-    "engineType": "DED",
-    "engineCode": "0017",
-    "engine": "DED – 0017",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Blok Mesin",
-    "keterangan": "Mesin tidak mau star",
-    "damage": "Blok Mesin — Mesin tidak mau star",
-    "sparepart": "-",
-    "prNumber": null,
-    "pic": "Internal",
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Sedang",
-    "__rawTingkat": "Sedang",
-    "__rawRepair": "Sudah",
-    "__rawTgl": "06/10/2026",
-    "__yearFixed": false,
-    "unit": "302E",
     "__row": 274
   },
   {
@@ -1321,33 +1348,6 @@
     "__yearFixed": false,
     "unit": "135C",
     "__row": 271
-  },
-  {
-    "timestamp": "2026-10-06T10:34:14+07:00",
-    "tanggalInspeksi": "2026-10-06",
-    "lokasi": "303C",
-    "divisi": "PG2",
-    "engineType": "DEM",
-    "engineCode": "0035",
-    "engine": "DEM – 0035",
-    "irrType": "-",
-    "irrCode": "-",
-    "irrigator": "-",
-    "damageType": "Aki",
-    "keterangan": "AKI perlu dijemper",
-    "damage": "Aki — AKI perlu dijemper",
-    "sparepart": "-",
-    "prNumber": null,
-    "pic": "Internal",
-    "status": "Selesai",
-    "repairStatus": "Sudah",
-    "tingkat": "Ringan",
-    "__rawTingkat": "Ringan",
-    "__rawRepair": "Sudah",
-    "__rawTgl": "06/10/2026",
-    "__yearFixed": false,
-    "unit": "303C",
-    "__row": 270
   },
   {
     "timestamp": "2026-10-06T10:32:28+07:00",
@@ -1447,11 +1447,11 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "06/10/2026",
     "__yearFixed": false,
     "unit": "168D",
@@ -1563,7 +1563,34 @@
     "__rawTgl": "06/10/2026",
     "__yearFixed": false,
     "unit": "143A",
-    "__row": 278
+    "__row": 277
+  },
+  {
+    "timestamp": "2026-10-05T18:12:47+07:00",
+    "tanggalInspeksi": "2026-10-05",
+    "lokasi": "302E",
+    "divisi": "PG2",
+    "engineType": "DED",
+    "engineCode": "0017",
+    "engine": "DED – 0017",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Blok Mesin",
+    "keterangan": "Perbaikan puli vanbelt menceng",
+    "damage": "Blok Mesin — Perbaikan puli vanbelt menceng",
+    "sparepart": "-",
+    "prNumber": null,
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Berat",
+    "__rawTingkat": "Berat",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "05/10/2026",
+    "__yearFixed": false,
+    "unit": "302E",
+    "__row": 322
   },
   {
     "timestamp": "2026-10-05T12:17:18+07:00",
@@ -2094,7 +2121,7 @@
     "damage": "Transmisi — Gear transmisi rusak/sering lolos",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -2141,14 +2168,14 @@
     "engineCode": "-",
     "engine": "-",
     "irrType": "ITI",
-    "irrCode": "0112",
-    "irrigator": "ITI – 0112",
+    "irrCode": "0200",
+    "irrigator": "ITI – 0200",
     "damageType": "Pipa PE",
-    "keterangan": "PE housedrum minta disambung",
-    "damage": "Pipa PE — PE housedrum minta disambung",
+    "keterangan": "Sambung pipa PE yg bocor",
+    "damage": "Pipa PE — Sambung pipa PE yg bocor",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -2202,12 +2229,12 @@
     "damage": "Tangki Solar — Tangki bocor",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "04/10/2026",
     "__yearFixed": false,
     "unit": "143G",
@@ -2310,7 +2337,7 @@
     "damage": "Pipa PE — Sambung pipa PE yg bocor",
     "sparepart": "Pipa PE",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -2320,6 +2347,33 @@
     "__yearFixed": false,
     "unit": "111C9",
     "__row": 234
+  },
+  {
+    "timestamp": "2026-10-04T10:34:14+07:00",
+    "tanggalInspeksi": "2026-10-04",
+    "lokasi": "303C",
+    "divisi": "PG2",
+    "engineType": "DEM",
+    "engineCode": "0035",
+    "engine": "DEM – 0035",
+    "irrType": "-",
+    "irrCode": "-",
+    "irrigator": "-",
+    "damageType": "Aki",
+    "keterangan": "Aki perlu dijamper",
+    "damage": "Aki — Aki perlu dijamper",
+    "sparepart": "-",
+    "prNumber": null,
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
+    "tingkat": "Ringan",
+    "__rawTingkat": "Ringan",
+    "__rawRepair": "Sudah",
+    "__rawTgl": "04/10/2026",
+    "__yearFixed": false,
+    "unit": "303C",
+    "__row": 270
   },
   {
     "timestamp": "2026-10-04T10:06:37+07:00",
@@ -2634,7 +2688,7 @@
     "damage": "Pipa PE — PE gun bocor",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -3066,7 +3120,7 @@
     "damage": "Pompa Sumur Bor — Perbaikan seal asbes",
     "sparepart": "Seal gland packing",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
@@ -3305,11 +3359,11 @@
     "irrCode": "-",
     "irrigator": "-",
     "damageType": "Selang",
-    "keterangan": "Perbaikan selang solar",
-    "damage": "Selang — Perbaikan selang solar",
-    "sparepart": "Selang solar",
+    "keterangan": "Perbaikan selang solar bocor",
+    "damage": "Selang — Perbaikan selang solar bocor",
+    "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -3363,7 +3417,7 @@
     "damage": "Pompa Ebara — Perbaikan seal asbes",
     "sparepart": "Seal asbes",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -3658,7 +3712,7 @@
     "damageType": "Selang",
     "keterangan": "Perbaikan selang radiator",
     "damage": "Selang — Perbaikan selang radiator",
-    "sparepart": "Selang",
+    "sparepart": "Selang radiator",
     "prNumber": null,
     "pic": "-",
     "status": "Selesai",
@@ -3931,11 +3985,11 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "01/10/2026",
     "__yearFixed": false,
     "unit": "130I",
@@ -4362,7 +4416,7 @@
     "damage": "Ban — Pecah ban",
     "sparepart": "Ban Irrigator",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -4686,12 +4740,12 @@
     "damage": "Pompa Sumur Bor — Baut patah",
     "sparepart": "Baut",
     "prNumber": null,
-    "pic": "-",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "29/09/2026",
     "__yearFixed": false,
     "unit": "143G",
@@ -5010,7 +5064,7 @@
     "damage": "Blok Mesin — Ganti vanbelt",
     "sparepart": "Vanbelt",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -5685,7 +5739,7 @@
     "damage": "Pipa PE — Pemasangan pipa PE dari BTI0032",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
@@ -5874,7 +5928,7 @@
     "damage": "Pipa PE — PE housedrum bocor",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -5955,7 +6009,7 @@
     "damage": "Transmisi — Ganti seal transmisi",
     "sparepart": "Seal transmisi",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -6306,7 +6360,7 @@
     "damage": "Sproket — Sproket aus dan PE kosong",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Berat",
@@ -6684,7 +6738,7 @@
     "damage": "Pipa PE — Flexible PE bocor",
     "sparepart": "Flexible PE",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Ringan",
@@ -7413,7 +7467,7 @@
     "damage": "Turbin — Perbaikan Fillowblock dan Seal nilon",
     "sparepart": "-",
     "prNumber": null,
-    "pic": "-",
+    "pic": "Internal",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Sedang",
@@ -7684,11 +7738,11 @@
     "sparepart": "-",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "20/09/2026",
     "__yearFixed": false,
     "unit": "118D",
@@ -8008,11 +8062,11 @@
     "sparepart": "Selang Oli",
     "prNumber": null,
     "pic": "Internal",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Ringan",
     "__rawTingkat": "Ringan",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "18/09/2026",
     "__yearFixed": false,
     "unit": "118F",
@@ -8061,12 +8115,12 @@
     "damage": "Blok Mesin — Bocor oli as krek",
     "sparepart": "Seal crankshaft depan",
     "prNumber": null,
-    "pic": "-",
-    "status": "Belum Ditangani",
-    "repairStatus": "Belum",
+    "pic": "Internal",
+    "status": "Selesai",
+    "repairStatus": "Sudah",
     "tingkat": "Berat",
     "__rawTingkat": "Berat",
-    "__rawRepair": "Belum",
+    "__rawRepair": "Sudah",
     "__rawTgl": "17/09/2026",
     "__yearFixed": false,
     "unit": "118H",
@@ -8196,7 +8250,7 @@
     "damage": "Pompa Sumur Bor — Pompa bawah patah, Baut habis",
     "sparepart": "-",
     "prNumber": "11099053",
-    "pic": "-",
+    "pic": "Sumur Bor",
     "status": "Selesai",
     "repairStatus": "Sudah",
     "tingkat": "Berat",
