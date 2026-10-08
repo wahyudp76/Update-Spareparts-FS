@@ -197,7 +197,7 @@ function renderNotifPanel(){
     const lvlIcon={error:'fa-circle-exclamation text-red-600',warn:'fa-triangle-exclamation text-amber-600',info:'fa-circle-info text-slate-400'};
     const cnt={error:0,warn:0,info:0}; items.forEach(r=>cnt[r.level]++);
     const head=`<div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50">
-        <div><div class="text-xs font-bold text-slate-800"><i class="fas fa-bell mr-1 text-slate-500"></i>Anomali data</div>
+        <div><div class="text-xs font-bold text-slate-800"><i class="fas fa-bell mr-1 text-slate-500"></i>Anomali data <span class="text-[10px] font-normal text-slate-400">${window.APP_VERSION||''}</span></div>
         <div class="text-[10.5px] text-slate-500">${items.length?`${cnt.error} salah · ${cnt.warn} perlu dicek · ${cnt.info} belum lengkap`:'Tidak ada anomali pada data saat ini'}</div></div>
         <div class="flex items-center gap-1">${getWriteUrl()&&items.length?`<button onclick="toggleNotifPanel(false);openQualityModal()" class="text-[10.5px] font-semibold px-2 py-1 rounded-md bg-slate-900 text-white">Tabel lengkap</button>`:''}${dmCount?`<button onclick="clearDismissed()" title="Tampilkan lagi ${dmCount} notifikasi yang diabaikan" class="text-[10.5px] px-2 py-1 rounded-md hover:bg-slate-200 text-slate-500">Pulihkan (${dmCount})</button>`:''}</div></div>`;
     if(!items.length){ p.innerHTML=head+`<div class="px-4 py-6 text-center text-xs text-slate-400"><i class="fas fa-circle-check text-emerald-500 text-lg block mb-1"></i>Semua laporan lolos pemeriksaan.</div>`; return; }

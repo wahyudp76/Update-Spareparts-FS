@@ -1,5 +1,5 @@
 // PG2 Dashboard service worker — network-first with robust cache-busting
-const CACHE = 'pg2-dashboard-v27';
+const CACHE = 'pg2-dashboard-v28';
 const ASSETS = [
   './',
   './index.html',
@@ -17,7 +17,9 @@ self.addEventListener('message', e => {
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    // cache:'reload' → precache SELALU dari jaringan, bukan dari HTTP cache browser
+    // (GitHub Pages memberi max-age=600; tanpa ini SW baru bisa menyimpan app.js LAMA).
+    caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => new Request(a, { cache: 'reload' })))).then(() => self.skipWaiting())
   );
 });
 
@@ -41,7 +43,7 @@ self.addEventListener('fetch', e => {
 
   // Request dengan ?t=<timestamp> (cache-bust refresh / auto refresh) →
   // selalu fetch fresh, JANGAN kembalikan cache dulu.
-  if (url.searchParams.has('t')) {
+  if (url.searchParams.has('t') || url.searchParams.has('v')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' }).then(res => {
         if (res.ok) {
@@ -55,8 +57,10 @@ self.addEventListener('fetch', e => {
   }
 
   // Strategi network-first untuk request lain (stale cache hanya sebagai fallback).
+  // cache:'no-cache' → selalu revalidasi ke server (ETag/304), supaya app.js/index.html
+  // tidak tertahan di HTTP cache browser hingga 10 menit setelah deploy.
   e.respondWith(
-    fetch(e.request).then(res => {
+    fetch(e.request, { cache: 'no-cache' }).then(res => {
       if (res.ok) {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});

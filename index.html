@@ -19,7 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script src="config.js"></script>
+    <script>window.APP_VERSION="v28";</script>
+    <script src="config.js?v=28"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -902,7 +903,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=28"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -913,7 +914,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v27').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v28').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
