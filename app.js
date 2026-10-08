@@ -3287,6 +3287,13 @@ function applyUnitToForm(u, overwrite){
 }
 let __lokT=null;
 function onLokasiInput(val, commit=false){
+    // Lokasi selalu HURUF BESAR saat diketik (tanpa perlu Caps Lock) — posisi kursor dipertahankan
+    const el=document.getElementById('f_lokasi');
+    if(el && typeof el.value==='string'){
+        const up=el.value.toUpperCase();
+        if(up!==el.value){ const a=el.selectionStart, b=el.selectionEnd; el.value=up; try{ el.setSelectionRange(a,b); }catch(e){} }
+        val=el.value;
+    }
     clearTimeout(__lokT);
     __lokT = setTimeout(()=>renderLokasiInfo(val, commit), commit?0:120);
 }

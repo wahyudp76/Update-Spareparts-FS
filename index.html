@@ -19,8 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v31";</script>
-    <script src="config.js?v=31"></script>
+    <script>window.APP_VERSION="v32";</script>
+    <script src="config.js?v=32"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -848,7 +848,7 @@
             <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib — sama dengan Google Form. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
-                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input" placeholder="Ketik lokasi, mis. 104I — data unit terpasang terisi otomatis" list="dl_lokasi" autocomplete="off" oninput="onLokasiInput(this.value)" onchange="onLokasiInput(this.value,true)"><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
+                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="Ketik lokasi, mis. 104I — data unit terpasang terisi otomatis" list="dl_lokasi" autocomplete="off" oninput="onLokasiInput(this.value)" onchange="onLokasiInput(this.value,true)"><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
                 <div><label class="form-label">Divisi</label>
                     <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
                 </div>
@@ -903,7 +903,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=31"></script>
+    <script src="app.js?v=32"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -914,7 +914,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v31').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v32').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
