@@ -269,3 +269,9 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 > **Catatan (Okt 2026):** perbedaan kode engine/irrigator/divisi dengan data *unit terpasang* (Draft Dashboard) **tidak lagi dihitung sebagai anomali** — posisi engine sering berpindah dermaga, sehingga laporan di suatu lokasi wajar memakai unit yang tercatat di lokasi lain. Lokasi yang tidak ada di daftar unit terpasang juga **tidak** ditandai. Data unit terpasang tetap dipakai untuk isi otomatis form dan petunjuk "Berbeda dari isian saat ini" (informatif, tidak memblokir).
 
 > **Hitungan anomali (Okt 2026):** PIC kosong ditandai untuk **seluruh data** (tanpa patokan tanggal) — jumlahnya turun setiap kali PIC dilengkapi. Lokasi bernama (Bengkel PG2, Guava, Banana) tidak dicek sebagai kode lokasi.
+
+## Audit sinkronisasi & stabilitas (14 Okt 2026)
+- Uji kebenaran data: 436/436 baris sheet = web, 0 baris ganda, 0 baris hilang; satu-satunya perbedaan adalah normalisasi yang disengaja (huruf kecil → kapital, alias `Panel` → `Panel Listrik`).
+- Uji tulis langsung (lokasi uji `ZZTEST`): tambah → verifikasi sheet → coba tambah ganda (ditolak proxy v9, tetap 1 baris) → edit → hapus; semua konsisten web ↔ sheet dalam ≤3,5 dtk.
+- Perbaikan: `lokCanon()` — lokasi bernama disimpan rapi (`Bengkel PG2`, bukan `BENGKELPG2`); penjaga respons gviz **terpotong** (jika baris live tiba-tiba < 50% dari yang tampil, data lama dipertahankan dan dicoba ulang maks. 3×); `fetch-data.js` tidak lagi menghasilkan status "Proses".
+- Performa: data live tampil ±0,8 dtk; `applyFilters` ±40 ms; refresh penuh ±200 ms; tidak ada kebocoran DOM/Chart setelah 4 siklus semua tab + refresh.

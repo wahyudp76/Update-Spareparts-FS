@@ -214,12 +214,12 @@ function mapRows(rows) {
     sp = sp ? sp.replace(/[\r\n]+/g, '; ').replace(/\s*;\s*/g, '; ') : '-';
 
     // Status 3 tahap dari 2 kolom sheet:
-    //   "Status Perbaikan" = Sudah → Selesai; selain itu: ada PR → Proses; tidak → Belum Ditangani
+    //   "Status Perbaikan" = Sudah → Selesai; selain itu → Belum Ditangani (tidak ada status 'Proses')
     const repairRaw = get('repair').toLowerCase();
     const repair = !repairRaw ? 'Belum' : (/^(sudah|selesai|done|ya|yes|y|ok|1|true)/.test(repairRaw) ? 'Sudah' : 'Belum');
     const tkRaw = get('tingkat').toLowerCase();
     const tingkat = /berat|tinggi|high|major/.test(tkRaw) ? 'Berat' : /sedang|medium|moderate/.test(tkRaw) ? 'Sedang' : /ringan|rendah|low|minor/.test(tkRaw) ? 'Ringan' : '';
-    const status = repair === 'Sudah' ? 'Selesai' : (pr ? 'Proses' : 'Belum Ditangani');
+    const status = repair === 'Sudah' ? 'Selesai' : 'Belum Ditangani';
 
     if (!lokasi && !ic && !dt && sp === '-') continue;
 

@@ -960,6 +960,19 @@ async function refreshData(forceLive=false, opts={}) {
             }
         }
         data = await livePromise;
+        // Penjaga respons TERPOTONG: gviz kadang mengembalikan CSV sebagian. Jika jumlah baris live
+        // tiba-tiba < 50% dari yang sudah tampil, jangan langsung timpa — coba lagi (maks. 3×),
+        // baru diterima jika konsisten (berarti data memang dihapus massal di sheet).
+        if (data && data.length && rawData.length >= 20 && data.length < rawData.length * 0.5) {
+            refreshData._short = (refreshData._short || 0) + 1;
+            if (refreshData._short <= 3) {
+                console.warn(`Sheets mengembalikan ${data.length} baris (sebelumnya ${rawData.length}) — dianggap terpotong, coba lagi (${refreshData._short}/3).`);
+                if (seq !== __refreshSeq) return;
+                const dsEl=document.getElementById('dataSource'); if(dsEl) dsEl.textContent = `Live (Sheets) · ${rawData.length} record · respons tidak lengkap, mencoba lagi…`;
+                setTimeout(()=>refreshData(true,{silent:true}), 8000);
+                return;
+            }
+        } else refreshData._short = 0;
         if (data && data.length) source='live-sheet';
         // 2) Cadangan: data.json (cache GitHub)
         if (!data || !data.length) {
@@ -3201,6 +3214,10 @@ let unitsByLokasi = null;      // key lokasi (normalisasi) → unit
 let unitsMeta = { loadedAt: 0, count: 0, source: '' };
 let __unitsPromise = null;
 const lokKey = v => String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+// Bentuk kanonik untuk DISIMPAN ke sheet: kode lokasi (diawali angka) → tanpa spasi huruf besar (104I);
+// lokasi bernama → spasi tunggal, tiap kata diawali huruf besar, token berangka tetap kapital (Bengkel PG2).
+const lokCanon = v => { v=String(v||'').replace(/\s+/g,' ').trim(); if(!v) return ''; if(/^\d/.test(v)) return lokKey(v);
+    return v.split(' ').map(w=>/\d/.test(w)?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' '); };
 function splitUnitCode(code){ // "SPC0195" → {type:'SPC', code:'0195'}; "0195" → {type:'', code:'0195'}
     const m = String(code||'').trim().toUpperCase().match(/^([A-Z]*)\s*-?\s*(\d+)$/);
     if(!m) return {type:'', code:''};
@@ -3430,7 +3447,7 @@ async function submitCreate(){
     if(window.__writeBusy){ return; } // cegah klik ganda / Enter dua kali
     const payload={
         action:'create',
-        tanggalInspeksi:g('f_tanggal'), lokasi:lokKey(g('f_lokasi')), divisi:g('f_divisi'),
+        tanggalInspeksi:g('f_tanggal'), lokasi:lokCanon(g('f_lokasi')), divisi:g('f_divisi'),
         repairStatus:g('f_repair'), tingkat:g('f_tingkat'),
         engineType:g('f_engineType')||'-', engineCode:g('f_engineCode')||'-',
         irrType:g('f_irrType')||'-', irrCode:g('f_irrCode')||'-',
@@ -3667,7 +3684,7 @@ async function submitEdit(){
         matchDamage: d.damageType,
         // Field-field baru
         tanggalInspeksi: document.getElementById('f_tanggal').value,
-        lokasi: lokKey(document.getElementById('f_lokasi').value) || '-',
+        lokasi: lokCanon(document.getElementById('f_lokasi').value) || '-',
         divisi: document.getElementById('f_divisi').value,
         repairStatus: document.getElementById('f_repair').value,
         tingkat: document.getElementById('f_tingkat').value,
