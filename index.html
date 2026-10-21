@@ -19,8 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v35";</script>
-    <script src="config.js?v=35"></script>
+    <script>window.APP_VERSION="v36";</script>
+    <script src="config.js?v=36"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -888,6 +888,16 @@
         <div class="modal p-0" style="max-width:900px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain"></div>
     </div>
 
+    <!-- Detail lengkap per jenis kerusakan -->
+    <div id="dmgDetailModal" class="modal-backdrop">
+        <div class="modal p-5" style="max-width:860px">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <h3 id="dmgDetailTitle" class="display-font font-bold text-slate-900 text-lg"></h3>
+                <button onclick="closeModal('dmgDetailModal')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-500 flex-shrink-0"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="dmgDetailBody"></div>
+        </div>
+    </div>
     <div id="deleteModal" class="modal-backdrop">
         <div class="modal p-5 max-w-md">
             <div class="flex items-start gap-3 mb-4">
@@ -907,7 +917,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=36"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -918,7 +928,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v35').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v36').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

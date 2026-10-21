@@ -2085,7 +2085,7 @@ function renderDamageTab(){
         const sevColor = pending/items.length > 0.6 ? 'text-red-600 bg-red-50' : pending/items.length > 0.3 ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50';
         const sevLabel = pending/items.length > 0.6 ? 'Prioritas Tinggi' : pending/items.length > 0.3 ? 'Perlu Perhatian' : 'Terkendali';
         const pctPending = Math.round(pending/items.length*100);
-        return `<div class="card p-4 card-hover">
+        return `<div class="card p-4 card-hover cursor-pointer" onclick="if(!event.target.closest('details,button,a')) openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" title="Klik untuk detail lengkap ${escapeHtml(name)}">
             <div class="flex items-start justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <div class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-sm flex-shrink-0" style="background:${color}"><i class="fas fa-bug"></i></div>
@@ -2121,6 +2121,7 @@ function renderDamageTab(){
                     ${topSp.length ? topSp.map(([s,c])=>`<span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-wrench text-[8px]"></i>${escapeHtml(s)} <span class="text-amber-400">×${c}</span></span>`).join('') : '<span class="text-[10px] text-slate-400 italic">Belum ditentukan</span>'}
                 </div>
             </div>
+            <button type="button" onclick="event.stopPropagation(); openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" class="w-full mb-2 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${escapeHtml(name)}</button>
             <!-- Mini list -->
             <details class="group">
                 <summary class="text-[11px] font-semibold text-blue-600 cursor-pointer list-none flex items-center gap-1 hover:text-blue-800"><i class="fas fa-chevron-right text-[9px] group-open:rotate-90 transition"></i>Lihat ${items.length} laporan</summary>
@@ -2302,6 +2303,75 @@ function renderDivisiTab(){
             </div>
         </div>`;
     }).join('');
+}
+// ---------- Detail lengkap per jenis kerusakan (modal) ----------
+function openDamageDetail(name){
+    const all = rawData.filter(d=>((d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya')===name);
+    const inFilter = filteredData.filter(d=>((d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya')===name);
+    const items = (openDamageDetail._scope==='all' ? all : inFilter).slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    const box=document.getElementById('dmgDetailBody'); const ttl=document.getElementById('dmgDetailTitle'); if(!box||!ttl) return;
+    openDamageDetail._name=name;
+    const n=items.length, pending=items.filter(d=>d.status!=='Selesai').length, done=n-pending;
+    const pct=n?Math.round(pending/n*100):0;
+    const cnt=(f,fn)=>{ const m={}; items.forEach(d=>{ const k=fn?fn(d):d[f]; if(k&&k!=='-') m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+    const byDiv=cnt('divisi'), byTk=cnt(null,d=>effectiveTingkat(d)), byPic=cnt(null,d=>picOf(d)), byLok=cnt('lokasi');
+    const byEng=cnt(null,d=>d.engineType&&d.engineType!=='-'&&d.engineCode&&d.engineCode!=='-'?`${d.engineType} ${d.engineCode}`:null);
+    const byIrr=cnt(null,d=>d.irrType&&d.irrType!=='-'&&d.irrCode&&d.irrCode!=='-'?`${d.irrType} ${d.irrCode}`:null);
+    const spAll={}, spOpen={}; items.forEach(d=>{ if(d.sparepart&&d.sparepart!=='-') d.sparepart.split(/;\s*/).forEach(x=>{ x=x.trim(); if(!x) return; spAll[x]=(spAll[x]||0)+1; if(d.status!=='Selesai') spOpen[x]=(spOpen[x]||0)+1; }); });
+    const sp=Object.entries(spAll).sort((a,b)=>b[1]-a[1]);
+    const withPr=items.filter(d=>d.status!=='Selesai'&&d.prNumber).length;
+    // tren per bulan (6 bulan terakhir yang ada datanya)
+    const byMon={}; items.forEach(d=>{ const k=(d.tanggalInspeksi||'').slice(0,7); if(k) byMon[k]=(byMon[k]||0)+1; });
+    const mons=Object.keys(byMon).sort().slice(-6); const monMax=Math.max(1,...mons.map(k=>byMon[k]));
+    const fmtMon=k=>{ const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); };
+    // lokasi berulang & laporan terbuka terlama
+    const recur=byLok.filter(([,c])=>c>=2);
+    const now=Date.now();
+    const oldest=items.filter(d=>d.status!=='Selesai').sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).slice(0,5);
+    const days=d=>Math.max(0,Math.floor((now-new Date(d.timestamp).getTime())/86400000));
+    const bar=(label,c,tot,color)=>`<div class="flex items-center gap-2 text-[11px] py-0.5"><span class="w-28 truncate text-slate-600" title="${escapeHtml(label)}">${escapeHtml(label)}</span><div class="flex-1 h-2 rounded bg-slate-100 overflow-hidden"><span class="block h-full rounded" style="width:${tot?Math.round(c/tot*100):0}%;background:${color}"></span></div><b class="w-8 text-right text-slate-700">${c}</b></div>`;
+    const sec=(title,icon,inner)=>`<div class="rounded-xl border border-slate-100 p-3"><div class="text-[11px] font-bold text-slate-700 mb-1.5"><i class="fas ${icon} mr-1"></i>${title}</div>${inner||'<span class="text-[11px] text-slate-400">—</span>'}</div>`;
+    const TK_COLOR={Berat:'#ef4444',Sedang:'#f59e0b',Ringan:'#10b981'};
+    ttl.innerHTML=`<i class="fas fa-bug mr-2 text-slate-400"></i>${escapeHtml(name)} <span class="text-slate-400 font-normal text-sm">· ${n} laporan</span>`;
+    const scopeBtn=(k,l)=>`<button type="button" onclick="openDamageDetail._scope='${k}'; openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold ${ (openDamageDetail._scope==='all')===(k==='all') ? 'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${l}</button>`;
+    box.innerHTML=`
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="flex items-center gap-1">${scopeBtn('filter',`Sesuai filter (${inFilter.length})`)}${scopeBtn('all',`Semua data (${all.length})`)}</div>
+        <button type="button" onclick="state.damage=['${escapeHtml(name).replace(/'/g,"\\'")}']; populateMultiSelect('damageFilter', damageOptions(), state.damage); applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke jenis ini</button>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+        <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Total</div><div class="text-xl font-bold text-slate-800">${n}</div></div>
+        <div class="rounded-lg p-2.5 ${pct>60?'bg-red-50':pct>30?'bg-amber-50':'bg-emerald-50'}"><div class="text-[9px] font-bold text-slate-400 uppercase">Belum ditangani</div><div class="text-xl font-bold ${pct>60?'text-red-700':pct>30?'text-amber-700':'text-emerald-700'}">${pending} <span class="text-xs font-semibold">(${pct}%)</span></div><div class="text-[10px] text-slate-500">${withPr} sudah ada nomor PR</div></div>
+        <div class="rounded-lg bg-emerald-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Selesai</div><div class="text-xl font-bold text-emerald-700">${done}</div></div>
+        <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Lokasi terdampak</div><div class="text-xl font-bold text-slate-800">${byLok.length}</div><div class="text-[10px] text-slate-500">${recur.length} lokasi berulang (≥2×)</div></div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+        ${sec('Tren per bulan','fa-chart-column', mons.length?`<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t bg-blue-500" style="height:${Math.round(byMon[k]/monMax*100)}%"></div><span class="text-[9px] text-slate-500">${fmtMon(k)}</span></div>`).join('')}</div>`:'')}
+        ${sec('Tingkat kerusakan','fa-gauge-high', byTk.map(([k,c])=>bar(k,c,n,TK_COLOR[k]||'#64748b')).join(''))}
+        ${sec('Per divisi','fa-building', byDiv.map(([k,c])=>bar(k,c,n,DIV_COLORS[k]||'#6366f1')).join(''))}
+        ${sec('PIC penanganan','fa-user-gear', byPic.map(([k,c])=>bar(k,c,n,'#8b5cf6')).join(''))}
+        ${sec(`Lokasi terdampak (${byLok.length})`,'fa-location-dot', byLok.length?`<div class="flex flex-wrap gap-1 max-h-36 overflow-y-auto">${byLok.map(([k,c])=>`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${c>=3?'bg-red-50 text-red-700':c>=2?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-700'}">${escapeHtml(k)} <span class="opacity-60">×${c}</span></span>`).join('')}</div>`:'')}
+        ${sec(`Sparepart dibutuhkan (${sp.length})`,'fa-cog', sp.length?`<div class="max-h-36 overflow-y-auto">${sp.map(([k,c])=>`<div class="flex items-center justify-between text-[11px] py-0.5 border-b border-slate-50"><span class="text-slate-700">${escapeHtml(k)}</span><span><b>${c}</b>${spOpen[k]?` <span class="text-amber-700">(${spOpen[k]} belum)</span>`:''}</span></div>`).join('')}</div>`:'')}
+        ${sec(`Engine terdampak (${byEng.length})`,'fa-oil-can', byEng.length?`<div class="flex flex-wrap gap-1 max-h-28 overflow-y-auto">${byEng.map(([k,c])=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">${escapeHtml(k)} <span class="opacity-60">×${c}</span></span>`).join('')}</div>`:'')}
+        ${sec(`Irrigator terdampak (${byIrr.length})`,'fa-water', byIrr.length?`<div class="flex flex-wrap gap-1 max-h-28 overflow-y-auto">${byIrr.map(([k,c])=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">${escapeHtml(k)} <span class="opacity-60">×${c}</span></span>`).join('')}</div>`:'')}
+      </div>
+      ${oldest.length?`<div class="rounded-xl border border-red-100 bg-red-50/40 p-3 mb-3"><div class="text-[11px] font-bold text-red-700 mb-1.5"><i class="fas fa-hourglass-half mr-1"></i>Belum ditangani paling lama</div>${oldest.map(d=>`<div class="flex items-center justify-between text-[11px] py-1 border-b border-red-100/60 last:border-0"><span><b>${escapeHtml(d.lokasi)}</b> · ${escapeHtml(d.keterangan||'-')}</span><span class="text-red-700 font-semibold whitespace-nowrap ml-2">${days(d)} hari</span></div>`).join('')}</div>`:''}
+      <div class="text-[11px] font-bold text-slate-700 mb-1.5"><i class="fas fa-list mr-1"></i>Semua laporan (${n}) — terbaru dulu</div>
+      <div class="space-y-1.5">${items.map(d=>{ const ri=rawData.indexOf(d); return `
+        <div class="p-2.5 rounded-lg border border-slate-100 bg-white text-[11px]">
+          <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+            <span class="font-semibold text-slate-800"><i class="fas fa-location-dot text-red-400 text-[9px] mr-1"></i>${escapeHtml(d.lokasi)} <span class="text-slate-400 font-normal">· ${escapeHtml(d.divisi)}${d.engine&&d.engine!=='-'?' · '+escapeHtml(d.engine):''}${d.irrigator&&d.irrigator!=='-'?' · '+escapeHtml(d.irrigator):''}</span></span>
+            <span class="flex items-center gap-1.5">${statusBadge(d)}<span class="text-[10px] text-slate-400">${fmtDateShort(d.timestamp)}</span>${ri>=0?`<button type="button" onclick="closeModal('dmgDetailModal'); openEditModalRaw(${ri})" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px]"><i class="fas fa-pen"></i></button>`:''}</span>
+          </div>
+          ${d.keterangan?`<div class="text-slate-600">${escapeHtml(d.keterangan)}</div>`:''}
+          <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-[10px] text-slate-500">
+            <span><i class="fas fa-gauge-high mr-0.5"></i>${escapeHtml(effectiveTingkat(d)||'-')}</span>
+            ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700"><i class="fas fa-cog mr-0.5"></i>${escapeHtml(d.sparepart)}</span>`:''}
+            ${d.prNumber?`<span><i class="fas fa-file-invoice mr-0.5"></i>PR ${escapeHtml(d.prNumber)}</span>`:''}
+            <span><i class="fas fa-user mr-0.5"></i>${escapeHtml(picOf(d))}</span>
+          </div>
+        </div>`; }).join('')}</div>`;
+    openModal('dmgDetailModal');
 }
 function showDivisiDetails(dv){
     const id = 'divlist-'+dv.replace(/\W/g,'_');
@@ -2539,7 +2609,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
         const latest = u.latest;
         const firstDt = fmtDateShort(u.firstSeen.timestamp);
         const lastDt = fmtDateShort(latest.timestamp);
-        return `<div class="card p-4 card-hover">
+        return `<div class="card p-4 card-hover cursor-pointer" onclick="if(!event.target.closest('details,button,a')) openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" title="Klik untuk detail lengkap ${escapeHtml(name)}">
             <div class="flex items-start justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs flex-shrink-0 font-bold" style="background:${color}">${escapeHtml(u.type)}</div>

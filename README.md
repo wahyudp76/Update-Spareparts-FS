@@ -285,3 +285,6 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 - Ambang kepadatan per hari: **< 15 laporan = aman** (putih), **15–25 = waspada** (kuning), **> 25 = bahaya** (merah). Angka di setiap tanggal = jumlah laporan.
 - Ringkasan bulan: total & tren vs bulan lalu, rata-rata/hari, jumlah hari padat (bahaya/waspada), belum ditangani (+ tingkat Berat), hari tersibuk (klik → detail), kerusakan & lokasi terbanyak.
 - Detail hari menampilkan label Aman/Waspada/Bahaya serta ringkasan Belum/Selesai/Berat sebelum daftar laporan.
+
+## Detail per Jenis Kerusakan (v36)
+Klik kartu jenis kerusakan (atau tombol **Detail lengkap**) di tab *Jenis Kerusakan* untuk membuka modal: ringkasan total/belum/selesai/lokasi, tren per bulan, tingkat kerusakan, per divisi, PIC, seluruh lokasi terdampak (merah ≥3×, kuning 2×), seluruh sparepart (dengan jumlah yang masih belum ditangani), engine & irrigator terdampak, 5 laporan terbuka terlama, dan daftar lengkap semua laporan (tombol ✎ membuka form Edit). Cakupan bisa "Sesuai filter" atau "Semua data"; tombol **Filter dashboard ke jenis ini** menerapkan filter ke seluruh tab.
