@@ -1538,6 +1538,64 @@ function mkDoughnutOpts(opts={}){
     };
 }
 
+// Bucket waktu untuk grafik tren (ikut periode/filter aktif): {groups (template berisi 0), getKey, labelFmt}
+function buildTrendBuckets(){
+    const groups={}; let getKey;
+    let mode = state.period;
+    if (state.selectedDate) mode = 'daily';
+    const p2 = n => String(n).padStart(2,'0');
+    const dayKey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const monKey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}`;
+    const fmtDay = k => { const [y,m,dd]=k.split('-'); return new Date(+y,+m-1,+dd).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}); };
+    const fmtMon = k => { const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('id-ID',{month:'short',year:'numeric'}); };
+    let labelFmt = k => k;
+    // Rentang tanggal aktual dari data (untuk mode "Semua" / custom panjang)
+    const times = filteredData.map(d=>new Date(d.timestamp).getTime()).filter(t=>!isNaN(t));
+    const dMin = times.length ? new Date(Math.min(...times)) : null;
+    const dMax = times.length ? new Date(Math.max(...times)) : null;
+    const spanDays = dMin ? Math.round((startOfDay(dMax)-startOfDay(dMin))/86400000)+1 : 0;
+
+    if (mode === 'daily' && !state.selectedDate) {
+        getKey = d => String(d.getHours()).padStart(2,'0');
+        for (let h=0;h<24;h++) groups[String(h).padStart(2,'0')]=0;
+        labelFmt = k => k+':00';
+    } else if (mode === 'daily' && state.selectedDate) {
+        getKey = d => String(d.getHours()).padStart(2,'0');
+        for (let h=0;h<24;h++) groups[String(h).padStart(2,'0')]=0;
+        labelFmt = k => k+':00';
+    } else if (mode === 'weekly') {
+        // Minggu berjalan: 7 hari dari Senin, key per tanggal agar tidak
+        // tercampur antar minggu.
+        const ws = startOfWeek(new Date());
+        for (let i=0;i<7;i++){ const x=new Date(ws); x.setDate(ws.getDate()+i); groups[dayKey(x)]=0; }
+        getKey = dayKey;
+        labelFmt = k => { const [y,m,dd]=k.split('-'); return ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][new Date(+y,+m-1,+dd).getDay()]+' '+dd; };
+    } else if (mode === 'monthly') {
+        const ref = new Date();
+        const dim = new Date(ref.getFullYear(), ref.getMonth()+1,0).getDate();
+        for (let i=1;i<=dim;i++) groups[`${ref.getFullYear()}-${p2(ref.getMonth()+1)}-${p2(i)}`]=0;
+        getKey = dayKey; labelFmt = k => String(+k.split('-')[2]);
+    } else {
+        // "Semua" atau custom: pilih granularitas dari rentang data/filter.
+        // SEBELUMNYA: mode "Semua" selalu per-BULAN → jika semua data ada di
+        // 1 bulan, hanya 1 titik → garis tidak tergambar (grafik kosong).
+        let from = dMin, to = dMax;
+        if (state.period==='custom' && state.dateFrom && state.dateTo) {
+            from = new Date(state.dateFrom+'T00:00:00'); to = new Date(state.dateTo+'T23:59:59');
+        }
+        const span = from ? Math.round((startOfDay(to)-startOfDay(from))/86400000)+1 : 0;
+        if (from && span <= 120) {
+            // per hari, isi hari kosong dengan 0 agar garis kontinu
+            for (let x=startOfDay(from); x<=to; x.setDate(x.getDate()+1)) groups[dayKey(x)]=0;
+            getKey = dayKey; labelFmt = fmtDay;
+        } else if (from) {
+            for (let x=startOfMonth(from); x<=to; x.setMonth(x.getMonth()+1)) groups[monKey(x)]=0;
+            getKey = monKey; labelFmt = fmtMon;
+        } else { getKey = dayKey; labelFmt = fmtDay; }
+    }
+    return {groups, getKey, labelFmt};
+}
+
 function renderCharts() {
     // Destroy dulu semua
     ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType','pic'].forEach(k=>dk(k));
@@ -1547,59 +1605,7 @@ function renderCharts() {
     // ==== TREND (overview tab) ====
     const trendEl = document.getElementById('trendChart');
     if(trendEl && isElVisible(trendEl)){
-        const groups={}; let getKey;
-        let mode = state.period;
-        if (state.selectedDate) mode = 'daily';
-        const p2 = n => String(n).padStart(2,'0');
-        const dayKey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
-        const monKey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}`;
-        const fmtDay = k => { const [y,m,dd]=k.split('-'); return new Date(+y,+m-1,+dd).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}); };
-        const fmtMon = k => { const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('id-ID',{month:'short',year:'numeric'}); };
-        let labelFmt = k => k;
-        // Rentang tanggal aktual dari data (untuk mode "Semua" / custom panjang)
-        const times = filteredData.map(d=>new Date(d.timestamp).getTime()).filter(t=>!isNaN(t));
-        const dMin = times.length ? new Date(Math.min(...times)) : null;
-        const dMax = times.length ? new Date(Math.max(...times)) : null;
-        const spanDays = dMin ? Math.round((startOfDay(dMax)-startOfDay(dMin))/86400000)+1 : 0;
-
-        if (mode === 'daily' && !state.selectedDate) {
-            getKey = d => String(d.getHours()).padStart(2,'0');
-            for (let h=0;h<24;h++) groups[String(h).padStart(2,'0')]=0;
-            labelFmt = k => k+':00';
-        } else if (mode === 'daily' && state.selectedDate) {
-            getKey = d => String(d.getHours()).padStart(2,'0');
-            for (let h=0;h<24;h++) groups[String(h).padStart(2,'0')]=0;
-            labelFmt = k => k+':00';
-        } else if (mode === 'weekly') {
-            // Minggu berjalan: 7 hari dari Senin, key per tanggal agar tidak
-            // tercampur antar minggu.
-            const ws = startOfWeek(new Date());
-            for (let i=0;i<7;i++){ const x=new Date(ws); x.setDate(ws.getDate()+i); groups[dayKey(x)]=0; }
-            getKey = dayKey;
-            labelFmt = k => { const [y,m,dd]=k.split('-'); return ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][new Date(+y,+m-1,+dd).getDay()]+' '+dd; };
-        } else if (mode === 'monthly') {
-            const ref = new Date();
-            const dim = new Date(ref.getFullYear(), ref.getMonth()+1,0).getDate();
-            for (let i=1;i<=dim;i++) groups[`${ref.getFullYear()}-${p2(ref.getMonth()+1)}-${p2(i)}`]=0;
-            getKey = dayKey; labelFmt = k => String(+k.split('-')[2]);
-        } else {
-            // "Semua" atau custom: pilih granularitas dari rentang data/filter.
-            // SEBELUMNYA: mode "Semua" selalu per-BULAN → jika semua data ada di
-            // 1 bulan, hanya 1 titik → garis tidak tergambar (grafik kosong).
-            let from = dMin, to = dMax;
-            if (state.period==='custom' && state.dateFrom && state.dateTo) {
-                from = new Date(state.dateFrom+'T00:00:00'); to = new Date(state.dateTo+'T23:59:59');
-            }
-            const span = from ? Math.round((startOfDay(to)-startOfDay(from))/86400000)+1 : 0;
-            if (from && span <= 120) {
-                // per hari, isi hari kosong dengan 0 agar garis kontinu
-                for (let x=startOfDay(from); x<=to; x.setDate(x.getDate()+1)) groups[dayKey(x)]=0;
-                getKey = dayKey; labelFmt = fmtDay;
-            } else if (from) {
-                for (let x=startOfMonth(from); x<=to; x.setMonth(x.getMonth()+1)) groups[monKey(x)]=0;
-                getKey = monKey; labelFmt = fmtMon;
-            } else { getKey = dayKey; labelFmt = fmtDay; }
-        }
+        const {groups, getKey, labelFmt} = buildTrendBuckets();
         filteredData.forEach(d=>{const t=new Date(d.timestamp); if(isNaN(t)) return; const k=getKey(t); groups[k]=(groups[k]||0)+1;});
         const keys = Object.keys(groups).sort();
         const labels = keys.map(labelFmt);
@@ -1732,25 +1738,40 @@ function renderCharts() {
     }
 
     // ==== LOKASI H-BAR (divisi tab) ====
+    // ==== TREN KERUSAKAN PER DIVISI (tab divisi) ====
     const lokasiEl = document.getElementById('lokasiChart');
     if(lokasiEl && isElVisible(lokasiEl)){
-        const lg={};
-        filteredData.forEach(d=>{if(d.lokasi&&d.lokasi!=='-')lg[d.lokasi]=(lg[d.lokasi]||0)+1;});
-        const ls=Object.entries(lg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        const {groups, getKey, labelFmt} = buildTrendBuckets();
+        const divs=[...new Set(filteredData.map(d=>d.divisi).filter(v=>v&&v!=='-'))].sort();
+        const per={}; divs.forEach(dv=>per[dv]={...groups});
+        filteredData.forEach(d=>{ if(!per[d.divisi]) return; const t=new Date(d.timestamp); if(isNaN(t)) return; const k=getKey(t); per[d.divisi][k]=(per[d.divisi][k]||0)+1; });
+        const keys=[...new Set(divs.flatMap(dv=>Object.keys(per[dv])))].sort();
+        const labels=keys.map(labelFmt);
+        const showPoints = keys.length <= 31;
         const ctx=lokasiEl.getContext('2d');
-        if(ctx){
+        if(ctx && divs.length){
             charts.lokasi=new Chart(ctx,{
-                type:'bar',
-                data:{labels:ls.map(x=>x[0]),datasets:[{
-                    label:'Jumlah',data:ls.map(x=>x[1]),
-                    backgroundColor:ls.map((_,i)=>CC[i%CC.length]),
-                    borderRadius:6,borderSkipped:false,borderWidth:0,maxBarThickness:22
-                }]},
-                options:mkOpts(true,{indexAxis:'y',plugins:{legend:{display:false}},scales:{
-                    x:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true},
-                    y:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10}},border:{display:false}}
-                }})
+                type:'line',
+                data:{labels,datasets:divs.map(dv=>{ const c=DIV_COLORS[dv]||'#6366f1'; return {label:dv,data:keys.map(k=>per[dv][k]||0),borderColor:c,backgroundColor:c+'22',borderWidth:2.2,fill:false,tension:0.35,pointRadius:showPoints?2.5:0,pointBackgroundColor:c,pointHoverRadius:5,pointHoverBorderColor:'#fff',pointHoverBorderWidth:2}; })},
+                options:mkOpts(false,{
+                    interaction:{mode:'index',intersect:false},
+                    plugins:{legend:{display:true,position:'top',labels:{boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'circle',font:{size:10},padding:10}},
+                             valueLabels: keys.length<=16 ? undefined : false,   // label angka hanya bila titik sedikit (biar tidak ramai)
+                             tooltip:{backgroundColor:'#0f172a',padding:10,cornerRadius:8,titleFont:{size:11,weight:'600'},bodyFont:{size:11},footerFont:{size:10,weight:'400'},callbacks:{footer:(items)=>'Total: '+items.reduce((a,x)=>a+x.parsed.y,0)}}},
+                    scales:{x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:keys.length<=16?keys.length:12},border:{display:false}},
+                            y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'10%'}}
+                })
             });
+        } else if(ctx){ ctx.clearRect(0,0,lokasiEl.width,lokasiEl.height); }
+        const sub=document.getElementById('divTrendSub');
+        if(sub){
+            // Ringkasan: total per divisi + arah tren (periode terakhir vs sebelumnya yang berisi data)
+            const parts=divs.map(dv=>{ const vals=keys.map(k=>per[dv][k]||0); const tot=vals.reduce((a,b)=>a+b,0);
+                const nz=vals.map((v,i)=>[i,v]).filter(x=>x[1]>0); let arrow='';
+                if(nz.length>=2){ const last=nz[nz.length-1][1], prev=nz[nz.length-2][1]; arrow = last>prev?`<i class="fas fa-arrow-trend-up text-red-500"></i>`:last<prev?`<i class="fas fa-arrow-trend-down text-emerald-500"></i>`:`<i class="fas fa-minus text-slate-400"></i>`; }
+                const pk=vals.reduce((m,v,i)=>v>vals[m]?i:m,0);
+                return `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${DIV_COLORS[dv]||'#6366f1'}"></span><b>${dv}</b> ${tot}${arrow?' '+arrow:''}${vals[pk]>0?` <span class="text-slate-400">(puncak ${labels[pk]}: ${vals[pk]})</span>`:''}</span>`; });
+            sub.innerHTML = parts.length ? parts.join('<span class="mx-1.5 text-slate-300">·</span>') : 'Tidak ada data pada filter ini';
         }
     }
 

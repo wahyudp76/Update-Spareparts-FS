@@ -10,6 +10,7 @@ Dashboard interaktif untuk memonitor kerusakan unit irigasi dan kebutuhan sparep
 
 - 📊 **7 Visualisasi Interaktif** — Tren kerusakan, distribusi status (doughnut), top unit (horizontal bar), sparepart needs, top irrigator, dan kategori kerusakan (polar area).
 - 🗓️ **Filter Periode** — **Harian**, **Mingguan**, **Bulanan**, **Semua data**, plus custom date range.
+- 📈 **Tren per Divisi** — tab Per Divisi menampilkan grafik garis jumlah laporan per periode, satu garis per divisi (granularitas mengikuti filter periode), dengan ringkasan total, arah tren, dan puncak per divisi.
 - 🔍 **Filter Lanjutan** — Filter Unit, Status (Belum Ditangani / Selesai), dan pencarian keyword global.
 - ⚠️ **Status Badge** — ⚪ Abu = Belum Ditangani, 🟢 Hijau = Selesai (Nomor PR ditampilkan sebagai info tambahan, bukan status).
 - 📋 **Tabel Detail** — Sortable columns, pagination (15 data per halaman), pencarian real-time.

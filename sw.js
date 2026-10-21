@@ -1,5 +1,5 @@
 // PG2 Dashboard service worker — network-first with robust cache-busting
-const CACHE = 'pg2-dashboard-v37';
+const CACHE = 'pg2-dashboard-v38';
 const ASSETS = [
   './',
   './index.html',
