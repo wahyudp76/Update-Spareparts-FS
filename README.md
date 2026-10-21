@@ -280,3 +280,8 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 - Uji kebenaran: 589/589 baris sheet = web, 0 ganda/hilang; prefill form Edit cocok 100% untuk sampel 16 baris; filter Status/Divisi/pencarian, kalender (432 laporan Okt = data), paginasi (40 hal × 15) semuanya konsisten.
 - **Bug kritis diperbaiki:** batas atas filter periode adalah "jam sekarang" → laporan dengan jam lebih besar dari jam perangkat (beda jam antar HP, atau laporan web yang timestamp-nya 12:00) **tidak tampil** di "Semua data"/Harian (23 laporan hari ini tersembunyi saat diuji). Kini batasnya akhir hari.
 - **Bug edit diperbaiki:** baris dengan jenis kerusakan lama `Panel` tidak bisa diedit ("Baris tidak ditemukan") karena web mengirim nama alias `Panel Listrik` untuk pencocokan. Web kini mengirim nilai asli sheet (`__rawDamage`); proxy v10 juga toleran alias. Dua baris `Panel` di sheet sudah dirapikan menjadi `Panel Listrik`.
+
+## Tab Kalender (v35)
+- Ambang kepadatan per hari: **< 15 laporan = aman** (putih), **15–25 = waspada** (kuning), **> 25 = bahaya** (merah). Angka di setiap tanggal = jumlah laporan.
+- Ringkasan bulan: total & tren vs bulan lalu, rata-rata/hari, jumlah hari padat (bahaya/waspada), belum ditangani (+ tingkat Berat), hari tersibuk (klik → detail), kerusakan & lokasi terbanyak.
+- Detail hari menampilkan label Aman/Waspada/Bahaya serta ringkasan Belum/Selesai/Berat sebelum daftar laporan.

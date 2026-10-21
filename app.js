@@ -2654,6 +2654,9 @@ function renderIrrTab(){
 }
 
 // ---------- Calendar ----------
+// Ambang kepadatan laporan per hari (kalender): <15 aman, 15–25 waspada (kuning), >25 bahaya (merah)
+const CAL_WARN = 15, CAL_DANGER = 25;
+const calLevel = n => n > CAL_DANGER ? 'danger' : n >= CAL_WARN ? 'warn' : 'safe';
 function renderCalendar() {
     const grid=document.getElementById('calendarGrid');
     if(!grid) return;
@@ -2673,17 +2676,63 @@ function renderCalendar() {
         const date=new Date(state.calMonth.getFullYear(),state.calMonth.getMonth(),d);
         const iso=isoDate(date);
         const count=byDate[iso]||0;
+        const lv=calLevel(count);
         let cls='cal-day';
         if(count>0) cls+=' has-data';
-        if(count>=3) cls+=' has-many';
+        if(count>0 && lv==='warn') cls+=' lv-warn';
+        if(count>0 && lv==='danger') cls+=' lv-danger';
         if(iso===todayIso) cls+=' today';
         if(iso===state.selectedDate) cls+=' selected';
-        html+=`<div class="${cls}" onclick="selectDate('${iso}')" title="${count?count+' laporan':'Tidak ada laporan'}">${d}${count>0?'<span class="cal-dot"></span>':''}</div>`;
+        const title = count ? `${count} laporan · ${lv==='danger'?'BAHAYA (>'+CAL_DANGER+')':lv==='warn'?'Waspada ('+CAL_WARN+'–'+CAL_DANGER+')':'Aman (<'+CAL_WARN+')'}` : 'Tidak ada laporan';
+        html+=`<div class="${cls}" onclick="selectDate('${iso}')" title="${title}"><span class="cal-num">${d}</span>${count>0?`<span class="cal-cnt">${count}</span>`:''}</div>`;
     }
     const totalCells=firstWeekday+daysInMonth;
     const nextCells=(7-(totalCells%7))%7;
     for(let i=1;i<=nextCells;i++) html+=`<div class="cal-day other-month">${i}</div>`;
     grid.innerHTML=html;
+    renderCalMonthSummary(byDate);
+}
+// Ringkasan bulan yang sedang ditampilkan di kalender
+function renderCalMonthSummary(byDate){
+    const box=document.getElementById('calMonthSummary'); if(!box) return;
+    const p2=n=>String(n).padStart(2,'0');
+    const y=state.calMonth.getFullYear(), m=state.calMonth.getMonth();
+    const ym=`${y}-${p2(m+1)}`;
+    const prev=new Date(y,m-1,1); const ymPrev=`${prev.getFullYear()}-${p2(prev.getMonth()+1)}`;
+    const items=rawData.filter(d=>d.tanggalInspeksi && d.tanggalInspeksi.startsWith(ym));
+    const prevItems=rawData.filter(d=>d.tanggalInspeksi && d.tanggalInspeksi.startsWith(ymPrev));
+    const days=Object.entries(byDate).filter(([k])=>k.startsWith(ym)).sort((a,b)=>b[1]-a[1]);
+    const nWarn=days.filter(([,c])=>calLevel(c)==='warn').length, nDanger=days.filter(([,c])=>calLevel(c)==='danger').length;
+    const activeDays=days.length;
+    const today=new Date(); const isCur = today.getFullYear()===y && today.getMonth()===m;
+    const elapsed = isCur ? today.getDate() : new Date(y,m+1,0).getDate();
+    const avg = elapsed ? (items.length/elapsed) : 0;
+    const open=items.filter(d=>d.status!=='Selesai').length;
+    const berat=items.filter(d=>d.status!=='Selesai' && effectiveTingkat(d)==='Berat').length;
+    const diff=items.length-prevItems.length; const pct=prevItems.length?Math.round(diff/prevItems.length*100):null;
+    const trend = !prevItems.length ? '<span class="text-slate-400">tidak ada data bulan lalu</span>'
+        : diff>0 ? `<span class="text-red-600 font-semibold"><i class="fas fa-arrow-trend-up mr-0.5"></i>+${diff} (${pct}%) vs bulan lalu</span>`
+        : diff<0 ? `<span class="text-emerald-600 font-semibold"><i class="fas fa-arrow-trend-down mr-0.5"></i>${diff} (${pct}%) vs bulan lalu</span>`
+        : '<span class="text-slate-500">sama dengan bulan lalu</span>';
+    const dmg={}; items.forEach(d=>{ if(d.damageType&&d.damageType!=='-') dmg[d.damageType]=(dmg[d.damageType]||0)+1; });
+    const topDmg=Object.entries(dmg).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const lok={}; items.forEach(d=>{ if(d.lokasi&&d.lokasi!=='-') lok[d.lokasi]=(lok[d.lokasi]||0)+1; });
+    const topLok=Object.entries(lok).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const busiest=days.slice(0,3);
+    const fmtD = iso => new Date(iso+'T00:00:00').toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
+    const chip=(c,lv)=>`<span class="px-1.5 py-0.5 rounded font-bold text-[10px] ${lv==='danger'?'bg-red-100 text-red-700':lv==='warn'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-600'}">${c}</span>`;
+    box.innerHTML = `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+        <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Laporan bulan ini</div><div class="text-xl font-bold text-slate-800">${items.length}</div><div class="text-[10px]">${trend}</div></div>
+        <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Rata-rata / hari</div><div class="text-xl font-bold text-slate-800">${avg.toFixed(1)}</div><div class="text-[10px] text-slate-500">${activeDays} hari ada laporan${isCur?` · ${elapsed} hari berjalan`:''}</div></div>
+        <div class="rounded-lg p-2.5 ${nDanger?'bg-red-50':nWarn?'bg-amber-50':'bg-emerald-50'}"><div class="text-[9px] font-bold text-slate-400 uppercase">Hari padat</div><div class="text-xl font-bold ${nDanger?'text-red-700':nWarn?'text-amber-700':'text-emerald-700'}">${nWarn+nDanger}</div><div class="text-[10px] text-slate-600">${nDanger} bahaya (>${CAL_DANGER}) · ${nWarn} waspada (${CAL_WARN}–${CAL_DANGER})</div></div>
+        <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Belum ditangani</div><div class="text-xl font-bold ${open?'text-slate-800':'text-emerald-700'}">${open}</div><div class="text-[10px] text-slate-500">${berat} di antaranya tingkat Berat</div></div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-fire text-red-500 mr-1"></i>Hari tersibuk</div>${busiest.length?busiest.map(([k,c])=>`<div class="flex justify-between items-center py-0.5 cursor-pointer hover:text-blue-700" onclick="selectDate('${k}')"><span>${fmtD(k)}</span>${chip(c,calLevel(c))}</div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
+        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-screwdriver-wrench text-amber-500 mr-1"></i>Kerusakan terbanyak</div>${topDmg.length?topDmg.map(([k,c])=>`<div class="flex justify-between py-0.5"><span>${escapeHtml(k)}</span><b>${c}</b></div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
+        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-location-dot text-blue-500 mr-1"></i>Lokasi terbanyak</div>${topLok.length?topLok.map(([k,c])=>`<div class="flex justify-between py-0.5"><span>${escapeHtml(k)}</span><b>${c}</b></div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
+      </div>`;
 }
 function changeCalMonth(delta){
     state.calMonth = new Date(state.calMonth.getFullYear(), state.calMonth.getMonth()+delta, 1);
@@ -2726,17 +2775,23 @@ function renderCalDayDetail(){
                     <i class="fas fa-calendar-day text-blue-500 text-sm"></i>
                     <span class="text-sm font-medium text-slate-700">${new Date(dt).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</span>
                 </div>
-                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">${c}</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${calLevel(c)==='danger'?'bg-red-100 text-red-700':calLevel(c)==='warn'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-600'}">${c}</span>
             </div>`).join('');
         return;
     }
     const items=rawData.filter(d=>d.tanggalInspeksi===state.selectedDate);
-    label.textContent=`${fmtDate(state.selectedDate)} · ${items.length} laporan`;
+    const lvl=calLevel(items.length);
+    label.innerHTML=`${fmtDate(state.selectedDate)} · ${items.length} laporan <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${lvl==='danger'?'bg-red-100 text-red-700':lvl==='warn'?'bg-amber-100 text-amber-800':'bg-emerald-50 text-emerald-700'}">${lvl==='danger'?'Bahaya':lvl==='warn'?'Waspada':'Aman'}</span>`;
     if(items.length===0){
         box.innerHTML=`<div class="text-center py-10 text-slate-400 text-sm"><i class="fas fa-calendar-check text-3xl mb-2 text-emerald-300"></i><p>Tidak ada laporan<br>di tanggal ini ✓</p></div>`;
         return;
     }
-    box.innerHTML=items.map(d=>{
+    const dOpen=items.filter(d=>d.status!=='Selesai').length, dDone=items.length-dOpen, dBerat=items.filter(d=>effectiveTingkat(d)==='Berat').length;
+    const sum=`<div class="grid grid-cols-3 gap-1.5 mb-2 text-center">
+        <div class="rounded-md bg-slate-50 py-1.5"><div class="text-base font-bold text-slate-800">${dOpen}</div><div class="text-[9px] text-slate-500 uppercase">Belum</div></div>
+        <div class="rounded-md bg-emerald-50 py-1.5"><div class="text-base font-bold text-emerald-700">${dDone}</div><div class="text-[9px] text-slate-500 uppercase">Selesai</div></div>
+        <div class="rounded-md bg-red-50 py-1.5"><div class="text-base font-bold text-red-700">${dBerat}</div><div class="text-[9px] text-slate-500 uppercase">Berat</div></div></div>`;
+    box.innerHTML=sum+items.map(d=>{
         const badge = statusBadge(d);
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">

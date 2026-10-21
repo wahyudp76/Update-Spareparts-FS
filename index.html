@@ -19,8 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v34";</script>
-    <script src="config.js?v=34"></script>
+    <script>window.APP_VERSION="v35";</script>
+    <script src="config.js?v=35"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -79,18 +79,20 @@
         #filterPanel .ms-menu{z-index:60}
         #tabCard{position:relative;z-index:1}
         /* Calendar */
-        .cal-day{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:12.5px;border-radius:10px;position:relative;cursor:pointer;transition:all .15s;user-select:none;font-weight:500}
-        .cal-day:hover:not(.other-month){background:#eff6ff}
-        .cal-day.selected{background:linear-gradient(135deg,#2563eb,#1e40af)!important;color:#fff!important;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)}
-        .cal-day.has-data{color:#1e40af;background:#eff6ff}
-        .cal-day.has-many{background:#fef2f2;color:#b91c1c;font-weight:700}
+        .cal-day{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12.5px;border-radius:10px;position:relative;cursor:pointer;transition:all .15s;user-select:none;font-weight:500;border:1px solid transparent}
+        .cal-day:hover:not(.other-month){background:#f1f5f9}
+        .cal-day.has-data{background:#fff;border-color:#e2e8f0;color:#334155}
+        .cal-day.lv-warn{background:#fef3c7;border-color:#fcd34d;color:#92400e;font-weight:700}
+        .cal-day.lv-danger{background:#fee2e2;border-color:#f87171;color:#991b1b;font-weight:700}
+        .cal-day.selected{background:linear-gradient(135deg,#2563eb,#1e40af)!important;border-color:transparent!important;color:#fff!important;font-weight:700;box-shadow:0 4px 12px rgba(37,99,235,.35)}
         .cal-day.today{outline:2px solid #2563eb;outline-offset:-2px}
         .cal-day.other-month{color:#cbd5e1;cursor:default}
         .cal-day.other-month:hover{background:transparent}
-        .cal-dot{position:absolute;bottom:4px;width:3px;height:3px;border-radius:999px;background:#2563eb}
-        .cal-day.selected .cal-dot{background:#fff}
-        .cal-day.has-many .cal-dot{background:#dc2626}
-        .cal-day.selected.has-many .cal-dot{background:#fff}
+        .cal-cnt{font-size:9.5px;line-height:1;padding:1px 5px;border-radius:999px;background:#f1f5f9;color:#64748b;font-weight:700}
+        .cal-day.lv-warn .cal-cnt{background:#f59e0b;color:#fff}
+        .cal-day.lv-danger .cal-cnt{background:#dc2626;color:#fff}
+        .cal-day.selected .cal-cnt{background:rgba(255,255,255,.25);color:#fff}
+        @media (max-width:420px){.cal-day{font-size:11px}.cal-cnt{font-size:8.5px;padding:1px 4px}}
         .cal-wd{text-align:center;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;padding:6px 0}
         /* Multi-select */
         .ms-wrap{position:relative}
@@ -713,7 +715,7 @@
         <div class="tab-pane" id="tab-calendar">
             <div class="mb-3">
                 <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-calendar-alt text-indigo-500 mr-2"></i>Kalender Inspeksi</h2>
-                <p class="text-xs text-slate-500 ml-6">Klik tanggal untuk memfilter detail laporan hari itu.</p>
+                <p class="text-xs text-slate-500 ml-6">Angka di tiap tanggal = jumlah laporan. Klik tanggal untuk melihat detail &amp; memfilter seluruh dashboard ke hari itu.</p>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 <div class="card p-4 lg:col-span-2">
@@ -727,12 +729,14 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-3 mb-2 text-[10px] text-slate-500">
-                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></span>Ada laporan</span>
-                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>≥ 3 laporan</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300"></span>Aman (&lt; 15 laporan)</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-400"></span>Waspada (15–25)</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-100 border border-red-400"></span>Bahaya (&gt; 25)</span>
                         <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md border-2 border-blue-600 flex items-center justify-center text-[8px] font-bold">18</span>Hari ini</span>
                         <span class="flex items-center gap-1"><span class="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[8px] font-bold">15</span>Terpilih</span>
                     </div>
                     <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+                    <div id="calMonthSummary" class="mt-3 pt-3 border-t border-slate-100"></div>
                 </div>
                 <div class="card p-4">
                     <h3 class="font-bold text-slate-800 text-sm mb-2"></h3>
@@ -903,7 +907,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=34"></script>
+    <script src="app.js?v=35"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -914,7 +918,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v34').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v35').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
