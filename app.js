@@ -2164,7 +2164,7 @@ function renderDivisiTab(){
         const locCount = new Set(items.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
         const pctP = total?Math.round(pending/total*100):0;
         const active = items.length>0 || !state.divisi.length || state.divisi.includes(dv);
-        return `<div class="card overflow-hidden card-hover">
+        return `<div class="card overflow-hidden card-hover cursor-pointer" onclick="openDivisiDetail('${dv}')" title="Klik untuk detail lengkap divisi ${dv}">
             <div class="div-card ${DIV_CLASS[dv]||'pg2'} p-4 text-white">
                 <div class="flex items-center justify-between">
                     <div>
@@ -2188,6 +2188,7 @@ function renderDivisiTab(){
                     <span style="color:${DIV_COLORS[dv]||'#2563eb'}">${100-pctP}%</span>
                 </div>
                 <div class="pbar"><span style="width:${100-pctP}%;background:${DIV_COLORS[dv]||'#2563eb'}"></span></div>
+                <button type="button" onclick="event.stopPropagation(); openDivisiDetail('${dv}')" class="w-full mt-3 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${DIV_COLORS[dv]||'#2563eb'}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${dv}</button>
             </div>
         </div>`;
     }).join('');
@@ -2222,6 +2223,7 @@ function renderDivisiTab(){
                     <h3 class="font-bold text-slate-900 text-base">Divisi ${escapeHtml(dv)}</h3>
                     <p class="text-[11px] text-slate-500">${total} laporan · ${Object.keys(locMap).length} lokasi · ${pending} belum ditangani</p>
                 </div>
+                <button onclick="openDivisiDetail('${dv}')" class="text-[10px] font-semibold text-white px-3 py-1.5 rounded-lg transition hover:opacity-90" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap</button>
                 <button onclick="state.divisi=['${dv}'];repop('divisiFilter','divisi');applyFilters();" class="text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Fokus divisi ini</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2305,16 +2307,21 @@ function renderDivisiTab(){
     }).join('');
 }
 // ---------- Detail lengkap per jenis kerusakan (modal) ----------
-function openDamageDetail(name){
-    const all = rawData.filter(d=>((d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya')===name);
-    const inFilter = filteredData.filter(d=>((d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya')===name);
+const _dmgName = d => (d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya';
+function openDamageDetail(name){ openGroupDetail({kind:'damage', name, icon:'fa-bug', match:d=>_dmgName(d)===name, filterKey:'damage', filterEl:'damageFilter'}); }
+function openDivisiDetail(dv){ openGroupDetail({kind:'divisi', name:dv, title:'Divisi '+dv, icon:'fa-building', match:d=>d.divisi===dv, filterKey:'divisi', filterEl:'divisiFilter'}); }
+// Modal detail generik untuk satu kelompok laporan (jenis kerusakan / divisi)
+function openGroupDetail(cfg){
+    const name=cfg.name, kind=cfg.kind; const q=name.replace(/'/g,"\\'");
+    const all = rawData.filter(cfg.match);
+    const inFilter = filteredData.filter(cfg.match);
     const items = (openDamageDetail._scope==='all' ? all : inFilter).slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
     const box=document.getElementById('dmgDetailBody'); const ttl=document.getElementById('dmgDetailTitle'); if(!box||!ttl) return;
-    openDamageDetail._name=name;
+    openDamageDetail._name=name; openGroupDetail._cfg=cfg;
     const n=items.length, pending=items.filter(d=>d.status!=='Selesai').length, done=n-pending;
     const pct=n?Math.round(pending/n*100):0;
     const cnt=(f,fn)=>{ const m={}; items.forEach(d=>{ const k=fn?fn(d):d[f]; if(k&&k!=='-') m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
-    const byDiv=cnt('divisi'), byTk=cnt(null,d=>effectiveTingkat(d)), byPic=cnt(null,d=>picOf(d)), byLok=cnt('lokasi');
+    const byDiv=cnt('divisi'), byTk=cnt(null,d=>effectiveTingkat(d)), byPic=cnt(null,d=>picOf(d)), byLok=cnt('lokasi'), byDmg=cnt(null,_dmgName);
     const byEng=cnt(null,d=>d.engineType&&d.engineType!=='-'&&d.engineCode&&d.engineCode!=='-'?`${d.engineType} ${d.engineCode}`:null);
     const byIrr=cnt(null,d=>d.irrType&&d.irrType!=='-'&&d.irrCode&&d.irrCode!=='-'?`${d.irrType} ${d.irrCode}`:null);
     const spAll={}, spOpen={}; items.forEach(d=>{ if(d.sparepart&&d.sparepart!=='-') d.sparepart.split(/;\s*/).forEach(x=>{ x=x.trim(); if(!x) return; spAll[x]=(spAll[x]||0)+1; if(d.status!=='Selesai') spOpen[x]=(spOpen[x]||0)+1; }); });
@@ -2332,12 +2339,12 @@ function openDamageDetail(name){
     const bar=(label,c,tot,color)=>`<div class="flex items-center gap-2 text-[11px] py-0.5"><span class="w-28 truncate text-slate-600" title="${escapeHtml(label)}">${escapeHtml(label)}</span><div class="flex-1 h-2 rounded bg-slate-100 overflow-hidden"><span class="block h-full rounded" style="width:${tot?Math.round(c/tot*100):0}%;background:${color}"></span></div><b class="w-8 text-right text-slate-700">${c}</b></div>`;
     const sec=(title,icon,inner)=>`<div class="rounded-xl border border-slate-100 p-3"><div class="text-[11px] font-bold text-slate-700 mb-1.5"><i class="fas ${icon} mr-1"></i>${title}</div>${inner||'<span class="text-[11px] text-slate-400">—</span>'}</div>`;
     const TK_COLOR={Berat:'#ef4444',Sedang:'#f59e0b',Ringan:'#10b981'};
-    ttl.innerHTML=`<i class="fas fa-bug mr-2 text-slate-400"></i>${escapeHtml(name)} <span class="text-slate-400 font-normal text-sm">· ${n} laporan</span>`;
-    const scopeBtn=(k,l)=>`<button type="button" onclick="openDamageDetail._scope='${k}'; openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold ${ (openDamageDetail._scope==='all')===(k==='all') ? 'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${l}</button>`;
+    ttl.innerHTML=`<i class="fas ${cfg.icon||'fa-layer-group'} mr-2 text-slate-400"></i>${escapeHtml(cfg.title||name)} <span class="text-slate-400 font-normal text-sm">· ${n} laporan</span>`;
+    const scopeBtn=(k,l)=>`<button type="button" onclick="openDamageDetail._scope='${k}'; openGroupDetail(openGroupDetail._cfg)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold ${ (openDamageDetail._scope==='all')===(k==='all') ? 'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${l}</button>`;
     box.innerHTML=`
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="flex items-center gap-1">${scopeBtn('filter',`Sesuai filter (${inFilter.length})`)}${scopeBtn('all',`Semua data (${all.length})`)}</div>
-        <button type="button" onclick="state.damage=['${escapeHtml(name).replace(/'/g,"\\'")}']; populateMultiSelect('damageFilter', damageOptions(), state.damage); applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke jenis ini</button>
+        <button type="button" onclick="state.${cfg.filterKey}=['${escapeHtml(q)}']; repop('${cfg.filterEl}','${cfg.filterKey}'); applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(cfg.title||name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke ${kind==='divisi'?'divisi':'jenis'} ini</button>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
         <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Total</div><div class="text-xl font-bold text-slate-800">${n}</div></div>
@@ -2348,7 +2355,7 @@ function openDamageDetail(name){
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
         ${sec('Tren per bulan','fa-chart-column', mons.length?`<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t bg-blue-500" style="height:${Math.round(byMon[k]/monMax*100)}%"></div><span class="text-[9px] text-slate-500">${fmtMon(k)}</span></div>`).join('')}</div>`:'')}
         ${sec('Tingkat kerusakan','fa-gauge-high', byTk.map(([k,c])=>bar(k,c,n,TK_COLOR[k]||'#64748b')).join(''))}
-        ${sec('Per divisi','fa-building', byDiv.map(([k,c])=>bar(k,c,n,DIV_COLORS[k]||'#6366f1')).join(''))}
+        ${kind==='divisi' ? sec(`Jenis kerusakan (${byDmg.length})`,'fa-bug', `<div class="max-h-40 overflow-y-auto pr-1">${byDmg.map(([k,c],i)=>`<div class="cursor-pointer hover:bg-slate-50 rounded" onclick="openDamageDetail('${escapeHtml(k).replace(/'/g,"\\'")}')">${bar(k,c,n,CC[i%CC.length])}</div>`).join('')}</div>`) : sec('Per divisi','fa-building', byDiv.map(([k,c])=>bar(k,c,n,DIV_COLORS[k]||'#6366f1')).join(''))}
         ${sec('PIC penanganan','fa-user-gear', byPic.map(([k,c])=>bar(k,c,n,'#8b5cf6')).join(''))}
         ${sec(`Lokasi terdampak (${byLok.length})`,'fa-location-dot', byLok.length?`<div class="flex flex-wrap gap-1 max-h-36 overflow-y-auto">${byLok.map(([k,c])=>`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${c>=3?'bg-red-50 text-red-700':c>=2?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-700'}">${escapeHtml(k)} <span class="opacity-60">×${c}</span></span>`).join('')}</div>`:'')}
         ${sec(`Sparepart dibutuhkan (${sp.length})`,'fa-cog', sp.length?`<div class="max-h-36 overflow-y-auto">${sp.map(([k,c])=>`<div class="flex items-center justify-between text-[11px] py-0.5 border-b border-slate-50"><span class="text-slate-700">${escapeHtml(k)}</span><span><b>${c}</b>${spOpen[k]?` <span class="text-amber-700">(${spOpen[k]} belum)</span>`:''}</span></div>`).join('')}</div>`:'')}

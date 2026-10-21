@@ -288,3 +288,6 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 
 ## Detail per Jenis Kerusakan (v36)
 Klik kartu jenis kerusakan (atau tombol **Detail lengkap**) di tab *Jenis Kerusakan* untuk membuka modal: ringkasan total/belum/selesai/lokasi, tren per bulan, tingkat kerusakan, per divisi, PIC, seluruh lokasi terdampak (merah ≥3×, kuning 2×), seluruh sparepart (dengan jumlah yang masih belum ditangani), engine & irrigator terdampak, 5 laporan terbuka terlama, dan daftar lengkap semua laporan (tombol ✎ membuka form Edit). Cakupan bisa "Sesuai filter" atau "Semua data"; tombol **Filter dashboard ke jenis ini** menerapkan filter ke seluruh tab.
+
+## Detail per Divisi (v37)
+Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* membuka modal detail yang sama informatifnya dengan jenis kerusakan: ringkasan, tren per bulan, tingkat, **jenis kerusakan** (klik → menyelam ke detail jenis tersebut), PIC, seluruh lokasi, sparepart (+ belum ditangani), engine & irrigator terdampak, terbuka terlama, dan semua laporan dengan tombol Edit. Tombol **Filter dashboard ke divisi ini** tersedia.
