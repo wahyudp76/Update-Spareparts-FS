@@ -275,3 +275,8 @@ Setiap record diperiksa setelah sync (dari spreadsheet maupun hasil edit web): a
 - Uji tulis langsung (lokasi uji `ZZTEST`): tambah → verifikasi sheet → coba tambah ganda (ditolak proxy v9, tetap 1 baris) → edit → hapus; semua konsisten web ↔ sheet dalam ≤3,5 dtk.
 - Perbaikan: `lokCanon()` — lokasi bernama disimpan rapi (`Bengkel PG2`, bukan `BENGKELPG2`); penjaga respons gviz **terpotong** (jika baris live tiba-tiba < 50% dari yang tampil, data lama dipertahankan dan dicoba ulang maks. 3×); `fetch-data.js` tidak lagi menghasilkan status "Proses".
 - Performa: data live tampil ±0,8 dtk; `applyFilters` ±40 ms; refresh penuh ±200 ms; tidak ada kebocoran DOM/Chart setelah 4 siklus semua tab + refresh.
+
+## Audit lanjutan (21 Okt 2026)
+- Uji kebenaran: 589/589 baris sheet = web, 0 ganda/hilang; prefill form Edit cocok 100% untuk sampel 16 baris; filter Status/Divisi/pencarian, kalender (432 laporan Okt = data), paginasi (40 hal × 15) semuanya konsisten.
+- **Bug kritis diperbaiki:** batas atas filter periode adalah "jam sekarang" → laporan dengan jam lebih besar dari jam perangkat (beda jam antar HP, atau laporan web yang timestamp-nya 12:00) **tidak tampil** di "Semua data"/Harian (23 laporan hari ini tersembunyi saat diuji). Kini batasnya akhir hari.
+- **Bug edit diperbaiki:** baris dengan jenis kerusakan lama `Panel` tidak bisa diedit ("Baris tidak ditemukan") karena web mengirim nama alias `Panel Listrik` untuk pencocokan. Web kini mengirim nilai asli sheet (`__rawDamage`); proxy v10 juga toleran alias. Dua baris `Panel` di sheet sudah dirapikan menjadi `Panel Listrik`.

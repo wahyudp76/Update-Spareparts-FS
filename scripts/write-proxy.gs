@@ -31,7 +31,7 @@
  */
 var SHEET_ID   = '1TZiQfgiVXmXCLorD1BePuH2wEDnUcy_zWTivQSE3fUk';
 var SHEET_NAME = 'Response';
-var VERSION    = 'v9';
+var VERSION    = 'v10';
 
 /** Jalankan SEKALI secara manual dari editor untuk memicu dialog otorisasi. */
 function authorize() {
@@ -182,9 +182,12 @@ function doPost(e) {
     // Verifikasi bahwa baris kandidat memang baris yang dimaksud (lokasi + jenis kerusakan
     // + tanggal ±1 hari). Ini melindungi dari __row yang basi (baris lain sudah dihapus/
     // ditambah sejak data dimuat).
+    // Alias jenis kerusakan (nama lama di sheet vs nama baru di web) — dianggap sama saat mencocokkan baris
+    var DMG_ALIAS = { 'panel': 'panel listrik' };
+    function _dmg(v) { v = _norm(v); return DMG_ALIAS[v] || v; }
     function rowMatches(rowVals, p) {
       var lokOk = _norm(rowVals[lokCol]) === _norm(p.matchLokasi);
-      var dmgOk = dmgCol < 0 || _norm(rowVals[dmgCol]) === _norm(p.matchDamage);
+      var dmgOk = dmgCol < 0 || _dmg(rowVals[dmgCol]) === _dmg(p.matchDamage);
       var want = p.matchTs ? new Date(p.matchTs).getTime() : NaN;
       var tsOk = true;
       if (!isNaN(want)) {
@@ -198,7 +201,7 @@ function doPost(e) {
       // Untuk nomor baris yang dikirim dashboard: cukup lokasi + jenis kerusakan sama.
       // (Tanggal bisa saja sedang salah di sheet — justru itu yang mau diperbaiki.)
       var lokOk = _norm(rowVals[lokCol]) === _norm(p.matchLokasi);
-      var dmgOk = dmgCol < 0 || _norm(rowVals[dmgCol]) === _norm(p.matchDamage);
+      var dmgOk = dmgCol < 0 || _dmg(rowVals[dmgCol]) === _dmg(p.matchDamage);
       return lokOk && dmgOk;
     }
     function findRow(p) {

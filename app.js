@@ -729,7 +729,7 @@ function normalizeFromCSV(rows) {
             irrType: it || '-', irrCode: ic || '-', irrigator,
             damageType: dt || '-', keterangan: dn || '', damage,
             sparepart: spNorm, prNumber: pr || null, pic: get('pic') || '-', status, repairStatus: repair || 'Belum', tingkat, unit: lok || '-',
-            __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __rawTs: get('ts'), __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
+            __rawTingkat: rawTk, __rawRepair: rawRp, __rawTgl: rawTgl, __rawTs: get('ts'), __rawDamage: get('dT'), __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(rawTgl),
             __row: i+1 // baris spreadsheet: rows[0]=header (baris 1), rows[1]=baris 2, dst.
         });
     }
@@ -1180,10 +1180,13 @@ function setPeriod(p) {
 }
 function getPeriodRange() {
     const now = new Date();
-    if (state.period === 'daily') return { from: startOfDay(now), to: now };
-    if (state.period === 'weekly') return { from: startOfWeek(now), to: now };
-    if (state.period === 'monthly') return { from: startOfMonth(now), to: now };
-    return { from: new Date(1970,0,1), to: now };
+    // Batas atas = AKHIR hari ini (bukan "sekarang"): laporan dengan jam lebih besar dari jam
+    // perangkat (beda jam antar HP, atau laporan web yang timestamp-nya ditetapkan 12:00) harus tetap tampil.
+    const eod = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    if (state.period === 'daily') return { from: startOfDay(now), to: eod };
+    if (state.period === 'weekly') return { from: startOfWeek(now), to: eod };
+    if (state.period === 'monthly') return { from: startOfMonth(now), to: eod };
+    return { from: new Date(1970,0,1), to: new Date(now.getFullYear()+10, 0, 1) };
 }
 function applyCustomDate() {
     const cf = document.getElementById('dateFrom').value;
@@ -3681,7 +3684,7 @@ async function submitEdit(){
         // Identitas untuk mencari baris bila sheetRow tidak akurat
         matchTs: d.timestamp,
         matchLokasi: d.lokasi,
-        matchDamage: d.damageType,
+        matchDamage: d.__rawDamage || d.damageType,   // nilai ASLI di sheet (alias 'Panel' hanya di tampilan)
         // Field-field baru
         tanggalInspeksi: document.getElementById('f_tanggal').value,
         lokasi: lokCanon(document.getElementById('f_lokasi').value) || '-',
@@ -3809,7 +3812,7 @@ async function submitDelete(){
                 sheetRow: sheetRow?parseInt(sheetRow):null,
                 matchTs: d.timestamp,
                 matchLokasi: d.lokasi,
-                matchDamage: d.damageType,
+                matchDamage: d.__rawDamage || d.damageType,
                 ...(submitDelete._opId?{opId:submitDelete._opId}:{})
             }, {onStatus:setStatus});
             submitDelete._opId = null;
