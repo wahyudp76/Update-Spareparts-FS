@@ -2384,8 +2384,33 @@ function openGroupDetail(cfg){
         ${sec(`Irrigator terdampak (${byIrr.length})`,'fa-water', byIrr.length?`<div class="flex flex-wrap gap-1 max-h-28 overflow-y-auto">${byIrr.map(([k,c])=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">${escapeHtml(k)} <span class="opacity-60">×${c}</span></span>`).join('')}</div>`:'')}
       </div>
       ${oldest.length?`<div class="rounded-xl border border-red-100 bg-red-50/40 p-3 mb-3"><div class="text-[11px] font-bold text-red-700 mb-1.5"><i class="fas fa-hourglass-half mr-1"></i>Belum ditangani paling lama</div>${oldest.map(d=>`<div class="flex items-center justify-between text-[11px] py-1 border-b border-red-100/60 last:border-0"><span><b>${escapeHtml(d.lokasi)}</b> · ${escapeHtml(d.keterangan||'-')}</span><span class="text-red-700 font-semibold whitespace-nowrap ml-2">${days(d)} hari</span></div>`).join('')}</div>`:''}
-      <div class="text-[11px] font-bold text-slate-700 mb-1.5"><i class="fas fa-list mr-1"></i>Semua laporan (${n}) — terbaru dulu</div>
-      <div class="space-y-1.5">${items.map(d=>{ const ri=rawData.indexOf(d); return `
+      <div id="dmgDetailList"></div>`;
+    openGroupDetail._items=items; openGroupDetail._page=1; openGroupDetail._lf=openGroupDetail._lf||'all';
+    renderGroupDetailList();
+    openModal('dmgDetailModal');
+}
+// Daftar laporan di modal detail: paging 10 per halaman + filter cepat status
+const GROUP_PAGE = 10;
+function renderGroupDetailList(){
+    const host=document.getElementById('dmgDetailList'); if(!host) return;
+    const all=openGroupDetail._items||[]; const lf=openGroupDetail._lf||'all';
+    const items = lf==='open' ? all.filter(d=>d.status!=='Selesai') : lf==='done' ? all.filter(d=>d.status==='Selesai') : all;
+    const pages=Math.max(1,Math.ceil(items.length/GROUP_PAGE));
+    let pg=Math.min(Math.max(1,openGroupDetail._page||1),pages); openGroupDetail._page=pg;
+    const slice=items.slice((pg-1)*GROUP_PAGE, pg*GROUP_PAGE);
+    const fbtn=(k,l,c)=>`<button type="button" onclick="openGroupDetail._lf='${k}'; openGroupDetail._page=1; renderGroupDetailList()" class="px-2 py-0.5 rounded-md text-[10.5px] font-semibold ${lf===k?'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${l} <span class="opacity-70">${c}</span></button>`;
+    const nOpen=all.filter(d=>d.status!=='Selesai').length;
+    const pbtn=(p,l,dis)=>`<button type="button" ${dis?'disabled':''} onclick="openGroupDetail._page=${p}; renderGroupDetailList(); document.getElementById('dmgDetailList').scrollIntoView({block:'start',behavior:'smooth'})" class="px-2 py-1 rounded-md text-[11px] font-semibold ${dis?'bg-slate-50 text-slate-300':'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${l}</button>`;
+    // nomor halaman ringkas: 1 … p-1 p p+1 … N
+    const nums=[...new Set([1,pages,pg-1,pg,pg+1].filter(x=>x>=1&&x<=pages))].sort((a,b)=>a-b);
+    let numHtml=''; nums.forEach((x,i)=>{ if(i>0 && x-nums[i-1]>1) numHtml+='<span class="text-slate-400 text-[11px] px-0.5">…</span>'; numHtml+=`<button type="button" onclick="openGroupDetail._page=${x}; renderGroupDetailList()" class="min-w-[26px] px-1.5 py-1 rounded-md text-[11px] font-semibold ${x===pg?'bg-blue-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${x}</button>`; });
+    const pager = items.length>GROUP_PAGE ? `<div class="flex items-center justify-between gap-2 mt-2 flex-wrap"><span class="text-[10.5px] text-slate-500">Menampilkan ${(pg-1)*GROUP_PAGE+1}–${Math.min(pg*GROUP_PAGE,items.length)} dari ${items.length}</span><div class="flex items-center gap-1">${pbtn(pg-1,'<i class="fas fa-chevron-left"></i>',pg<=1)}${numHtml}${pbtn(pg+1,'<i class="fas fa-chevron-right"></i>',pg>=pages)}</div></div>` : '';
+    host.innerHTML=`
+      <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+        <div class="text-[11px] font-bold text-slate-700"><i class="fas fa-list mr-1"></i>Daftar laporan — terbaru dulu${pages>1?` <span class="font-normal text-slate-400">(hal. ${pg}/${pages})</span>`:''}</div>
+        <div class="flex items-center gap-1">${fbtn('all','Semua',all.length)}${fbtn('open','Belum',nOpen)}${fbtn('done','Selesai',all.length-nOpen)}</div>
+      </div>
+      ${slice.length ? `<div class="space-y-1.5">${slice.map(d=>{ const ri=rawData.indexOf(d); return `
         <div class="p-2.5 rounded-lg border border-slate-100 bg-white text-[11px]">
           <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
             <span class="font-semibold text-slate-800"><i class="fas fa-location-dot text-red-400 text-[9px] mr-1"></i>${escapeHtml(d.lokasi)} <span class="text-slate-400 font-normal">· ${escapeHtml(d.divisi)}${d.engine&&d.engine!=='-'?' · '+escapeHtml(d.engine):''}${d.irrigator&&d.irrigator!=='-'?' · '+escapeHtml(d.irrigator):''}</span></span>
@@ -2398,8 +2423,8 @@ function openGroupDetail(cfg){
             ${d.prNumber?`<span><i class="fas fa-file-invoice mr-0.5"></i>PR ${escapeHtml(d.prNumber)}</span>`:''}
             <span><i class="fas fa-user mr-0.5"></i>${escapeHtml(picOf(d))}</span>
           </div>
-        </div>`; }).join('')}</div>`;
-    openModal('dmgDetailModal');
+        </div>`; }).join('')}</div>` : '<div class="text-center text-[11px] text-slate-400 py-4">Tidak ada laporan pada pilihan ini</div>'}
+      ${pager}`;
 }
 function showDivisiDetails(dv){
     const id = 'divlist-'+dv.replace(/\W/g,'_');
