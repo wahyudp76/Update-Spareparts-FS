@@ -296,3 +296,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Paging daftar laporan di modal detail (v39)
 - Daftar "Semua laporan" di modal detail Jenis Kerusakan maupun Per Divisi kini dipaging maksimal 10 laporan per halaman (navigasi prev/next + nomor halaman, info "Menampilkan a–b dari N").
 - Tombol filter cepat status (Semua / Belum / Selesai) di atas daftar; ganti filter otomatis kembali ke halaman 1.
+
+### Detail per Unit Engine / Irigator (v40)
+- Perbaikan: klik kartu unit di tab Engine/Irigator (mis. ITI 0183) sebelumnya tidak membuka data unit tersebut (handler salah memanggil detail jenis kerusakan dengan nama kosong).
+- Kini membuka modal detail generik (`openUnitDetail`) berisi ringkasan, tren, lokasi, sparepart, laporan terbuka terlama, dan daftar laporan berpaging untuk unit itu; tombol "Filter dashboard ke unit ini" mengisi kolom pencarian dengan kode unit.

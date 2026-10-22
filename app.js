@@ -2330,6 +2330,11 @@ function renderDivisiTab(){
 // ---------- Detail lengkap per jenis kerusakan (modal) ----------
 const _dmgName = d => (d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya';
 function openDamageDetail(name){ openGroupDetail({kind:'damage', name, icon:'fa-bug', match:d=>_dmgName(d)===name, filterKey:'damage', filterEl:'damageFilter'}); }
+function openUnitDetail(kind, type, code){
+    const isEng = kind==='engine', tf=isEng?'engineType':'irrType', cf=isEng?'engineCode':'irrCode';
+    openGroupDetail({kind, name:`${type} ${code}`, title:`${isEng?'Engine':'Irigator'} ${type} ${code}`, icon:isEng?'fa-gear':'fa-spray-can',
+        match:d=>d[tf]===type && d[cf]===code, searchQuery:`${type} ${code}`});
+}
 function openDivisiDetail(dv){ openGroupDetail({kind:'divisi', name:dv, title:'Divisi '+dv, icon:'fa-building', match:d=>d.divisi===dv, filterKey:'divisi', filterEl:'divisiFilter'}); }
 // Modal detail generik untuk satu kelompok laporan (jenis kerusakan / divisi)
 function openGroupDetail(cfg){
@@ -2365,7 +2370,9 @@ function openGroupDetail(cfg){
     box.innerHTML=`
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="flex items-center gap-1">${scopeBtn('filter',`Sesuai filter (${inFilter.length})`)}${scopeBtn('all',`Semua data (${all.length})`)}</div>
-        <button type="button" onclick="state.${cfg.filterKey}=['${escapeHtml(q)}']; repop('${cfg.filterEl}','${cfg.filterKey}'); applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(cfg.title||name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke ${kind==='divisi'?'divisi':'jenis'} ini</button>
+        <button type="button" onclick="${cfg.searchQuery
+            ? `state.search='${escapeHtml(cfg.searchQuery).toLowerCase().replace(/'/g,"\\'")}'; var si=document.getElementById('searchInput'); if(si) si.value='${escapeHtml(cfg.searchQuery).replace(/'/g,"\\'")}';`
+            : `state.${cfg.filterKey}=['${escapeHtml(q)}']; repop('${cfg.filterEl}','${cfg.filterKey}');`} applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(cfg.title||name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke ${kind==='divisi'?'divisi':kind==='damage'?'jenis':'unit'} ini</button>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
         <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Total</div><div class="text-xl font-bold text-slate-800">${n}</div></div>
@@ -2662,7 +2669,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
         const latest = u.latest;
         const firstDt = fmtDateShort(u.firstSeen.timestamp);
         const lastDt = fmtDateShort(latest.timestamp);
-        return `<div class="card p-4 card-hover cursor-pointer" onclick="if(!event.target.closest('details,button,a')) openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" title="Klik untuk detail lengkap ${escapeHtml(name)}">
+        return `<div class="card p-4 card-hover cursor-pointer" onclick="if(!event.target.closest('details,button,a')) openUnitDetail('${gridId==='engineDetailGrid'?'engine':'irrigator'}','${escapeHtml(u.type).replace(/'/g,"\\'")}','${escapeHtml(u.code).replace(/'/g,"\\'")}')" title="Klik untuk detail lengkap unit ${escapeHtml(u.type)} ${escapeHtml(u.code)}">
             <div class="flex items-start justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2 min-w-0">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs flex-shrink-0 font-bold" style="background:${color}">${escapeHtml(u.type)}</div>
