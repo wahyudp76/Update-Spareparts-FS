@@ -304,3 +304,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Ikon & logo baru (v41)
 - Set ikon PWA/favicon mengikuti pola aset web FS-evaluation (favicon 16/32/ico/svg, icon-72…512, maskable 192/512, apple-touch-icon, logo-white-192) dengan warna hijau yang sama (#10A05C).
 - Motif tetes air dipertahankan; isi ikon diganti menjadi semburan irigator + roda gigi (spareparts) + kunci pas (perbaikan kerusakan) sesuai tema aplikasi. Sumber vektor: `assets/icon.svg`, `assets/icon-maskable.svg`.
+
+### Tema biru langit (v42)
+- Warna ikon/logo diganti dari hijau ke biru langit (`#0EA5E9`), desain motif tetap.
+- Tema web ikut beraksen biru langit: palet `brand` → sky, garis gradien di atas header & kartu tab, latar belakang bertitik halus + gradasi sky, aksen gelombang pada kartu Total Laporan, tab aktif/filter/kalender/tombol edit/fokus input/warna grafik tren memakai sky.

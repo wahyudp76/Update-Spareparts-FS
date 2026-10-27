@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PG2 Irrigation Monitor">
-  <rect width="512" height="512" fill="#10A05C"/>
+  <rect width="512" height="512" fill="#0EA5E9"/>
   <g transform="translate(256 256) scale(0.7) translate(-256 -256)">
   <path fill="#fff" fill-rule="evenodd" d="M256,34 C196,116 104,230 104,322 C104,406 172,472 256,472 C340,472 408,406 408,322 C408,230 316,116 256,34 Z M256,82 C214,146 138,246 138,322 C138,388 191,440 256,440 C321,440 374,388 374,322 C374,246 298,146 256,82 Z"/>
   <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="14">

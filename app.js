@@ -204,7 +204,7 @@ function renderNotifPanel(){
                 ${r.list.map(x=>`<div class="text-[11px] text-slate-600 mt-0.5 flex items-start gap-1"><span class="px-1 rounded text-[9.5px] font-bold ${lvl[issueLevel(x.i)]} shrink-0 mt-[1px]">${escapeHtml(x.i.col)}</span><span>${escapeHtml(x.i.msg)}</span><button onclick="event.stopPropagation();dismissIssue(${r.ri},${x.ix})" title="Abaikan notifikasi ini" class="ml-auto text-slate-300 hover:text-slate-600 shrink-0"><i class="fas fa-xmark text-[10px]"></i></button></div>`).join('')}
             </div>
             <div class="flex flex-col gap-1 shrink-0">
-                ${getWriteUrl()?`<button onclick="toggleNotifPanel(false);openEditModalRaw(${r.ri})" class="px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[10.5px] font-semibold"><i class="fas fa-pen mr-1"></i>Perbaiki</button>`:''}
+                ${getWriteUrl()?`<button onclick="toggleNotifPanel(false);openEditModalRaw(${r.ri})" class="px-2 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[10.5px] font-semibold"><i class="fas fa-pen mr-1"></i>Perbaiki</button>`:''}
                 ${getWriteUrl()&&r.list.some(x=>x.i.type==='duplicate')?`<button onclick="toggleNotifPanel(false);openDeleteModalRaw(${r.ri})" class="px-2 py-1 rounded-md bg-red-600 hover:bg-red-700 text-white text-[10.5px] font-semibold"><i class="fas fa-trash mr-1"></i>Hapus</button>`:''}
             </div>
         </div></div>`).join('');
@@ -253,7 +253,7 @@ function openQualityModal(){
     const bad = activeIssues().map(r=>Object.assign({}, r.d, {__issues:r.list.map(x=>x.i), __ri:r.ri})).sort((a,b)=>(a.__row||0)-(b.__row||0));
     const rowsHtml = bad.map(d=>`<tr class="border-b border-slate-100 last:border-0 align-top">
         <td class="py-2 pr-2 font-mono text-slate-500">${d.__row||'—'}</td>
-        <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-blue-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
+        <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-sky-700 font-semibold">${escapeHtml(d.lokasi)}</div></td>
         <td class="py-2 pr-2">${d.__issues.map(i=>`<div class="mb-1"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${i.type==='separator'||i.type==='scientific'?'bg-red-100 text-red-700':i.type==='duplicate'?'bg-purple-100 text-purple-700':'bg-amber-100 text-amber-800'}">${escapeHtml(i.col)}</span> <span class="text-slate-700">${escapeHtml(i.msg)}</span>${i.fixed&&i.fixed!==i.raw?` <span class="text-emerald-700 text-[10px]">→ ditampilkan sebagai <b>${escapeHtml(i.fixed)}</b></span>`:''}</div>`).join('')}</td>
         <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${d.__ri})" class="act-btn edit" title="Perbaiki lewat web"><i class="fas fa-pen"></i></button>${d.__issues.some(i=>i.type==='duplicate')?` <button onclick="closeModal('typeDetailModal');openDeleteModalRaw(${d.__ri})" class="act-btn del" title="Hapus baris duplikat"><i class="fas fa-trash"></i></button>`:''}`:''}</td>
     </tr>`).join('');
@@ -425,7 +425,7 @@ function renderSparepartsTab(rebuildCharts=true){
     if(rc){
         const rec=[]; listAll.forEach(i=>Object.entries(i.byLok).forEach(([l,c])=>{ if(c>=2 && l!=='—') rec.push({name:i.name,key:i.key,lok:l,c,open:i.lokOpen[l]||0}); }));
         rec.sort((a,b)=>b.c-a.c||b.open-a.open);
-        rc.innerHTML = rec.length ? rec.slice(0,10).map(r=>`<div class="flex items-center justify-between text-xs bg-slate-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-purple-50" onclick="openSparepartDetail('${escapeHtml(r.key)}')"><div><span class="font-semibold text-slate-800">${escapeHtml(r.name)}</span> <span class="text-slate-400">di</span> <span class="font-semibold text-blue-700">${escapeHtml(r.lok)}</span></div><div class="flex items-center gap-2"><span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">${r.c}×</span>${r.open?`<span class="text-[10px] text-amber-700">${r.open} terbuka</span>`:'<span class="text-[10px] text-emerald-700">selesai</span>'}</div></div>`).join('') : '<div class="text-slate-400 italic text-sm">Tidak ada sparepart yang diminta berulang di lokasi yang sama</div>';
+        rc.innerHTML = rec.length ? rec.slice(0,10).map(r=>`<div class="flex items-center justify-between text-xs bg-slate-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-purple-50" onclick="openSparepartDetail('${escapeHtml(r.key)}')"><div><span class="font-semibold text-slate-800">${escapeHtml(r.name)}</span> <span class="text-slate-400">di</span> <span class="font-semibold text-sky-700">${escapeHtml(r.lok)}</span></div><div class="flex items-center gap-2"><span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">${r.c}×</span>${r.open?`<span class="text-[10px] text-amber-700">${r.open} terbuka</span>`:'<span class="text-[10px] text-emerald-700">selesai</span>'}</div></div>`).join('') : '<div class="text-slate-400 italic text-sm">Tidak ada sparepart yang diminta berulang di lokasi yang sama</div>';
     }
     // Katalog
     const sorters={ total:(a,b)=>b.total-a.total||b.open-a.open, open:(a,b)=>b.open-a.open||b.total-a.total, score:(a,b)=>b.score-a.score||b.total-a.total, recent:(a,b)=>b.lastTs-a.lastTs, name:(a,b)=>a.name.localeCompare(b.name,'id') };
@@ -476,7 +476,7 @@ function renderSparepartCharts(){
     }
     const dEl=document.getElementById('spDivChart');
     if(dEl && isElVisible(dEl) && top8.length && divs.length){
-        const CC=['#2563eb','#f59e0b','#10b981','#8b5cf6','#ec4899','#64748b'];
+        const CC=['#0ea5e9','#f59e0b','#10b981','#8b5cf6','#ec4899','#64748b'];
         charts.spDiv = new Chart(dEl.getContext('2d'),{type:'bar',data:{labels:top8.map(i=>i.name),datasets:divs.map((dv,ix)=>({label:dv,data:top8.map(i=>i.byDiv[dv]||0),backgroundColor:DIV_COLORS[dv]||CC[ix%CC.length],stack:'s',borderRadius:3,maxBarThickness:18}))},
             options:spBarOpts({
                 onClick:(e,els)=>{ if(els.length) openSparepartDetail(top8[els[0].index].key); }})});
@@ -507,7 +507,7 @@ function openSparepartDetail(key){
                 <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5 pr-2">Tanggal</th><th class="text-left py-1.5 pr-2">Lokasi</th><th class="text-left py-1.5 pr-2">Unit</th><th class="text-left py-1.5 pr-2">Kerusakan</th><th class="text-left py-1.5 pr-2">Tingkat</th><th class="text-left py-1.5 pr-2">Status</th><th class="py-1.5"></th></tr></thead>
                 <tbody>${recs.map(d=>`<tr class="border-b border-slate-100 last:border-0 align-top">
                     <td class="py-2 pr-2 whitespace-nowrap">${fmtDateShort(d.timestamp)}<div class="text-[10px] text-slate-400">${isOpen(d)?daysSince(d.timestamp)+' hari':''}</div></td>
-                    <td class="py-2 pr-2 font-semibold text-blue-700">${escapeHtml(d.lokasi)}<div class="text-[10px] text-slate-400 font-normal">${escapeHtml(d.divisi)}</div></td>
+                    <td class="py-2 pr-2 font-semibold text-sky-700">${escapeHtml(d.lokasi)}<div class="text-[10px] text-slate-400 font-normal">${escapeHtml(d.divisi)}</div></td>
                     <td class="py-2 pr-2 text-slate-600">${escapeHtml(d.engine!=='-'?d.engine:d.irrigator)}</td>
                     <td class="py-2 pr-2 text-slate-700">${escapeHtml(d.damageType)}<div class="text-[10px] text-slate-400">${escapeHtml((d.keterangan||'').slice(0,80))}</div></td>
                     <td class="py-2 pr-2">${tingkatBadge(effectiveTingkat(d))}</td>
@@ -588,8 +588,8 @@ let charts = {};
 let isFirstLoad = true;
 
 // Palette
-const CC = ['#2563eb','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
-const DIV_COLORS = { 'PG2':'#2563eb','FM4':'#f59e0b','OP2':'#10b981' };
+const CC = ['#0ea5e9','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
+const DIV_COLORS = { 'PG2':'#0ea5e9','FM4':'#f59e0b','OP2':'#10b981' };
 const DIV_CLASS = { 'PG2':'pg2','FM4':'fm4','OP2':'op2' };
 // Palet khusus untuk jenis engine/irigator (muncul di card header)
 const ENG_COLORS = { 'DEM':'#f97316','DEC':'#dc2626','SPC':'#8b5cf6','PMP':'#06b6d4' };
@@ -1023,7 +1023,7 @@ async function refreshData(forceLive=false, opts={}) {
         const dot=document.getElementById('dataSourceDot');
         if(dot) dot.className = 'w-2 h-2 rounded-full pulse-dot '+(
             source==='live-sheet'?'bg-green-500':
-            source==='github-cache'?'bg-blue-500':
+            source==='github-cache'?'bg-sky-500':
             source==='demo'?'bg-amber-500':
             (source==='stale'||source==='error')?'bg-red-500':'bg-slate-400');
 
@@ -1298,9 +1298,9 @@ function renderActiveChips() {
     if (!container) return;
     if (!chips.length) { container.innerHTML = ''; return; }
     container.innerHTML = chips.map((c,i)=>
-        `<span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full">
+        `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 text-xs px-2 py-1 rounded-full">
             ${c.label}
-            <button onclick="window.__chipAction(${i})" class="hover:text-blue-900"><i class="fas fa-times text-[9px]"></i></button>
+            <button onclick="window.__chipAction(${i})" class="hover:text-sky-900"><i class="fas fa-times text-[9px]"></i></button>
         </span>`
     ).join('') + `<button onclick="clearAllFilters()" class="text-xs text-slate-500 hover:text-red-600 font-medium">Reset semua</button>`;
     window.__chipActions = chips.map(c=>c.clear);
@@ -1487,7 +1487,7 @@ if(typeof Chart !== 'undefined'){
                     const step = Math.max(1, Math.ceil(n * 26 / Math.max(1, chartArea.width)));
                     // Selalu beri label: titik puncak & titik terakhir; sisanya tiap `step`
                     let maxI = 0; data.forEach((v,i)=>{ if((+v||0) > (+data[maxI]||0)) maxI=i; });
-                    const color = typeof m.dataset?.options?.borderColor === 'string' ? m.dataset.options.borderColor : '#1e40af';
+                    const color = typeof m.dataset?.options?.borderColor === 'string' ? m.dataset.options.borderColor : '#0369a1';
                     m.data.forEach((pt,i)=>{
                         const v = +data[i]||0; if(!v) return;
                         if(i % step !== 0 && i !== maxI && i !== n-1) return;
@@ -1621,10 +1621,10 @@ function renderCharts() {
                 type:'line',
                 data:{labels,datasets:[{
                     label:'Laporan',data:values,
-                    borderColor:'#2563eb',backgroundColor:g,
+                    borderColor:'#0ea5e9',backgroundColor:g,
                     borderWidth:2.5,fill:true,tension:0.35,
-                    pointRadius:showPoints?3:0,pointBackgroundColor:'#2563eb',pointHoverRadius:5,
-                    pointHoverBackgroundColor:'#1d4ed8',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2
+                    pointRadius:showPoints?3:0,pointBackgroundColor:'#0ea5e9',pointHoverRadius:5,
+                    pointHoverBackgroundColor:'#0284c7',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2
                 }]},
                 options:mkOpts(false,{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:TICK_COLOR,font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:keys.length<=16?keys.length:12},border:{display:false}},y:{grid:{color:GRID_COLOR},ticks:{color:TICK_COLOR,font:{size:10},precision:0},border:{display:false},beginAtZero:true,grace:'10%'}}})
             });
@@ -1997,7 +1997,7 @@ function renderOverview(){
         if(!entries.length){ c.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center italic">${emptyText}</div>`; return; }
         const maxV = entries[0][1];
         c.innerHTML = entries.map(([k,v],i)=>{
-            const rankBg = i===0?'bg-red-100 text-red-600':i===1?'bg-amber-100 text-amber-600':i===2?'bg-blue-100 text-blue-600':'bg-slate-100 text-slate-500';
+            const rankBg = i===0?'bg-red-100 text-red-600':i===1?'bg-amber-100 text-amber-600':i===2?'bg-sky-100 text-sky-600':'bg-slate-100 text-slate-500';
             const pct = maxV?Math.round(v/maxV*100):0;
             return `<div class="top-item">
                 <div class="top-rank ${rankBg}">${i+1}</div>
@@ -2059,13 +2059,13 @@ function renderOverview(){
             rl.innerHTML = recent.map(d=>{
                 const sb = statusBadge(d);
                 return `<div class="flex items-start gap-3 py-2.5 cursor-pointer hover:bg-slate-50 -mx-2 px-2 rounded-lg" onclick="selectDate('${d.tanggalInspeksi}');switchTab('calendar')">
-                    <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex flex-col items-center justify-center flex-shrink-0">
+                    <div class="w-9 h-9 rounded-lg bg-sky-50 text-sky-600 flex flex-col items-center justify-center flex-shrink-0">
                         <div class="text-[8px] font-bold uppercase leading-none">${new Date(d.timestamp).toLocaleDateString('id-ID',{month:'short'})}</div>
                         <div class="text-sm font-bold leading-none">${new Date(d.timestamp).getDate()}</div>
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                            <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
+                            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
                             <span class="text-[9px] text-slate-400 font-semibold bg-slate-50 px-1.5 py-0.5 rounded">${d.divisi}</span>
                             ${sb}
                         </div>
@@ -2145,7 +2145,7 @@ function renderDamageTab(){
             <button type="button" onclick="event.stopPropagation(); openDamageDetail('${escapeHtml(name).replace(/'/g,"\\'")}')" class="w-full mb-2 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${escapeHtml(name)}</button>
             <!-- Mini list -->
             <details class="group">
-                <summary class="text-[11px] font-semibold text-blue-600 cursor-pointer list-none flex items-center gap-1 hover:text-blue-800"><i class="fas fa-chevron-right text-[9px] group-open:rotate-90 transition"></i>Lihat ${items.length} laporan</summary>
+                <summary class="text-[11px] font-semibold text-sky-600 cursor-pointer list-none flex items-center gap-1 hover:text-sky-800"><i class="fas fa-chevron-right text-[9px] group-open:rotate-90 transition"></i>Lihat ${items.length} laporan</summary>
                 <div class="mt-2 space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     ${items.slice(0,15).map(d=>`
                         <div class="p-2 rounded-lg bg-slate-50 text-[11px] border-l-2" style="border-color:${color}">
@@ -2156,7 +2156,7 @@ function renderDamageTab(){
                             ${d.keterangan?`<div class="text-slate-600 mb-0.5">${escapeHtml(d.keterangan)}</div>`:''}
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700 text-[10px]"><i class="fas fa-cog text-[8px]"></i> ${escapeHtml(d.sparepart)}</span>`:''}
-                                ${d.prNumber?`<span class="text-blue-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
+                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
                             </div>
                         </div>
                     `).join('')}
@@ -2202,14 +2202,14 @@ function renderDivisiTab(){
                 <div class="grid grid-cols-3 gap-2 mb-3 text-center">
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Belum</div><div class="text-lg font-bold text-slate-700">${pending}</div></div>
                     <div><div class="text-[9px] font-bold text-slate-400 uppercase">Selesai</div><div class="text-lg font-bold text-emerald-600">${done}</div></div>
-                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Lokasi</div><div class="text-lg font-bold text-blue-600">${locCount}</div></div>
+                    <div><div class="text-[9px] font-bold text-slate-400 uppercase">Lokasi</div><div class="text-lg font-bold text-sky-600">${locCount}</div></div>
                 </div>
                 <div class="mb-1 flex justify-between text-[10px] font-semibold">
                     <span class="text-slate-500">Progress penanganan</span>
-                    <span style="color:${DIV_COLORS[dv]||'#2563eb'}">${100-pctP}%</span>
+                    <span style="color:${DIV_COLORS[dv]||'#0ea5e9'}">${100-pctP}%</span>
                 </div>
-                <div class="pbar"><span style="width:${100-pctP}%;background:${DIV_COLORS[dv]||'#2563eb'}"></span></div>
-                <button type="button" onclick="event.stopPropagation(); openDivisiDetail('${dv}')" class="w-full mt-3 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${DIV_COLORS[dv]||'#2563eb'}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${dv}</button>
+                <div class="pbar"><span style="width:${100-pctP}%;background:${DIV_COLORS[dv]||'#0ea5e9'}"></span></div>
+                <button type="button" onclick="event.stopPropagation(); openDivisiDetail('${dv}')" class="w-full mt-3 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${DIV_COLORS[dv]||'#0ea5e9'}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${dv}</button>
             </div>
         </div>`;
     }).join('');
@@ -2233,7 +2233,7 @@ function renderDivisiTab(){
         // Top sparepart
         const spMap={}; items.forEach(x=>{if(x.sparepart&&x.sparepart!=='-')x.sparepart.split(/;\s*/).forEach(s=>{s=s.trim();if(s)spMap[s]=(spMap[s]||0)+1;});});
         const topSp = Object.entries(spMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        const color = DIV_COLORS[dv] || '#2563eb';
+        const color = DIV_COLORS[dv] || '#0ea5e9';
         // List terbaru per divisi
         const latest = items.slice(0,4);
 
@@ -2245,7 +2245,7 @@ function renderDivisiTab(){
                     <p class="text-[11px] text-slate-500">${total} laporan · ${Object.keys(locMap).length} lokasi · ${pending} belum ditangani</p>
                 </div>
                 <button onclick="openDivisiDetail('${dv}')" class="text-[10px] font-semibold text-white px-3 py-1.5 rounded-lg transition hover:opacity-90" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap</button>
-                <button onclick="state.divisi=['${dv}'];repop('divisiFilter','divisi');applyFilters();" class="text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Fokus divisi ini</button>
+                <button onclick="state.divisi=['${dv}'];repop('divisiFilter','divisi');applyFilters();" class="text-[10px] font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition">Fokus divisi ini</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Hotspot lokasi -->
@@ -2311,7 +2311,7 @@ function renderDivisiTab(){
                     const sb = statusBadge(d);
                     return `<div class="p-2.5 rounded-lg border-l-2 bg-slate-50" style="border-color:${color}">
                         <div class="flex items-start justify-between gap-2 mb-1">
-                            <span class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
+                            <span class="inline-flex items-center gap-1 text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
                             <span class="text-[9px] text-slate-400">${fmtDateShort(d.timestamp)}</span>
                         </div>
                         <div class="text-xs font-semibold text-slate-800 mb-0.5">${d.damageType||'-'}</div>
@@ -2372,7 +2372,7 @@ function openGroupDetail(cfg){
         <div class="flex items-center gap-1">${scopeBtn('filter',`Sesuai filter (${inFilter.length})`)}${scopeBtn('all',`Semua data (${all.length})`)}</div>
         <button type="button" onclick="${cfg.searchQuery
             ? `state.search='${escapeHtml(cfg.searchQuery).toLowerCase().replace(/'/g,"\\'")}'; var si=document.getElementById('searchInput'); if(si) si.value='${escapeHtml(cfg.searchQuery).replace(/'/g,"\\'")}';`
-            : `state.${cfg.filterKey}=['${escapeHtml(q)}']; repop('${cfg.filterEl}','${cfg.filterKey}');`} applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(cfg.title||name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke ${kind==='divisi'?'divisi':kind==='damage'?'jenis':'unit'} ini</button>
+            : `state.${cfg.filterKey}=['${escapeHtml(q)}']; repop('${cfg.filterEl}','${cfg.filterKey}');`} applyFilters(); closeModal('dmgDetailModal'); switchTab('data'); showToast('Dashboard difilter ke ${escapeHtml(cfg.title||name)}','info')" class="ml-auto px-2.5 py-1 rounded-md text-[11px] font-semibold bg-sky-600 text-white hover:bg-sky-700"><i class="fas fa-filter mr-1"></i>Filter dashboard ke ${kind==='divisi'?'divisi':kind==='damage'?'jenis':'unit'} ini</button>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
         <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Total</div><div class="text-xl font-bold text-slate-800">${n}</div></div>
@@ -2381,7 +2381,7 @@ function openGroupDetail(cfg){
         <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Lokasi terdampak</div><div class="text-xl font-bold text-slate-800">${byLok.length}</div><div class="text-[10px] text-slate-500">${recur.length} lokasi berulang (≥2×)</div></div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-        ${sec('Tren per bulan','fa-chart-column', mons.length?`<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t bg-blue-500" style="height:${Math.round(byMon[k]/monMax*100)}%"></div><span class="text-[9px] text-slate-500">${fmtMon(k)}</span></div>`).join('')}</div>`:'')}
+        ${sec('Tren per bulan','fa-chart-column', mons.length?`<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-0.5 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t bg-sky-500" style="height:${Math.round(byMon[k]/monMax*100)}%"></div><span class="text-[9px] text-slate-500">${fmtMon(k)}</span></div>`).join('')}</div>`:'')}
         ${sec('Tingkat kerusakan','fa-gauge-high', byTk.map(([k,c])=>bar(k,c,n,TK_COLOR[k]||'#64748b')).join(''))}
         ${kind==='divisi' ? sec(`Jenis kerusakan (${byDmg.length})`,'fa-bug', `<div class="max-h-40 overflow-y-auto pr-1">${byDmg.map(([k,c],i)=>`<div class="cursor-pointer hover:bg-slate-50 rounded" onclick="openDamageDetail('${escapeHtml(k).replace(/'/g,"\\'")}')">${bar(k,c,n,CC[i%CC.length])}</div>`).join('')}</div>`) : sec('Per divisi','fa-building', byDiv.map(([k,c])=>bar(k,c,n,DIV_COLORS[k]||'#6366f1')).join(''))}
         ${sec('PIC penanganan','fa-user-gear', byPic.map(([k,c])=>bar(k,c,n,'#8b5cf6')).join(''))}
@@ -2410,7 +2410,7 @@ function renderGroupDetailList(){
     const pbtn=(p,l,dis)=>`<button type="button" ${dis?'disabled':''} onclick="openGroupDetail._page=${p}; renderGroupDetailList(); document.getElementById('dmgDetailList').scrollIntoView({block:'start',behavior:'smooth'})" class="px-2 py-1 rounded-md text-[11px] font-semibold ${dis?'bg-slate-50 text-slate-300':'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${l}</button>`;
     // nomor halaman ringkas: 1 … p-1 p p+1 … N
     const nums=[...new Set([1,pages,pg-1,pg,pg+1].filter(x=>x>=1&&x<=pages))].sort((a,b)=>a-b);
-    let numHtml=''; nums.forEach((x,i)=>{ if(i>0 && x-nums[i-1]>1) numHtml+='<span class="text-slate-400 text-[11px] px-0.5">…</span>'; numHtml+=`<button type="button" onclick="openGroupDetail._page=${x}; renderGroupDetailList()" class="min-w-[26px] px-1.5 py-1 rounded-md text-[11px] font-semibold ${x===pg?'bg-blue-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${x}</button>`; });
+    let numHtml=''; nums.forEach((x,i)=>{ if(i>0 && x-nums[i-1]>1) numHtml+='<span class="text-slate-400 text-[11px] px-0.5">…</span>'; numHtml+=`<button type="button" onclick="openGroupDetail._page=${x}; renderGroupDetailList()" class="min-w-[26px] px-1.5 py-1 rounded-md text-[11px] font-semibold ${x===pg?'bg-sky-600 text-white':'bg-slate-100 text-slate-700 hover:bg-slate-200'}">${x}</button>`; });
     const pager = items.length>GROUP_PAGE ? `<div class="flex items-center justify-between gap-2 mt-2 flex-wrap"><span class="text-[10.5px] text-slate-500">Menampilkan ${(pg-1)*GROUP_PAGE+1}–${Math.min(pg*GROUP_PAGE,items.length)} dari ${items.length}</span><div class="flex items-center gap-1">${pbtn(pg-1,'<i class="fas fa-chevron-left"></i>',pg<=1)}${numHtml}${pbtn(pg+1,'<i class="fas fa-chevron-right"></i>',pg>=pages)}</div></div>` : '';
     host.innerHTML=`
       <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
@@ -2589,7 +2589,7 @@ function openTypeDetail(kind, type){
     const rowsHtml = [...items].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(d=>`
         <tr class="border-b border-slate-100 last:border-0">
             <td class="py-1.5 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td>
-            <td class="py-1.5 pr-2 font-semibold text-blue-700">${escapeHtml(d.lokasi)}</td>
+            <td class="py-1.5 pr-2 font-semibold text-sky-700">${escapeHtml(d.lokasi)}</td>
             <td class="py-1.5 pr-2 text-slate-600">${escapeHtml(d.divisi)}</td>
             <td class="py-1.5 pr-2 font-mono text-slate-700">${d[cf]&&d[cf]!=='-'?escapeHtml(d[cf]):'—'}</td>
             <td class="py-1.5 pr-2 text-slate-800">${escapeHtml(d.damageType||'-')}${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td>
@@ -2599,7 +2599,7 @@ function openTypeDetail(kind, type){
 
     const lokDmgHtml = Object.entries(lokDmg).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).map(([l,m])=>`
         <div class="flex items-start gap-2 text-xs py-1 border-b border-slate-100 last:border-0">
-            <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold whitespace-nowrap"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(l)}</span>
+            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded font-semibold whitespace-nowrap"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(l)}</span>
             <div class="flex flex-wrap gap-1">${Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-semibold">${escapeHtml(k)}${v>1?` ×${v}`:''}</span>`).join('')}</div>
         </div>`).join('');
 
@@ -2624,7 +2624,7 @@ function openTypeDetail(kind, type){
             <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed"><i class="fas fa-circle-info mr-1" style="color:${color}"></i>${summary}</div>
             ${total?`
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>Lokasi kerusakan</h4>${bar(byLok,'#2563eb')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-sky-500 mr-1"></i>Lokasi kerusakan</h4>${bar(byLok,'#0ea5e9')}</div>
                 <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i>Jenis kerusakan</h4>${bar(byDmg,'#ef4444')}</div>
                 <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-hashtag mr-1" style="color:${color}"></i>Unit terdampak</h4>${bar(byUnit,color)}</div>
                 <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart dibutuhkan</h4>${bar(bySp,'#f59e0b')}</div>
@@ -2732,7 +2732,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 ${sb}
                                 ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700 text-[10px]"><i class="fas fa-cog text-[8px]"></i> ${escapeHtml(d.sparepart)}</span>`:''}
-                                ${d.prNumber?`<span class="text-blue-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
+                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
                             </div>
                         </div>`;
                     }).join('')}
@@ -2859,9 +2859,9 @@ function renderCalMonthSummary(byDate){
         <div class="rounded-lg bg-slate-50 p-2.5"><div class="text-[9px] font-bold text-slate-400 uppercase">Belum ditangani</div><div class="text-xl font-bold ${open?'text-slate-800':'text-emerald-700'}">${open}</div><div class="text-[10px] text-slate-500">${berat} di antaranya tingkat Berat</div></div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-fire text-red-500 mr-1"></i>Hari tersibuk</div>${busiest.length?busiest.map(([k,c])=>`<div class="flex justify-between items-center py-0.5 cursor-pointer hover:text-blue-700" onclick="selectDate('${k}')"><span>${fmtD(k)}</span>${chip(c,calLevel(c))}</div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
+        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-fire text-red-500 mr-1"></i>Hari tersibuk</div>${busiest.length?busiest.map(([k,c])=>`<div class="flex justify-between items-center py-0.5 cursor-pointer hover:text-sky-700" onclick="selectDate('${k}')"><span>${fmtD(k)}</span>${chip(c,calLevel(c))}</div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
         <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-screwdriver-wrench text-amber-500 mr-1"></i>Kerusakan terbanyak</div>${topDmg.length?topDmg.map(([k,c])=>`<div class="flex justify-between py-0.5"><span>${escapeHtml(k)}</span><b>${c}</b></div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
-        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-location-dot text-blue-500 mr-1"></i>Lokasi terbanyak</div>${topLok.length?topLok.map(([k,c])=>`<div class="flex justify-between py-0.5"><span>${escapeHtml(k)}</span><b>${c}</b></div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
+        <div class="rounded-lg border border-slate-100 p-2.5"><div class="font-semibold text-slate-700 mb-1"><i class="fas fa-location-dot text-sky-500 mr-1"></i>Lokasi terbanyak</div>${topLok.length?topLok.map(([k,c])=>`<div class="flex justify-between py-0.5"><span>${escapeHtml(k)}</span><b>${c}</b></div>`).join(''):'<span class="text-slate-400">—</span>'}</div>
       </div>`;
 }
 function changeCalMonth(delta){
@@ -2900,9 +2900,9 @@ function renderCalDayDetail(){
         const recent = Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,10);
         box.innerHTML = `<div class="text-xs text-slate-500 mb-3"><i class="fas fa-clock-rotate-left mr-1"></i>Laporan terbaru:</div>` +
             recent.map(([dt,c])=>`
-            <div onclick="selectDate('${dt}')" class="flex items-center justify-between p-2.5 rounded-lg hover:bg-blue-50 cursor-pointer transition border border-slate-100 mb-1.5">
+            <div onclick="selectDate('${dt}')" class="flex items-center justify-between p-2.5 rounded-lg hover:bg-sky-50 cursor-pointer transition border border-slate-100 mb-1.5">
                 <div class="flex items-center gap-2">
-                    <i class="fas fa-calendar-day text-blue-500 text-sm"></i>
+                    <i class="fas fa-calendar-day text-sky-500 text-sm"></i>
                     <span class="text-sm font-medium text-slate-700">${new Date(dt).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</span>
                 </div>
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${calLevel(c)==='danger'?'bg-red-100 text-red-700':calLevel(c)==='warn'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-600'}">${c}</span>
@@ -2926,7 +2926,7 @@ function renderCalDayDetail(){
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${d.lokasi}</span>
+                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${d.lokasi}</span>
                     <span class="text-[10px] text-slate-400">${d.divisi}</span>
                 </div>
                 ${badge}
@@ -2937,7 +2937,7 @@ function renderCalDayDetail(){
                 ${d.sparepart&&d.sparepart!=='-'?`<span class="inline-flex items-center gap-1 text-amber-700"><i class="fas fa-cog text-[9px]"></i>${escapeHtml(d.sparepart)}</span>`:''}
                 ${d.engine&&d.engine!=='-'?`<span class="inline-flex items-center gap-1 text-slate-500"><i class="fas fa-oil-can text-[9px]"></i>${escapeHtml(d.engine)}</span>`:''}
                 ${d.irrigator&&d.irrigator!=='-'?`<span class="inline-flex items-center gap-1 text-slate-500"><i class="fas fa-spray-can text-[9px]"></i>${escapeHtml(d.irrigator)}</span>`:''}
-                ${d.prNumber?`<span class="inline-flex items-center gap-1 text-blue-700"><i class="fas fa-file-invoice text-[9px]"></i>PR ${d.prNumber}</span>`:''}
+                ${d.prNumber?`<span class="inline-flex items-center gap-1 text-sky-700"><i class="fas fa-file-invoice text-[9px]"></i>PR ${d.prNumber}</span>`:''}
             </div>
         </div>`;
     }).join('');
@@ -2972,7 +2972,7 @@ function renderTable(){
                 <div class="font-medium text-slate-800 text-xs">${new Date(d.timestamp).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</div>
             </td>
             <td class="px-4 py-3">
-                <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(d.lokasi)}</span>
+                <span class="inline-flex items-center gap-1.5 bg-sky-50 text-sky-700 px-2 py-1 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(d.lokasi)}</span>
             </td>
             <td class="px-4 py-3"><span class="text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded">${escapeHtml(d.divisi)}</span></td>
             <td class="px-4 py-3">${engCell}</td>
@@ -2980,7 +2980,7 @@ function renderTable(){
             <td class="px-4 py-3"><span class="font-medium text-slate-800 text-xs">${escapeHtml(d.damageType||'-')}</span></td>
             <td class="px-4 py-3 text-xs text-slate-600 max-w-[200px]">${d.keterangan?escapeHtml(d.keterangan):'<span class="text-slate-400 italic">-</span>'}</td>
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
-            <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
+            <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 text-xs whitespace-nowrap">${d.pic&&d.pic!=='-'?`<span class="inline-flex items-center gap-1 text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-medium"><i class="fas fa-user-gear text-[9px]"></i>${escapeHtml(d.pic)}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}${d.__issues&&d.__issues.length?` <i class="fas fa-triangle-exclamation text-amber-500 ml-1 cursor-help" title="${escapeHtml(d.__issues.map(i=>i.msg).join('\n'))}"></i>`:''}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
@@ -3183,7 +3183,7 @@ function renderSeverityTab(){
             list.length ? list.map((r,i0)=>{ const i=startIdx+i0; const d=r.d, R=SEVERITY_RULES[r.level];
                 const unit = d.engineType!=='-'&&d.engineType ? `Engine ${escapeHtml(d.engineType)} ${d.engineCode!=='-'?escapeHtml(d.engineCode):''}` : d.irrType!=='-'&&d.irrType ? `Irigator ${escapeHtml(d.irrType)} ${d.irrCode!=='-'?escapeHtml(d.irrCode):''}` : escapeHtml(r.asset);
                 const sc = r.score>=70?'#dc2626':r.score>=45?'#f59e0b':'#10b981';
-                return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${statusBadge(d)}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
+                return `<tr class="border-b border-slate-100 last:border-0 align-top"><td class="py-2 pr-2 text-slate-400">${i+1}</td><td class="py-2 pr-2"><div class="flex items-center gap-1.5"><div class="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${r.score}%;background:${sc}"></div></div><b style="color:${sc}">${r.score}</b></div></td><td class="py-2 pr-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${r.level}</span></td><td class="py-2 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td><td class="py-2 pr-2 whitespace-nowrap ${r.age>7&&d.status==='Belum Ditangani'?'text-red-600 font-bold':'text-slate-600'}">${r.age} hr</td><td class="py-2 pr-2"><span class="bg-sky-50 text-sky-700 px-2 py-0.5 rounded font-semibold">${escapeHtml(d.lokasi)}</span><div class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</div></td><td class="py-2 pr-2 text-slate-700 whitespace-nowrap">${unit}${r.recur>1?`<div class="text-[10px] text-purple-600 font-semibold"><i class="fas fa-rotate mr-0.5"></i>${r.recur}× berulang</div>`:''}</td><td class="py-2 pr-2 text-slate-800"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td><td class="py-2 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td><td class="py-2 pr-2 whitespace-nowrap">${statusBadge(d)}</td><td class="py-2 text-[10px] text-slate-500">${escapeHtml(r.reasons.join('; '))}</td></tr>`;
             }).join('') : '<tr><td colspan="11" class="py-6 text-center text-slate-400 italic">Tidak ada laporan pada tingkat ini</td></tr>'
         }</tbody>`;
         // Pagination
@@ -3252,7 +3252,7 @@ function exportCSV(){
 
 // ---------- Toast ----------
 function showToast(msg,type='info'){
-    const colors={success:'bg-emerald-500',warning:'bg-amber-500',error:'bg-red-500',info:'bg-blue-500'};
+    const colors={success:'bg-emerald-500',warning:'bg-amber-500',error:'bg-red-500',info:'bg-sky-500'};
     const icons={success:'check-circle',warning:'exclamation-triangle',error:'times-circle',info:'info-circle'};
     const t=document.createElement('div');
     t.className=`fixed top-20 right-4 ${colors[type]} text-white px-4 py-3 rounded-lg shadow-xl z-50 flex items-center gap-2 fade-in text-sm font-medium max-w-sm`;
@@ -3334,7 +3334,7 @@ function openSetupModal(){
         if(globalUrl){
             infoBox.innerHTML = '<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4 text-xs text-emerald-900"><p class="font-bold mb-1"><i class="fas fa-circle-check mr-1"></i>Endpoint global sudah diaktifkan oleh admin.</p><p class="mb-2">Edit &amp; hapus sudah aktif untuk SEMUA pengguna di semua perangkat. Anda bisa mengosongkan URL di bawah hanya untuk menonaktifkan di perangkat ini saja.</p><p class="font-mono text-[10px] bg-white px-2 py-1 rounded border break-all" id="setupGlobalUrlDisplay">'+escapeHtml(globalUrl)+'</p></div>';
         } else {
-            infoBox.innerHTML = '<div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-900"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i>Opsi konfigurasi</p><ol class="list-decimal list-inside space-y-0.5 text-blue-800"><li><b>(Direkomendasikan)</b> Edit file <code class="bg-white px-1 rounded">config.js</code> di repo, isi <code>WRITE_URL</code> lalu push — berlaku untuk SEMUA user/device otomatis.</li><li>Atau paste URL Web App di bawah untuk mengaktifkan hanya di perangkat/browser ini.</li></ol><p class="mt-2">Lihat <code class="bg-white px-1 rounded">SETUP-EDIT.md</code> untuk panduan lengkap.</p></div>';
+            infoBox.innerHTML = '<div class="bg-sky-50 border border-sky-100 rounded-lg p-3 mb-4 text-xs text-sky-900"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i>Opsi konfigurasi</p><ol class="list-decimal list-inside space-y-0.5 text-sky-800"><li><b>(Direkomendasikan)</b> Edit file <code class="bg-white px-1 rounded">config.js</code> di repo, isi <code>WRITE_URL</code> lalu push — berlaku untuk SEMUA user/device otomatis.</li><li>Atau paste URL Web App di bawah untuk mengaktifkan hanya di perangkat/browser ini.</li></ol><p class="mt-2">Lihat <code class="bg-white px-1 rounded">SETUP-EDIT.md</code> untuk panduan lengkap.</p></div>';
         }
     }
     openModal('setupModal');
@@ -3386,11 +3386,11 @@ function setEditMode(mode){
     document.getElementById('editMode').value = mode;
     const isCreate = mode==='create';
     document.getElementById('editModalTitle').textContent = isCreate ? 'Tambah Laporan Baru' : 'Edit Laporan';
-    document.getElementById('editModalIcon').className = isCreate ? 'fas fa-plus-circle text-emerald-600 mr-2' : 'fas fa-pen-to-square text-blue-600 mr-2';
+    document.getElementById('editModalIcon').className = isCreate ? 'fas fa-plus-circle text-emerald-600 mr-2' : 'fas fa-pen-to-square text-sky-600 mr-2';
     document.getElementById('createHint').classList.toggle('hidden', !isCreate);
     const btn = document.getElementById('editSaveBtn');
     btn.innerHTML = isCreate ? '<i class="fas fa-paper-plane mr-1"></i>Simpan ke Spreadsheet' : '<i class="fas fa-save mr-1"></i>Simpan ke Spreadsheet';
-    btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700');
+    btn.className = 'px-4 py-2 rounded-lg text-xs font-semibold text-white ' + (isCreate ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-sky-600 hover:bg-sky-700');
 }
 
 // ======================================================
@@ -3888,7 +3888,7 @@ async function submitEdit(){
     };
     const msg=document.getElementById('editMsg');
     const btn=document.getElementById('editSaveBtn');
-    const setStatus = t => { msg.innerHTML=`<span class="text-blue-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
+    const setStatus = t => { msg.innerHTML=`<span class="text-sky-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
     if(window.__writeBusy) return;
     btn.disabled=true;
     if(!openEditModalRaw._conflictChecked){
