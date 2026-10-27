@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=43">
+    <link rel="stylesheet" href="assets/tailwind.css?v=44">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v43";</script>
-    <script src="config.js?v=43"></script>
+    <script>window.APP_VERSION="v44";</script>
+    <script src="config.js?v=44"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -142,6 +142,24 @@
             .tab-btn{padding:10px 10px;font-size:12px}
             .tab-btn .tab-icon{margin-right:3px}
             .form-grid{grid-template-columns:1fr}
+            /* Header: ikon logo tidak terhimpit, judul satu baris */
+            header .h-14{height:3.25rem}
+            header h1{font-size:15px}
+            header p{font-size:10px}
+            header .gap-2\.5{gap:6px}
+            /* Panel filter: tata letak grid rapi 2 kolom dengan lebar sama */
+            #filterPanel{padding:12px}
+            #filterPanel .date-range{width:100%}
+            #filterPanel .date-range input{flex:1;min-width:0;width:100%}
+            #filterPanel .filter-selects{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+            #filterPanel .filter-selects .ms-wrap{width:100%}
+            #filterPanel .filter-selects .ms-btn{width:100%;min-width:0!important}
+            #filterPanel .filter-selects .ms-btn-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            #filterPanel .filter-selects > .relative{grid-column:1/-1}
+            #filterPanel .filter-selects > .relative input{width:100%}
+            #filterPanel .filter-btn{padding:6px 9px;font-size:11.5px}
+            .kpi-row > :nth-child(5){grid-column:1/-1}
+            .kpi-row .stat-number{font-size:1.75rem!important}
         }
     </style>
 </head>
@@ -150,16 +168,16 @@
     <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-sky-100 sky-topbar">
         <div class="max-w-[1400px] mx-auto px-4 lg:px-6">
             <div class="h-14 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-md" style="background:linear-gradient(135deg,#38bdf8,#0284c7);box-shadow:0 4px 10px rgba(14,165,233,.35)">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-md flex-shrink-0" style="background:linear-gradient(135deg,#38bdf8,#0284c7);box-shadow:0 4px 10px rgba(14,165,233,.35)">
                         <img src="assets/logo-white-192.png" alt="" class="w-7 h-7">
                     </div>
-                    <div class="leading-tight">
-                        <h1 class="display-font font-bold text-slate-900 text-[17px]">PG2 Irrigation</h1>
-                        <p class="text-[11px] text-slate-500 -mt-0.5">Monitoring Kerusakan & Spareparts</p>
+                    <div class="leading-tight min-w-0">
+                        <h1 class="display-font font-bold text-slate-900 text-[17px] truncate">PG2 Irrigation</h1>
+                        <p class="text-[11px] text-slate-500 -mt-0.5 truncate">Monitoring Kerusakan & Spareparts</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2.5 flex-shrink-0">
                     <div class="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-100/70 px-2.5 py-1 rounded-full border border-slate-200/70">
                         <span id="dataSourceDot" class="dot bg-sky-500 pulse"></span>
                         <span id="dataSource">Memuat…</span>
@@ -201,14 +219,14 @@
                         <button onclick="setPeriod('monthly')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition text-slate-600" data-filter="monthly">Bulanan</button>
                         <button onclick="setPeriod('all')" class="filter-btn active px-3 py-1.5 rounded-md text-xs font-semibold transition" data-filter="all">Semua</button>
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 date-range">
                         <input type="date" id="dateFrom" onchange="applyCustomDate()" class="px-2 py-1.5 border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
                         <span class="text-slate-400 text-xs">—</span>
                         <input type="date" id="dateTo" onchange="applyCustomDate()" class="px-2 py-1.5 border border-slate-200 rounded-md text-xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
                     </div>
                 </div>
                 <div class="flex-1"></div>
-                <div class="flex flex-wrap gap-2 items-center">
+                <div class="flex flex-wrap gap-2 items-center filter-selects">
                     <div class="ms-wrap" id="divisiFilter" data-state-key="divisi" data-ph="Semua Divisi">
                         <button type="button" class="ms-btn flex items-center gap-2 px-2.5 py-1.5 rounded-lg min-w-[130px] justify-between"><span class="ms-btn-text text-slate-700 text-xs font-medium">Semua Divisi</span><i class="fas fa-chevron-down text-slate-400 text-[9px]"></i></button>
                         <div class="ms-menu hidden absolute z-50 top-full mt-1 right-0 bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-44">
@@ -307,7 +325,7 @@
         <!-- ==================== TAB: OVERVIEW ==================== -->
         <div class="tab-pane active" id="tab-overview">
             <!-- KPI Row -->
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4 kpi-row">
                 <div class="card card-hover p-4 bg-gradient-to-br from-white to-sky-50/40 sky-wave">
                     <div class="flex items-start justify-between">
                         <div>
@@ -917,7 +935,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=43"></script>
+    <script src="app.js?v=44"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -928,7 +946,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v43').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v44').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

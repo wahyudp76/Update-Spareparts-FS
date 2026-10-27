@@ -314,3 +314,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 - **Performa**: Tailwind kini dikompilasi statis (`assets/tailwind.css`, ~60 KB) menggantikan CDN runtime (~380 KB JS + JIT tiap buka halaman); font ikon *brands* (117 KB) tidak lagi dimuat (ikon GitHub di footer jadi SVG inline); `data.json` ditulis satu record per baris (501 KB → 391 KB).
 - **Keamanan/stabilitas**: semua interpolasi nilai spreadsheet ke HTML (lokasi, divisi, PR, keterangan, jenis kerusakan, tingkat, dsb.) kini melalui `escapeHtml` — diuji dengan record berisi `<img onerror>` di 10 kolom: 0 eksekusi, 0 error JS. Refresh paralel 3× tidak menggandakan chart.
 - Catatan untuk pengembang: `assets/tailwind.css` dibangun dengan `tailwindcss@3.4` (content: index.html + app.js, safelist warna dinamis). Jika menambah kelas Tailwind baru yang belum pernah dipakai, jalankan ulang build atau tambahkan ke safelist.
+
+### Rapi di mobile (v44)
+- Header: kotak logo tidak lagi terhimpit (`flex-shrink-0`), judul/subjudul satu baris (truncate), tinggi header lebih ringkas di layar ≤640px.
+- Panel filter mobile: rentang tanggal selebar panel, dropdown filter grid 2 kolom berlebar sama, kolom pencarian selebar penuh; kartu KPI ke-5 melebar penuh agar tidak menyisakan ruang kosong.
