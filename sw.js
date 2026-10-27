@@ -1,10 +1,11 @@
 // PG2 Dashboard service worker — network-first with robust cache-busting
-const CACHE = 'pg2-dashboard-v42';
+const CACHE = 'pg2-dashboard-v43';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './config.js',
+  './assets/tailwind.css',
   './manifest.webmanifest',
   './assets/icon.svg',
   './assets/icon-maskable.svg',

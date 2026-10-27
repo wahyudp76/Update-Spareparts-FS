@@ -308,3 +308,9 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Tema biru langit (v42)
 - Warna ikon/logo diganti dari hijau ke biru langit (`#0EA5E9`), desain motif tetap.
 - Tema web ikut beraksen biru langit: palet `brand` → sky, garis gradien di atas header & kartu tab, latar belakang bertitik halus + gradasi sky, aksen gelombang pada kartu Total Laporan, tab aktif/filter/kalender/tombol edit/fokus input/warna grafik tren memakai sky.
+
+### Audit kebenaran data, keamanan & performa (v43)
+- **Uji kebenaran data** (27 Okt 2026, 712 baris): agregasi web (divisi, status, tingkat, PIC, jenis kerusakan, lokasi, jenis engine/irigator, tanggal inspeksi per hari, nomor baris sheet) dibandingkan dengan hitungan independen dari CSV spreadsheet — **100% identik**, baik jalur Live (gviz) maupun cadangan `data.json`.
+- **Performa**: Tailwind kini dikompilasi statis (`assets/tailwind.css`, ~60 KB) menggantikan CDN runtime (~380 KB JS + JIT tiap buka halaman); font ikon *brands* (117 KB) tidak lagi dimuat (ikon GitHub di footer jadi SVG inline); `data.json` ditulis satu record per baris (501 KB → 391 KB).
+- **Keamanan/stabilitas**: semua interpolasi nilai spreadsheet ke HTML (lokasi, divisi, PR, keterangan, jenis kerusakan, tingkat, dsb.) kini melalui `escapeHtml` — diuji dengan record berisi `<img onerror>` di 10 kolom: 0 eksekusi, 0 error JS. Refresh paralel 3× tidak menggandakan chart.
+- Catatan untuk pengembang: `assets/tailwind.css` dibangun dengan `tailwindcss@3.4` (content: index.html + app.js, safelist warna dinamis). Jika menambah kelas Tailwind baru yang belum pernah dipakai, jalankan ulang build atau tambahkan ke safelist.

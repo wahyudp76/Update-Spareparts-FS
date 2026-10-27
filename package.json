@@ -5,6 +5,7 @@
   "private": true,
   "main": "scripts/fetch-data.js",
   "scripts": {
-    "fetch": "node scripts/fetch-data.js"
+    "fetch": "node scripts/fetch-data.js",
+    "build:css": "npx tailwindcss@3.4.17 -c scripts/tailwind.config.js -i scripts/tailwind.input.css -o assets/tailwind.css --minify"
   }
 }

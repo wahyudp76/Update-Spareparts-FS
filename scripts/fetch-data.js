@@ -289,7 +289,9 @@ async function main() {
   const data = mapRows(rows);
   console.log(`Valid records: ${data.length}`);
 
-  fs.writeFileSync(OUTPUT, JSON.stringify(data, null, 2));
+  // Satu record per baris: ~35% lebih kecil dari indent-2 (parse lebih cepat di browser),
+  // tetapi diff git tetap terbaca per record.
+  fs.writeFileSync(OUTPUT, data.length ? '[\n' + data.map(r => JSON.stringify(r)).join(',\n') + '\n]\n' : '[]');
   fs.writeFileSync(META, JSON.stringify({
     sheetId: SHEET_ID, sheetName: SHEET_NAME,
     lastFetchSuccess: ok, lastFetchAttempt: new Date().toISOString(),

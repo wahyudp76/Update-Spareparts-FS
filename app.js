@@ -556,7 +556,7 @@ function statusBadge(d, withPr=true){
 function tingkatBadge(t){
     if(!t) return '<span class="text-slate-400 italic text-[10px]">—</span>';
     const R = (typeof SEVERITY_RULES!=='undefined' && SEVERITY_RULES[t]) ? SEVERITY_RULES[t] : {bg:'bg-slate-100',text:'text-slate-700'};
-    return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${t}</span>`;
+    return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${R.bg} ${R.text}">${escapeHtml(t)}</span>`;
 }
 
 
@@ -1770,7 +1770,7 @@ function renderCharts() {
                 const nz=vals.map((v,i)=>[i,v]).filter(x=>x[1]>0); let arrow='';
                 if(nz.length>=2){ const last=nz[nz.length-1][1], prev=nz[nz.length-2][1]; arrow = last>prev?`<i class="fas fa-arrow-trend-up text-red-500"></i>`:last<prev?`<i class="fas fa-arrow-trend-down text-emerald-500"></i>`:`<i class="fas fa-minus text-slate-400"></i>`; }
                 const pk=vals.reduce((m,v,i)=>v>vals[m]?i:m,0);
-                return `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${DIV_COLORS[dv]||'#6366f1'}"></span><b>${dv}</b> ${tot}${arrow?' '+arrow:''}${vals[pk]>0?` <span class="text-slate-400">(puncak ${labels[pk]}: ${vals[pk]})</span>`:''}</span>`; });
+                return `<span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${DIV_COLORS[dv]||'#6366f1'}"></span><b>${escapeHtml(dv)}</b> ${tot}${arrow?' '+arrow:''}${vals[pk]>0?` <span class="text-slate-400">(puncak ${labels[pk]}: ${vals[pk]})</span>`:''}</span>`; });
             sub.innerHTML = parts.length ? parts.join('<span class="mx-1.5 text-slate-300">·</span>') : 'Tidak ada data pada filter ini';
         }
     }
@@ -2065,12 +2065,12 @@ function renderOverview(){
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
-                            <span class="text-[9px] text-slate-400 font-semibold bg-slate-50 px-1.5 py-0.5 rounded">${d.divisi}</span>
+                            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${escapeHtml(d.lokasi)}</span>
+                            <span class="text-[9px] text-slate-400 font-semibold bg-slate-50 px-1.5 py-0.5 rounded">${escapeHtml(d.divisi)}</span>
                             ${sb}
                         </div>
-                        <div class="text-xs font-semibold text-slate-800 truncate">${d.damageType||'-'}</div>
-                        <div class="text-[11px] text-slate-500 truncate">${d.keterangan||d.sparepart||'-'}</div>
+                        <div class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(d.damageType||'-')}</div>
+                        <div class="text-[11px] text-slate-500 truncate">${escapeHtml(d.keterangan||d.sparepart||'-')}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -2150,13 +2150,13 @@ function renderDamageTab(){
                     ${items.slice(0,15).map(d=>`
                         <div class="p-2 rounded-lg bg-slate-50 text-[11px] border-l-2" style="border-color:${color}">
                             <div class="flex items-center justify-between mb-0.5">
-                                <span class="font-semibold text-slate-700">${d.lokasi} · ${d.divisi}</span>
+                                <span class="font-semibold text-slate-700">${escapeHtml(d.lokasi)} · ${escapeHtml(d.divisi)}</span>
                                 <span class="text-[9px] text-slate-400">${fmtDateShort(d.timestamp)}</span>
                             </div>
                             ${d.keterangan?`<div class="text-slate-600 mb-0.5">${escapeHtml(d.keterangan)}</div>`:''}
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700 text-[10px]"><i class="fas fa-cog text-[8px]"></i> ${escapeHtml(d.sparepart)}</span>`:''}
-                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
+                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${escapeHtml(d.prNumber)}</span>`:''}
                             </div>
                         </div>
                     `).join('')}
@@ -2185,12 +2185,12 @@ function renderDivisiTab(){
         const locCount = new Set(items.map(d=>d.lokasi).filter(v=>v&&v!=='-')).size;
         const pctP = total?Math.round(pending/total*100):0;
         const active = items.length>0 || !state.divisi.length || state.divisi.includes(dv);
-        return `<div class="card overflow-hidden card-hover cursor-pointer" onclick="openDivisiDetail('${dv}')" title="Klik untuk detail lengkap divisi ${dv}">
+        return `<div class="card overflow-hidden card-hover cursor-pointer" onclick="openDivisiDetail('${escapeHtml(dv).replace(/'/g,"\\'")}')" title="Klik untuk detail lengkap divisi ${escapeHtml(dv)}">
             <div class="div-card ${DIV_CLASS[dv]||'pg2'} p-4 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="text-[10px] uppercase tracking-widest font-semibold opacity-80">Divisi</div>
-                        <h3 class="display-font font-bold text-2xl">${dv}</h3>
+                        <h3 class="display-font font-bold text-2xl">${escapeHtml(dv)}</h3>
                     </div>
                     <div class="text-right">
                         <div class="stat-number text-3xl">${total}</div>
@@ -2209,7 +2209,7 @@ function renderDivisiTab(){
                     <span style="color:${DIV_COLORS[dv]||'#0ea5e9'}">${100-pctP}%</span>
                 </div>
                 <div class="pbar"><span style="width:${100-pctP}%;background:${DIV_COLORS[dv]||'#0ea5e9'}"></span></div>
-                <button type="button" onclick="event.stopPropagation(); openDivisiDetail('${dv}')" class="w-full mt-3 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${DIV_COLORS[dv]||'#0ea5e9'}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${dv}</button>
+                <button type="button" onclick="event.stopPropagation(); openDivisiDetail('${escapeHtml(dv).replace(/'/g,"\\'")}')" class="w-full mt-3 text-[11px] font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition" style="background:${DIV_COLORS[dv]||'#0ea5e9'}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap ${escapeHtml(dv)}</button>
             </div>
         </div>`;
     }).join('');
@@ -2244,8 +2244,8 @@ function renderDivisiTab(){
                     <h3 class="font-bold text-slate-900 text-base">Divisi ${escapeHtml(dv)}</h3>
                     <p class="text-[11px] text-slate-500">${total} laporan · ${Object.keys(locMap).length} lokasi · ${pending} belum ditangani</p>
                 </div>
-                <button onclick="openDivisiDetail('${dv}')" class="text-[10px] font-semibold text-white px-3 py-1.5 rounded-lg transition hover:opacity-90" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap</button>
-                <button onclick="state.divisi=['${dv}'];repop('divisiFilter','divisi');applyFilters();" class="text-[10px] font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition">Fokus divisi ini</button>
+                <button onclick="openDivisiDetail('${escapeHtml(dv).replace(/'/g,"\\'")}')" class="text-[10px] font-semibold text-white px-3 py-1.5 rounded-lg transition hover:opacity-90" style="background:${color}"><i class="fas fa-magnifying-glass-chart mr-1"></i>Detail lengkap</button>
+                <button onclick="state.divisi=['${escapeHtml(dv).replace(/'/g,"\\'")}'];repop('divisiFilter','divisi');applyFilters();" class="text-[10px] font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg transition">Fokus divisi ini</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Hotspot lokasi -->
@@ -2303,7 +2303,7 @@ function renderDivisiTab(){
                     <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400"></span><span class="text-[11px] text-slate-600">Belum: <b>${pending}</b></span></div>
                     <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-[11px] text-slate-600">Selesai: <b>${done}</b></span></div>
                 </div>
-                <button onclick="showDivisiDetails('${dv}')" class="text-[10px] font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90 transition" style="background:${color}"><i class="fas fa-list-check mr-1"></i>Lihat ${latest.length} laporan terbaru</button>
+                <button onclick="showDivisiDetails('${escapeHtml(dv).replace(/'/g,"\\'")}')" class="text-[10px] font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90 transition" style="background:${color}"><i class="fas fa-list-check mr-1"></i>Lihat ${latest.length} laporan terbaru</button>
             </div>
             <!-- Laporan terbaru per divisi -->
             <div id="divlist-${dv.replace(/\W/g,'_')}" class="hidden mt-3 space-y-2">
@@ -2311,10 +2311,10 @@ function renderDivisiTab(){
                     const sb = statusBadge(d);
                     return `<div class="p-2.5 rounded-lg border-l-2 bg-slate-50" style="border-color:${color}">
                         <div class="flex items-start justify-between gap-2 mb-1">
-                            <span class="inline-flex items-center gap-1 text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${d.lokasi}</span>
+                            <span class="inline-flex items-center gap-1 text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded text-[10px] font-semibold"><i class="fas fa-map-marker-alt text-[7px]"></i>${escapeHtml(d.lokasi)}</span>
                             <span class="text-[9px] text-slate-400">${fmtDateShort(d.timestamp)}</span>
                         </div>
-                        <div class="text-xs font-semibold text-slate-800 mb-0.5">${d.damageType||'-'}</div>
+                        <div class="text-xs font-semibold text-slate-800 mb-0.5">${escapeHtml(d.damageType||'-')}</div>
                         ${d.keterangan?`<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(d.keterangan)}</div>`:''}
                         <div class="flex items-center gap-2 flex-wrap">
                             ${sb}
@@ -2678,7 +2678,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
                             <h4 class="font-bold text-slate-900 text-base leading-tight">${codeLabel} <span class="font-mono" style="color:${color}">${escapeHtml(u.code)}</span></h4>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${sev.cls}"><i class="fas ${sev.icon} text-[5px] mr-0.5"></i>${sev.label}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mt-0.5">Jenis ${escapeHtml(u.type)} · ${divs.map(x=>x[0]).join('/')||'-'}</div>
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mt-0.5">Jenis ${escapeHtml(u.type)} · ${escapeHtml(divs.map(x=>x[0]).join('/')||'-')}</div>
                     </div>
                 </div>
                 <div class="flex flex-col items-end flex-shrink-0">
@@ -2724,7 +2724,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
                         const sb = statusBadge(d);
                         return `<div class="p-2 rounded-lg bg-slate-50 text-[11px] border-l-2" style="border-color:${color}">
                             <div class="flex items-center justify-between mb-0.5">
-                                <span class="font-semibold text-slate-700">${d.lokasi} · ${d.divisi}</span>
+                                <span class="font-semibold text-slate-700">${escapeHtml(d.lokasi)} · ${escapeHtml(d.divisi)}</span>
                                 <span class="text-[9px] text-slate-400">${fmtDateShort(d.timestamp)}</span>
                             </div>
                             <div class="text-slate-800 font-medium mb-0.5">${escapeHtml(d.damageType||'-')}</div>
@@ -2732,7 +2732,7 @@ function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel)
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 ${sb}
                                 ${d.sparepart&&d.sparepart!=='-'?`<span class="text-amber-700 text-[10px]"><i class="fas fa-cog text-[8px]"></i> ${escapeHtml(d.sparepart)}</span>`:''}
-                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${d.prNumber}</span>`:''}
+                                ${d.prNumber?`<span class="text-sky-700 text-[10px]"><i class="fas fa-file-invoice text-[8px]"></i> PR ${escapeHtml(d.prNumber)}</span>`:''}
                             </div>
                         </div>`;
                     }).join('')}
@@ -2926,18 +2926,18 @@ function renderCalDayDetail(){
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${d.lokasi}</span>
-                    <span class="text-[10px] text-slate-400">${d.divisi}</span>
+                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(d.lokasi)}</span>
+                    <span class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</span>
                 </div>
                 ${badge}
             </div>
-            <div class="text-sm font-semibold text-slate-800 mb-1">${d.damageType||'-'}</div>
+            <div class="text-sm font-semibold text-slate-800 mb-1">${escapeHtml(d.damageType||'-')}</div>
             ${d.keterangan?`<div class="text-xs text-slate-500 mb-1.5">${escapeHtml(d.keterangan)}</div>`:''}
             <div class="flex flex-wrap gap-2 text-[11px]">
                 ${d.sparepart&&d.sparepart!=='-'?`<span class="inline-flex items-center gap-1 text-amber-700"><i class="fas fa-cog text-[9px]"></i>${escapeHtml(d.sparepart)}</span>`:''}
                 ${d.engine&&d.engine!=='-'?`<span class="inline-flex items-center gap-1 text-slate-500"><i class="fas fa-oil-can text-[9px]"></i>${escapeHtml(d.engine)}</span>`:''}
                 ${d.irrigator&&d.irrigator!=='-'?`<span class="inline-flex items-center gap-1 text-slate-500"><i class="fas fa-spray-can text-[9px]"></i>${escapeHtml(d.irrigator)}</span>`:''}
-                ${d.prNumber?`<span class="inline-flex items-center gap-1 text-sky-700"><i class="fas fa-file-invoice text-[9px]"></i>PR ${d.prNumber}</span>`:''}
+                ${d.prNumber?`<span class="inline-flex items-center gap-1 text-sky-700"><i class="fas fa-file-invoice text-[9px]"></i>PR ${escapeHtml(d.prNumber)}</span>`:''}
             </div>
         </div>`;
     }).join('');
@@ -2980,7 +2980,7 @@ function renderTable(){
             <td class="px-4 py-3"><span class="font-medium text-slate-800 text-xs">${escapeHtml(d.damageType||'-')}</span></td>
             <td class="px-4 py-3 text-xs text-slate-600 max-w-[200px]">${d.keterangan?escapeHtml(d.keterangan):'<span class="text-slate-400 italic">-</span>'}</td>
             <td class="px-4 py-3 text-xs text-slate-700 max-w-[220px]">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</td>
-            <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">${d.prNumber}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
+            <td class="px-4 py-3 text-xs">${d.prNumber?`<span class="font-mono font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">${escapeHtml(d.prNumber)}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 text-xs whitespace-nowrap">${d.pic&&d.pic!=='-'?`<span class="inline-flex items-center gap-1 text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-medium"><i class="fas fa-user-gear text-[9px]"></i>${escapeHtml(d.pic)}</span>`:'<span class="text-slate-400 italic">—</span>'}</td>
             <td class="px-4 py-3 whitespace-nowrap">${tingkatBadge(effectiveTingkat(d))}${d.__issues&&d.__issues.length?` <i class="fas fa-triangle-exclamation text-amber-500 ml-1 cursor-help" title="${escapeHtml(d.__issues.map(i=>i.msg).join('\n'))}"></i>`:''}</td>
             <td class="px-4 py-3 whitespace-nowrap">${sb}</td>
