@@ -1,5 +1,5 @@
 // PG2 Dashboard service worker — network-first with robust cache-busting
-const CACHE = 'pg2-dashboard-v40';
+const CACHE = 'pg2-dashboard-v41';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +7,11 @@ const ASSETS = [
   './config.js',
   './manifest.webmanifest',
   './assets/icon.svg',
-  './assets/icon-maskable.svg'
+  './assets/icon-maskable.svg',
+  './assets/favicon.svg',
+  './assets/favicon-32.png',
+  './assets/icon-192.png',
+  './assets/apple-touch-icon.png'
 ];
 // data.json TIDAK di-precache: selalu diambil fresh dari jaringan.
 

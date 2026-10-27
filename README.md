@@ -300,3 +300,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Detail per Unit Engine / Irigator (v40)
 - Perbaikan: klik kartu unit di tab Engine/Irigator (mis. ITI 0183) sebelumnya tidak membuka data unit tersebut (handler salah memanggil detail jenis kerusakan dengan nama kosong).
 - Kini membuka modal detail generik (`openUnitDetail`) berisi ringkasan, tren, lokasi, sparepart, laporan terbuka terlama, dan daftar laporan berpaging untuk unit itu; tombol "Filter dashboard ke unit ini" mengisi kolom pencarian dengan kode unit.
+
+### Ikon & logo baru (v41)
+- Set ikon PWA/favicon mengikuti pola aset web FS-evaluation (favicon 16/32/ico/svg, icon-72…512, maskable 192/512, apple-touch-icon, logo-white-192) dengan warna hijau yang sama (#10A05C).
+- Motif tetes air dipertahankan; isi ikon diganti menjadi semburan irigator + roda gigi (spareparts) + kunci pas (perbaikan kerusakan) sesuai tema aplikasi. Sumber vektor: `assets/icon.svg`, `assets/icon-maskable.svg`.

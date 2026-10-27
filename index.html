@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
     <title>PG2 Irrigation Monitor</title>
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#10A05C">
     <meta name="description" content="Dashboard monitoring kerusakan dan kebutuhan spareparts unit irigasi PG2">
-    <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
-    <link rel="apple-touch-icon" href="assets/icon.svg">
+    <link rel="icon" href="assets/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -19,8 +22,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v40";</script>
-    <script src="config.js?v=40"></script>
+    <script>window.APP_VERSION="v41";</script>
+    <script src="config.js?v=41"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -152,8 +155,8 @@
         <div class="max-w-[1400px] mx-auto px-4 lg:px-6">
             <div class="h-14 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-800 flex items-center justify-center shadow-md shadow-blue-500/30">
-                        <img src="assets/icon.svg" alt="" class="w-6 h-6">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-md" style="background:#10A05C;box-shadow:0 4px 10px rgba(16,160,92,.35)">
+                        <img src="assets/logo-white-192.png" alt="" class="w-7 h-7">
                     </div>
                     <div class="leading-tight">
                         <h1 class="display-font font-bold text-slate-900 text-[17px]">PG2 Irrigation</h1>
@@ -918,7 +921,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=40"></script>
+    <script src="app.js?v=41"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -929,7 +932,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v40').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v41').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
