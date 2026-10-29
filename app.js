@@ -2923,13 +2923,15 @@ function renderCalDayDetail(){
         <div class="rounded-md bg-red-50 py-1.5"><div class="text-base font-bold text-red-700">${dBerat}</div><div class="text-[9px] text-slate-500 uppercase">Berat</div></div></div>`;
     box.innerHTML=sum+items.map(d=>{
         const badge = statusBadge(d);
+        const ri = rawData.indexOf(d);
+        const editBtn = getWriteUrl() && ri>=0 ? `<button type="button" onclick="openEditModalRaw(${ri})" class="act-btn edit flex-shrink-0" title="Edit laporan ini"><i class="fas fa-pen"></i></button>` : '';
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(d.lokasi)}</span>
                     <span class="text-[10px] text-slate-400">${escapeHtml(d.divisi)}</span>
                 </div>
-                ${badge}
+                <div class="flex items-center gap-1.5 flex-shrink-0">${badge}${editBtn}</div>
             </div>
             <div class="text-sm font-semibold text-slate-800 mb-1">${escapeHtml(d.damageType||'-')}</div>
             ${d.keterangan?`<div class="text-xs text-slate-500 mb-1.5">${escapeHtml(d.keterangan)}</div>`:''}

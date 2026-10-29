@@ -318,3 +318,6 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Rapi di mobile (v44)
 - Header: kotak logo tidak lagi terhimpit (`flex-shrink-0`), judul/subjudul satu baris (truncate), tinggi header lebih ringkas di layar ≤640px.
 - Panel filter mobile: rentang tanggal selebar panel, dropdown filter grid 2 kolom berlebar sama, kolom pencarian selebar penuh; kartu KPI ke-5 melebar penuh agar tidak menyisakan ruang kosong.
+
+### Tombol edit di daftar laporan Kalender (v45)
+- Saat satu tanggal diklik di tab Kalender, tiap laporan pada daftar hari itu kini punya tombol edit (ikon pensil) seperti tab lain; setelah disimpan daftar langsung diperbarui dan tetap di tab Kalender.
