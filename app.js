@@ -905,7 +905,12 @@ function reconcilePendingWrites(data){
  * cron GitHub tidak andal) sementara tombol Refresh baca Sheets → data
  * "maju-mundur" tiap kali reload. Sekarang keduanya konsisten.
  */
+// Form Tambah/Edit sedang terbuka? Sinkronisasi LATAR (auto-refresh 5 menit, kembali
+// online/tab aktif, sinkron ulang pasca-tulis) ditunda agar isian user tidak tertimpa /
+// terisi otomatis lagi. Dijalankan setelah modal ditutup. Klik tombol Refresh tetap jalan.
+function isFormModalOpen(){ const em=document.getElementById('editModal'); return !!(em && em.classList.contains('show')); }
 async function refreshData(forceLive=false, opts={}) {
+    if (opts.silent && !opts.fromModalClose && isFormModalOpen()) { refreshData._deferred = {forceLive}; return null; }
     if (__refreshInFlight && !forceLive) return __refreshInFlight; // sudah ada yang jalan
     const seq = ++__refreshSeq;
     const silent = !!opts.silent;
@@ -3311,11 +3316,13 @@ function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){
     document.getElementById(id).classList.remove('show');
     document.querySelectorAll('#'+id+' [id$="Msg"]').forEach(x=>x.innerHTML='');
+    if(id==='editModal' && refreshData._deferred){ const d=refreshData._deferred; refreshData._deferred=null; setTimeout(()=>refreshData(d.forceLive,{silent:true,fromModalClose:true}),300); }
 }
 // Close modal on backdrop click
 document.addEventListener('click',(e)=>{
     if(e.target.classList && e.target.classList.contains('modal-backdrop')){
         e.target.classList.remove('show');
+        if(e.target.id==='editModal' && refreshData._deferred){ const d=refreshData._deferred; refreshData._deferred=null; setTimeout(()=>refreshData(d.forceLive,{silent:true,fromModalClose:true}),300); }
     }
 });
 // Close modal on ESC
@@ -3465,7 +3472,7 @@ async function loadUnits(force=false){
             if(rawData && rawData.length){ validateAll(rawData); renderQualityBanner(); } // isu "unit terpasang" butuh data unit
             try{ localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({ts:Date.now(), map})); }catch(e){}
             fillDatalists();
-            const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true);
+            const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true, {noFill:true});
         }catch(e){ console.warn('Unit terpasang: gagal memuat —', e.message); }
         finally{ __unitsPromise=null; }
         return unitsByLokasi;
@@ -3504,11 +3511,11 @@ function onLokasiInput(val, commit=false){
     clearTimeout(__lokT);
     __lokT = setTimeout(()=>renderLokasiInfo(val, commit), commit?0:120);
 }
-function renderLokasiInfo(val, commit){
+function renderLokasiInfo(val, commit, o={}){
     const info=document.getElementById('lokasiUnitInfo'); if(!info) return;
     const v=String(val||'').trim();
     if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis · ${unitsMeta.source==='live'?'disinkron':'cache'} ${new Date(unitsMeta.loadedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>` : ''; return; }
-    if(!unitsByLokasi){ info.innerHTML='<span class="text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</span>'; loadUnits().then(()=>renderLokasiInfo(val, commit)); return; }
+    if(!unitsByLokasi){ info.innerHTML='<span class="text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</span>'; loadUnits().then(()=>renderLokasiInfo(val, commit, o)); return; }
     const u=findUnit(v);
     if(!u){
         // saran lokasi mirip
@@ -3521,7 +3528,13 @@ function renderLokasiInfo(val, commit){
     const isCreate = document.getElementById('editMode').value==='create';
     // Mode tambah: kolom kosong diisi otomatis. Mode edit: tidak mengubah apa pun diam-diam,
     // hanya menampilkan perbedaan + tombol untuk menyamakan.
-    const filled = isCreate ? applyUnitToForm(u, false) : 0;
+    // noFill: dipanggil dari pembaruan latar (sinkron data unit) → hanya tampilkan info, jangan isi ulang kolom yang sengaja dikosongkan user
+    // Isi otomatis hanya SEKALI per lokasi yang sama: kalau user sengaja mengosongkan kolom
+    // lalu input lokasi kehilangan fokus / data disinkron ulang, kolom tidak terisi kembali.
+    const fillKey = lokKey(v);
+    const mayFill = isCreate && !o.noFill && renderLokasiInfo._filledFor !== fillKey;
+    const filled = mayFill ? applyUnitToForm(u, false) : 0;
+    if(mayFill) renderLokasiInfo._filledFor = fillKey;
     // deteksi perbedaan dengan isian saat ini
     const g=id=>document.getElementById(id).value.trim();
     const diffs=[];
@@ -3604,6 +3617,7 @@ function validateFormNumbers(){
     return errs;
 }
 function openCreateModal(){
+    renderLokasiInfo._filledFor = null;
     if(!requireWriteEndpoint()) return;
     fillDatalists();
     setEditMode('create');

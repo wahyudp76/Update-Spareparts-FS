@@ -321,3 +321,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 
 ### Tombol edit di daftar laporan Kalender (v45)
 - Saat satu tanggal diklik di tab Kalender, tiap laporan pada daftar hari itu kini punya tombol edit (ikon pensil) seperti tab lain; setelah disimpan daftar langsung diperbarui dan tetap di tab Kalender.
+
+### Form Tambah/Edit tidak diganggu sinkron otomatis (v46)
+- Saat modal Tambah/Edit Laporan terbuka, sinkronisasi latar (auto-refresh 5 menit, tab aktif kembali, online kembali, sinkron ulang pasca-tulis) **ditunda** dan dijalankan otomatis setelah modal ditutup. Tombol Refresh manual tetap berfungsi dan tidak menyentuh isi form.
+- Isi-otomatis dari data "Unit Terpasang" kini hanya terjadi **sekali per lokasi**; kolom yang sengaja dikosongkan user tidak terisi kembali saat data unit disinkron ulang atau input lokasi kehilangan fokus. Mengganti lokasi tetap mengisi otomatis untuk lokasi baru.
