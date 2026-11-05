@@ -48,6 +48,9 @@ jobs:
           cat data.meta.json || true
 
       - name: Commit & push updated data.json
+        # Gagal push data (mis. gangguan sisi GitHub) TIDAK boleh membatalkan deploy Pages:
+        # artefak tetap memakai data.json terbaru yang baru diambil di langkah sebelumnya.
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -57,8 +60,11 @@ jobs:
           else
             git commit -m "chore(sync): update data.json from Google Sheets - $(date -u +'%Y-%m-%d %H:%M UTC')"
             # Hindari gagal push bila ada commit baru masuk saat workflow berjalan
-            git pull --rebase origin main || true
-            git push
+            for i in 1 2 3; do
+              git pull --rebase origin main || true
+              git push && break
+              echo "Push gagal (percobaan $i/3), coba lagi dalam 20 detik…"; sleep 20
+            done
           fi
 
       - name: Setup Pages
