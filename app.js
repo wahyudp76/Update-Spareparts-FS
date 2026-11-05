@@ -2352,6 +2352,11 @@ function openUnitDetail(kind, type, code){
         match:d=>d[tf]===type && d[cf]===code, searchQuery:`${type} ${code}`});
 }
 // Drill-down dari modal Detail Jenis Engine/Irigator: lokasi / jenis kerusakan / unit / sparepart / tingkat / PIC / divisi
+function toggleMoreRows(btn){
+    const box=btn.previousElementSibling; if(!box) return;
+    const hidden=box.classList.toggle('hidden');
+    btn.innerHTML = hidden ? `<i class="fas fa-chevron-down mr-1"></i>+${btn.dataset.n} lainnya (${btn.dataset.sum} laporan)` : `<i class="fas fa-chevron-up mr-1"></i>Sembunyikan ${btn.dataset.n} lainnya`;
+}
 function openTypeSubDetail(kind, type, field, value){
     const isEng = kind==='engine', tf=isEng?'engineType':'irrType', cf=isEng?'engineCode':'irrCode', label=isEng?'Engine':'Irigator';
     if(field==='unit'){ closeModal('typeDetailModal'); return openUnitDetail(kind, type, value); }
@@ -2645,18 +2650,25 @@ function openTypeDetail(kind, type){
     const barClick = (rows, colr, field, maxShow=8) => {
         if(!rows.length) return '<div class="text-xs text-slate-400 italic">Tidak ada data</div>';
         const max = rows[0][1];
-        return rows.slice(0,maxShow).map(([k,v])=>`
+        const row = ([k,v]) => `
             <button type="button" onclick="openTypeSubDetail('${K}','${T}','${field}','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 transition text-left group" title="Klik untuk detail ${escapeHtml(k)}">
                 <div class="w-28 truncate font-medium text-slate-700 group-hover:text-sky-700">${escapeHtml(k)}</div>
                 <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(6,v/max*100)}%;background:${colr}"></div></div>
                 <div class="w-8 text-right font-bold text-slate-700">${v}</div>
                 <i class="fas fa-chevron-right text-[9px] text-slate-300 group-hover:text-sky-500"></i>
-            </button>`).join('') + (rows.length>maxShow?`<div class="text-[10px] text-slate-400 mt-1 px-1">+${rows.length-maxShow} lainnya</div>`:'');
+            </button>`;
+        const head = rows.slice(0,maxShow).map(row).join('');
+        if(rows.length<=maxShow) return head;
+        // Sisanya tetap bisa diklik: disembunyikan di balik tombol "+N lainnya" (buka/tutup di tempat)
+        const more = rows.slice(maxShow).map(row).join('');
+        const sumMore = rows.slice(maxShow).reduce((a,[,v])=>a+v,0);
+        return head + `<div class="hidden mt-0.5 pt-0.5 border-t border-dashed border-slate-200 max-h-56 overflow-y-auto">${more}</div>
+            <button type="button" onclick="toggleMoreRows(this)" data-n="${rows.length-maxShow}" data-sum="${sumMore}" class="mt-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100"><i class="fas fa-chevron-down mr-1"></i>+${rows.length-maxShow} lainnya (${sumMore} laporan)</button>`;
     };
     const clickHint = `<span class="text-[10px] font-normal text-slate-400 ml-1">· klik untuk detail</span>`;
     const tkCls = {Berat:'bg-red-500',Sedang:'bg-amber-400',Ringan:'bg-emerald-500'};
     const tkHtml = byTk.length ? byTk.map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','tingkat','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-16 font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${tkCls[k]||'bg-slate-400'}" style="width:${Math.round(v/total*100)}%"></div></div><span class="w-16 text-right font-bold text-slate-700">${v} <span class="font-normal text-slate-400">(${Math.round(v/total*100)}%)</span></span></button>`).join('') : '<div class="text-xs text-slate-400 italic">—</div>';
-    const picHtml = byPic.length ? byPic.slice(0,6).map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','pic','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-24 truncate font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-violet-500" style="width:${Math.round(v/total*100)}%"></div></div><span class="w-8 text-right font-bold text-slate-700">${v}</span></button>`).join('') : '<div class="text-xs text-slate-400 italic">—</div>';
+    const picHtml = byPic.length ? byPic.map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','pic','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-24 truncate font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-violet-500" style="width:${Math.round(v/total*100)}%"></div></div><span class="w-8 text-right font-bold text-slate-700">${v}</span></button>`).join('') : '<div class="text-xs text-slate-400 italic">—</div>';
     const monHtml = mons.length ? `<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-1 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t-md" style="height:${Math.max(6,byMon[k]/monMax*100)}%;background:${color}"></div><span class="text-[9px] text-slate-500 whitespace-nowrap">${fmtMon(k)}</span></div>`).join('')}</div>` : '<div class="text-xs text-slate-400 italic">—</div>';
     const oldestHtml = oldest.length ? oldest.map(x=>{ const age=Math.max(0,Math.floor((now-new Date(x.timestamp))/86400000)); const ri=rawIndexOf(x); return `<div class="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-red-100 last:border-0"><div class="min-w-0"><span class="font-semibold text-slate-800">${escapeHtml(x.lokasi)}</span> <span class="text-slate-400">· ${x[cf]&&x[cf]!=='-'?escapeHtml(type+' '+x[cf]):''}</span> <span class="text-slate-600">· ${escapeHtml(x.damageType||'-')}</span>${x.prNumber?` <span class="text-[10px] text-sky-700">PR ${escapeHtml(x.prNumber)}</span>`:''}</div><div class="flex items-center gap-1.5 flex-shrink-0"><span class="font-bold ${age>30?'text-red-700':age>14?'text-amber-700':'text-slate-700'}">${age} hari</span>${getWriteUrl()&&ri>=0?`<button type="button" onclick="closeModal('typeDetailModal');openEditModalRaw(${ri})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</div></div>`; }).join('') : '<div class="text-xs text-emerald-700"><i class="fas fa-circle-check mr-1"></i>Semua laporan sudah ditangani</div>';
 
