@@ -329,3 +329,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 ### Tombol edit di modal detail tidak hilang setelah sinkron (v47)
 - Bug: setelah data disinkron ulang (misalnya sesudah menyimpan edit), daftar laporan di modal detail (Jenis Kerusakan / Divisi / Unit) masih memegang objek data lama sehingga `indexOf` ke data baru = -1 dan tombol edit tidak dirender.
 - Perbaikan: `rawIndexOf()` mencocokkan ulang record lewat nomor baris sheet + lokasi (atau timestamp|lokasi|jenis); modal detail yang sedang terbuka otomatis dirender ulang dengan data baru (halaman, filter status, dan posisi scroll dipertahankan).
+
+### Modal Detail Jenis Engine/Irigator dirombak (v48)
+- Tabel "Kerusakan per lokasi" dan "Daftar laporan" dihapus dari modal. Sebagai gantinya, baris pada kartu **Lokasi kerusakan, Jenis kerusakan, Unit terdampak, Sparepart, Tingkat, PIC, Per divisi** bisa diklik → membuka modal detail generik (ringkasan + daftar laporan berpaging + tombol edit) yang sudah difilter ke jenis engine tsb., dengan tombol **Kembali** ke modal jenis.
+- Resume baru: tingkat penyelesaian (%), rata-rata usia laporan tertunda & jumlah yang sudah ber-PR, 30 hari terakhir vs 30 hari sebelumnya (arah tren), unit paling bermasalah (klik → detail unit), distribusi tingkat kerusakan, PIC penanganan, tren per bulan, per divisi, lokasi rusak berulang (≥2×), daftar "belum ditangani paling lama" (usia hari + tombol edit), dan tombol "Lihat semua laporan".

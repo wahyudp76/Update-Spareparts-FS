@@ -2351,6 +2351,24 @@ function openUnitDetail(kind, type, code){
     openGroupDetail({kind, name:`${type} ${code}`, title:`${isEng?'Engine':'Irigator'} ${type} ${code}`, icon:isEng?'fa-gear':'fa-spray-can',
         match:d=>d[tf]===type && d[cf]===code, searchQuery:`${type} ${code}`});
 }
+// Drill-down dari modal Detail Jenis Engine/Irigator: lokasi / jenis kerusakan / unit / sparepart / tingkat / PIC / divisi
+function openTypeSubDetail(kind, type, field, value){
+    const isEng = kind==='engine', tf=isEng?'engineType':'irrType', cf=isEng?'engineCode':'irrCode', label=isEng?'Engine':'Irigator';
+    if(field==='unit'){ closeModal('typeDetailModal'); return openUnitDetail(kind, type, value); }
+    const base = d=>d[tf]===type;
+    const F = {
+        all:       [d=>true, `${label} ${type} · semua laporan`, type],
+        lokasi:    [d=>d.lokasi===value, `${label} ${type} · Lokasi ${value}`, value],
+        damageType:[d=>(d.damageType||'-')===value, `${label} ${type} · ${value}`, value],
+        sparepart: [d=>d.sparepart&&d.sparepart!=='-'&&d.sparepart.split(/;\s*/).map(x=>x.trim()).includes(value), `${label} ${type} · Sparepart ${value}`, value],
+        tingkat:   [d=>effectiveTingkat(d)===value, `${label} ${type} · Tingkat ${value}`, type],
+        pic:       [d=>picOf(d)===value, `${label} ${type} · PIC ${value}`, type],
+        divisi:    [d=>d.divisi===value, `${label} ${type} · Divisi ${value}`, type],
+    }[field];
+    if(!F) return;
+    closeModal('typeDetailModal');
+    openGroupDetail({kind:'typesub', name:`${type} ${value||''}`.trim(), title:F[1], icon:isEng?'fa-oil-can':'fa-spray-can', match:d=>base(d)&&F[0](d), searchQuery:F[2], backTo:{kind,type}});
+}
 function openDivisiDetail(dv){ openGroupDetail({kind:'divisi', name:dv, title:'Divisi '+dv, icon:'fa-building', match:d=>d.divisi===dv, filterKey:'divisi', filterEl:'divisiFilter'}); }
 // Modal detail generik untuk satu kelompok laporan (jenis kerusakan / divisi)
 function openGroupDetail(cfg){
@@ -2385,6 +2403,7 @@ function openGroupDetail(cfg){
     const scopeBtn=(k,l)=>`<button type="button" onclick="openDamageDetail._scope='${k}'; openGroupDetail(openGroupDetail._cfg)" class="px-2.5 py-1 rounded-md text-[11px] font-semibold ${ (openDamageDetail._scope==='all')===(k==='all') ? 'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${l}</button>`;
     box.innerHTML=`
       <div class="flex flex-wrap items-center gap-2 mb-3">
+        ${cfg.backTo?`<button type="button" onclick="closeModal('dmgDetailModal'); openTypeDetail('${escapeHtml(cfg.backTo.kind)}','${escapeHtml(cfg.backTo.type).replace(/'/g,"\\'")}')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200"><i class="fas fa-arrow-left mr-1"></i>Kembali</button>`:''}
         <div class="flex items-center gap-1">${scopeBtn('filter',`Sesuai filter (${inFilter.length})`)}${scopeBtn('all',`Semua data (${all.length})`)}</div>
         <button type="button" onclick="${cfg.searchQuery
             ? `state.search='${escapeHtml(cfg.searchQuery).toLowerCase().replace(/'/g,"\\'")}'; var si=document.getElementById('searchInput'); if(si) si.value='${escapeHtml(cfg.searchQuery).replace(/'/g,"\\'")}';`
@@ -2602,22 +2621,44 @@ function openTypeDetail(kind, type){
             + (dates.length?` Rentang laporan: ${fmtDateShort(dates[0])}${dates.length>1?` – ${fmtDateShort(dates[dates.length-1])}`:''}.`:'');
     }
 
-    const rowsHtml = [...items].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).map(d=>`
-        <tr class="border-b border-slate-100 last:border-0">
-            <td class="py-1.5 pr-2 whitespace-nowrap text-slate-600">${fmtDateShort(d.timestamp)}</td>
-            <td class="py-1.5 pr-2 font-semibold text-sky-700">${escapeHtml(d.lokasi)}</td>
-            <td class="py-1.5 pr-2 text-slate-600">${escapeHtml(d.divisi)}</td>
-            <td class="py-1.5 pr-2 font-mono text-slate-700">${d[cf]&&d[cf]!=='-'?escapeHtml(d[cf]):'—'}</td>
-            <td class="py-1.5 pr-2 text-slate-800">${escapeHtml(d.damageType||'-')}${d.keterangan?`<div class="text-[10px] text-slate-500">${escapeHtml(d.keterangan)}</div>`:''}</td>
-            <td class="py-1.5 pr-2 text-slate-600">${d.sparepart&&d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">—</span>'}</td>
-            <td class="py-1.5 whitespace-nowrap">${statusBadge(d)}</td>
-        </tr>`).join('');
-
-    const lokDmgHtml = Object.entries(lokDmg).sort((a,b)=>Object.values(b[1]).reduce((x,y)=>x+y,0)-Object.values(a[1]).reduce((x,y)=>x+y,0)).map(([l,m])=>`
-        <div class="flex items-start gap-2 text-xs py-1 border-b border-slate-100 last:border-0">
-            <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-0.5 rounded font-semibold whitespace-nowrap"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(l)}</span>
-            <div class="flex flex-wrap gap-1">${Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-semibold">${escapeHtml(k)}${v>1?` ×${v}`:''}</span>`).join('')}</div>
-        </div>`).join('');
+    // ---- Resume tambahan ----
+    const now = Date.now();
+    const byTk = cnt(items, x=>effectiveTingkat(x));
+    const byPic = cnt(items, x=>picOf(x));
+    const pendItems = items.filter(x=>x.status!=='Selesai');
+    const withPr = pendItems.filter(x=>x.prNumber).length;
+    const ages = pendItems.map(x=>Math.max(0,Math.floor((now-new Date(x.timestamp))/86400000)));
+    const avgAge = ages.length ? Math.round(ages.reduce((a,b)=>a+b,0)/ages.length) : 0;
+    const oldest = [...pendItems].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).slice(0,5);
+    const recur = byLok.filter(([,c])=>c>=2);
+    const last30 = items.filter(x=>now-new Date(x.timestamp) <= 30*86400000).length;
+    const prev30 = items.filter(x=>{ const a=now-new Date(x.timestamp); return a>30*86400000 && a<=60*86400000; }).length;
+    const trendTxt = prev30||last30 ? (last30>prev30?`<span class="text-red-600 font-semibold"><i class="fas fa-arrow-trend-up"></i> naik</span>`:last30<prev30?`<span class="text-emerald-600 font-semibold"><i class="fas fa-arrow-trend-down"></i> turun</span>`:`<span class="text-slate-500 font-semibold">stabil</span>`) : '';
+    const byMon={}; items.forEach(x=>{ const k=(x.tanggalInspeksi||'').slice(0,7); if(k) byMon[k]=(byMon[k]||0)+1; });
+    const mons=Object.keys(byMon).sort().slice(-6); const monMax=Math.max(1,...mons.map(k=>byMon[k]));
+    const fmtMon=k=>{ const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); };
+    const unitStats = {}; items.forEach(x=>{ const c=x[cf]; if(!c||c==='-') return; (unitStats[c]=unitStats[c]||{t:0,p:0}); unitStats[c].t++; if(x.status!=='Selesai') unitStats[c].p++; });
+    const worstUnit = Object.entries(unitStats).sort((a,b)=>b[1].p-a[1].p||b[1].t-a[1].t)[0];
+    const q = v => escapeHtml(String(v)).replace(/'/g,"\\'");
+    const K = q(kind), T = q(type);
+    // Baris bar yang bisa diklik → detail lengkap (modal generik dengan daftar berpaging + tombol edit)
+    const barClick = (rows, colr, field, maxShow=8) => {
+        if(!rows.length) return '<div class="text-xs text-slate-400 italic">Tidak ada data</div>';
+        const max = rows[0][1];
+        return rows.slice(0,maxShow).map(([k,v])=>`
+            <button type="button" onclick="openTypeSubDetail('${K}','${T}','${field}','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 transition text-left group" title="Klik untuk detail ${escapeHtml(k)}">
+                <div class="w-28 truncate font-medium text-slate-700 group-hover:text-sky-700">${escapeHtml(k)}</div>
+                <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(6,v/max*100)}%;background:${colr}"></div></div>
+                <div class="w-8 text-right font-bold text-slate-700">${v}</div>
+                <i class="fas fa-chevron-right text-[9px] text-slate-300 group-hover:text-sky-500"></i>
+            </button>`).join('') + (rows.length>maxShow?`<div class="text-[10px] text-slate-400 mt-1 px-1">+${rows.length-maxShow} lainnya</div>`:'');
+    };
+    const clickHint = `<span class="text-[10px] font-normal text-slate-400 ml-1">· klik untuk detail</span>`;
+    const tkCls = {Berat:'bg-red-500',Sedang:'bg-amber-400',Ringan:'bg-emerald-500'};
+    const tkHtml = byTk.length ? byTk.map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','tingkat','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-16 font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${tkCls[k]||'bg-slate-400'}" style="width:${Math.round(v/total*100)}%"></div></div><span class="w-16 text-right font-bold text-slate-700">${v} <span class="font-normal text-slate-400">(${Math.round(v/total*100)}%)</span></span></button>`).join('') : '<div class="text-xs text-slate-400 italic">—</div>';
+    const picHtml = byPic.length ? byPic.slice(0,6).map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','pic','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-24 truncate font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-violet-500" style="width:${Math.round(v/total*100)}%"></div></div><span class="w-8 text-right font-bold text-slate-700">${v}</span></button>`).join('') : '<div class="text-xs text-slate-400 italic">—</div>';
+    const monHtml = mons.length ? `<div class="flex items-end gap-1.5 h-20">${mons.map(k=>`<div class="flex-1 flex flex-col items-center justify-end gap-1 h-full"><span class="text-[10px] font-bold text-slate-700">${byMon[k]}</span><div class="w-full rounded-t-md" style="height:${Math.max(6,byMon[k]/monMax*100)}%;background:${color}"></div><span class="text-[9px] text-slate-500 whitespace-nowrap">${fmtMon(k)}</span></div>`).join('')}</div>` : '<div class="text-xs text-slate-400 italic">—</div>';
+    const oldestHtml = oldest.length ? oldest.map(x=>{ const age=Math.max(0,Math.floor((now-new Date(x.timestamp))/86400000)); const ri=rawIndexOf(x); return `<div class="flex items-center justify-between gap-2 text-xs py-1.5 border-b border-red-100 last:border-0"><div class="min-w-0"><span class="font-semibold text-slate-800">${escapeHtml(x.lokasi)}</span> <span class="text-slate-400">· ${x[cf]&&x[cf]!=='-'?escapeHtml(type+' '+x[cf]):''}</span> <span class="text-slate-600">· ${escapeHtml(x.damageType||'-')}</span>${x.prNumber?` <span class="text-[10px] text-sky-700">PR ${escapeHtml(x.prNumber)}</span>`:''}</div><div class="flex items-center gap-1.5 flex-shrink-0"><span class="font-bold ${age>30?'text-red-700':age>14?'text-amber-700':'text-slate-700'}">${age} hari</span>${getWriteUrl()&&ri>=0?`<button type="button" onclick="closeModal('typeDetailModal');openEditModalRaw(${ri})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</div></div>`; }).join('') : '<div class="text-xs text-emerald-700"><i class="fas fa-circle-check mr-1"></i>Semua laporan sudah ditangani</div>';
 
     modal.querySelector('.modal').innerHTML = `
         <div class="p-5 text-white" style="background:linear-gradient(135deg,${color},${shade(color,-25)})">
@@ -2636,30 +2677,31 @@ function openTypeDetail(kind, type){
                 ${[['Laporan',total],['Unit',byUnit.length],['Lokasi',byLok.length],['Belum ditangani',pending]].map(([k,v])=>`<div class="bg-white/15 rounded-lg p-2 text-center"><div class="stat-number text-xl">${v}</div><div class="text-[9px] uppercase font-semibold opacity-80">${k}</div></div>`).join('')}
             </div>
         </div>
-        <div class="p-5 space-y-5">
+        <div class="p-5 space-y-4">
             <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed"><i class="fas fa-circle-info mr-1" style="color:${color}"></i>${summary}</div>
             ${total?`
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="rounded-xl border border-slate-100 bg-white p-3"><div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Tingkat penyelesaian</div><div class="stat-number text-xl text-emerald-600">${Math.round((total-pending)/total*100)}%</div><div class="text-[10px] text-slate-500">${total-pending} dari ${total} selesai</div></div>
+                <div class="rounded-xl border border-slate-100 bg-white p-3"><div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Rata-rata usia tertunda</div><div class="stat-number text-xl ${avgAge>30?'text-red-600':avgAge>14?'text-amber-600':'text-slate-800'}">${avgAge} <span class="text-xs font-semibold">hari</span></div><div class="text-[10px] text-slate-500">${pending} laporan · ${withPr} sudah ada PR</div></div>
+                <div class="rounded-xl border border-slate-100 bg-white p-3"><div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">30 hari terakhir</div><div class="stat-number text-xl text-slate-800">${last30}</div><div class="text-[10px] text-slate-500">vs ${prev30} sebelumnya ${trendTxt}</div></div>
+                <div class="rounded-xl border border-slate-100 bg-white p-3"><div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Unit paling bermasalah</div>${worstUnit?`<button type="button" onclick="closeModal('typeDetailModal');openUnitDetail('${K}','${T}','${q(worstUnit[0])}')" class="stat-number text-xl text-left hover:underline" style="color:${color}">${escapeHtml(type)} ${escapeHtml(worstUnit[0])}</button><div class="text-[10px] text-slate-500">${worstUnit[1].t} laporan · ${worstUnit[1].p} belum selesai</div>`:'<div class="text-sm text-slate-400 italic">—</div>'}</div>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-sky-500 mr-1"></i>Lokasi kerusakan</h4>${bar(byLok,'#0ea5e9')}</div>
-                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i>Jenis kerusakan</h4>${bar(byDmg,'#ef4444')}</div>
-                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-hashtag mr-1" style="color:${color}"></i>Unit terdampak</h4>${bar(byUnit,color)}</div>
-                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart dibutuhkan</h4>${bar(bySp,'#f59e0b')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-map-marker-alt text-sky-500 mr-1"></i>Lokasi kerusakan${clickHint}</h4>${barClick(byLok,'#0ea5e9','lokasi')}${recur.length?`<div class="mt-2 text-[10.5px] text-amber-700 bg-amber-50 rounded-md px-2 py-1"><i class="fas fa-rotate mr-1"></i>${recur.length} lokasi rusak berulang (≥2×): ${recur.slice(0,6).map(([k,v])=>`<b>${escapeHtml(k)}</b> ×${v}`).join(', ')}${recur.length>6?', …':''}</div>`:''}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i>Jenis kerusakan${clickHint}</h4>${barClick(byDmg,'#ef4444','damageType')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-hashtag mr-1" style="color:${color}"></i>Unit terdampak${clickHint}</h4>${barClick(byUnit.map(([k,v])=>[k.slice(type.length+1),v]),color,'unit')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-cog text-amber-500 mr-1"></i>Sparepart dibutuhkan${clickHint}</h4>${barClick(bySp,'#f59e0b','sparepart')}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-gauge-high text-slate-500 mr-1"></i>Tingkat kerusakan</h4>${tkHtml}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-user-gear text-violet-500 mr-1"></i>PIC penanganan</h4>${picHtml}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-chart-column mr-1" style="color:${color}"></i>Tren per bulan</h4>${monHtml}</div>
+                <div class="card p-4"><h4 class="text-xs font-bold text-slate-800 mb-3"><i class="fas fa-sitemap text-slate-500 mr-1"></i>Per divisi</h4>${byDiv.map(([k,v])=>`<button type="button" onclick="openTypeSubDetail('${K}','${T}','divisi','${q(k)}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-0.5 hover:bg-slate-100 text-left"><span class="w-16 font-medium text-slate-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(v/total*100)}%;background:${DIV_COLORS[k]||'#64748b'}"></div></div><span class="w-16 text-right font-bold text-slate-700">${v} <span class="font-normal text-slate-400">(${Math.round(v/total*100)}%)</span></span></button>`).join('')}</div>
             </div>
-            <div class="card p-4">
-                <h4 class="text-xs font-bold text-slate-800 mb-2"><i class="fas fa-sitemap text-slate-500 mr-1"></i>Kerusakan per lokasi</h4>
-                ${lokDmgHtml}
+            <div class="rounded-xl border border-red-100 bg-red-50/60 p-4">
+                <h4 class="text-xs font-bold text-red-800 mb-1"><i class="fas fa-hourglass-half mr-1"></i>Belum ditangani paling lama</h4>
+                ${oldestHtml}
             </div>
-            <div class="card p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-xs font-bold text-slate-800"><i class="fas fa-list text-slate-500 mr-1"></i>Daftar laporan (${total})</h4>
-                    <div class="flex gap-1 flex-wrap">${chips(byDiv,'bg-slate-100 text-slate-700')}</div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-slate-200"><th class="text-left py-1.5 pr-2">Tanggal</th><th class="text-left py-1.5 pr-2">Lokasi</th><th class="text-left py-1.5 pr-2">Divisi</th><th class="text-left py-1.5 pr-2">Kode</th><th class="text-left py-1.5 pr-2">Kerusakan</th><th class="text-left py-1.5 pr-2">Sparepart</th><th class="text-left py-1.5">Status</th></tr></thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeModal('typeDetailModal'); openTypeSubDetail('${K}','${T}','all','')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:${color}"><i class="fas fa-list mr-1"></i>Lihat semua ${total} laporan ${label} ${escapeHtml(type)}</button>
             </div>`:''}
         </div>`;
     openModal('typeDetailModal');
