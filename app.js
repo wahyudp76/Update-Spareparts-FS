@@ -512,7 +512,7 @@ function openSparepartDetail(key){
                     <td class="py-2 pr-2 text-slate-700">${escapeHtml(d.damageType)}<div class="text-[10px] text-slate-400">${escapeHtml((d.keterangan||'').slice(0,80))}</div></td>
                     <td class="py-2 pr-2">${tingkatBadge(effectiveTingkat(d))}</td>
                     <td class="py-2 pr-2">${statusBadge(d)}</td>
-                    <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawData.indexOf(d)})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</td>
+                    <td class="py-2 whitespace-nowrap">${getWriteUrl()?`<button onclick="closeModal('typeDetailModal');openEditModalRaw(${rawIndexOf(d)})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</td>
                 </tr>`).join('')}</tbody>
             </table></div>
         </div>`;
@@ -1008,6 +1008,8 @@ async function refreshData(forceLive=false, opts={}) {
         validateAll(data);
         rawData = indexRecords(data);
         renderQualityBanner();
+        // Modal detail kelompok (jenis kerusakan/divisi/unit) sedang terbuka → segarkan daftarnya dengan objek data baru
+        try{ const dm=document.getElementById('dmgDetailModal'); if(dm && dm.classList.contains('show') && openGroupDetail._cfg){ const pg=openGroupDetail._page, lf=openGroupDetail._lf, sc=dm.querySelector('.modal'), st=sc?sc.scrollTop:0; openGroupDetail(openGroupDetail._cfg); openGroupDetail._page=pg||1; openGroupDetail._lf=lf||'all'; renderGroupDetailList(); if(sc) sc.scrollTop=st; } }catch(e){}
         if (source==='live-sheet' || source==='github-cache') {
             // Simpan di latar (idle) tanpa field turunan agar cache kecil & parse cepat
             const persist = () => { try {
@@ -2334,6 +2336,15 @@ function renderDivisiTab(){
 }
 // ---------- Detail lengkap per jenis kerusakan (modal) ----------
 const _dmgName = d => (d.damageType&&d.damageType!=='-')?d.damageType:'Lainnya';
+// Indeks record di rawData yang tahan terhadap refresh: setelah sinkron, objek rawData dibuat
+// ulang sehingga indexOf(d) pada daftar modal yang lama = -1 (tombol edit hilang). Cocokkan
+// kembali lewat nomor baris sheet + lokasi, atau kunci timestamp|lokasi|jenis.
+function rawIndexOf(d){
+    if(!d) return -1;
+    let i = rawData.indexOf(d); if(i>=0) return i;
+    if(typeof d.__row==='number') { i = rawData.findIndex(x=>x.__row===d.__row && lokKey(x.lokasi)===lokKey(d.lokasi)); if(i>=0) return i; }
+    return rawData.findIndex(x=>x.timestamp===d.timestamp && x.lokasi===d.lokasi && x.damageType===d.damageType);
+}
 function openDamageDetail(name){ openGroupDetail({kind:'damage', name, icon:'fa-bug', match:d=>_dmgName(d)===name, filterKey:'damage', filterEl:'damageFilter'}); }
 function openUnitDetail(kind, type, code){
     const isEng = kind==='engine', tf=isEng?'engineType':'irrType', cf=isEng?'engineCode':'irrCode';
@@ -2422,7 +2433,7 @@ function renderGroupDetailList(){
         <div class="text-[11px] font-bold text-slate-700"><i class="fas fa-list mr-1"></i>Daftar laporan — terbaru dulu${pages>1?` <span class="font-normal text-slate-400">(hal. ${pg}/${pages})</span>`:''}</div>
         <div class="flex items-center gap-1">${fbtn('all','Semua',all.length)}${fbtn('open','Belum',nOpen)}${fbtn('done','Selesai',all.length-nOpen)}</div>
       </div>
-      ${slice.length ? `<div class="space-y-1.5">${slice.map(d=>{ const ri=rawData.indexOf(d); return `
+      ${slice.length ? `<div class="space-y-1.5">${slice.map(d=>{ const ri=rawIndexOf(d); return `
         <div class="p-2.5 rounded-lg border border-slate-100 bg-white text-[11px]">
           <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
             <span class="font-semibold text-slate-800"><i class="fas fa-location-dot text-red-400 text-[9px] mr-1"></i>${escapeHtml(d.lokasi)} <span class="text-slate-400 font-normal">· ${escapeHtml(d.divisi)}${d.engine&&d.engine!=='-'?' · '+escapeHtml(d.engine):''}${d.irrigator&&d.irrigator!=='-'?' · '+escapeHtml(d.irrigator):''}</span></span>
@@ -2928,7 +2939,7 @@ function renderCalDayDetail(){
         <div class="rounded-md bg-red-50 py-1.5"><div class="text-base font-bold text-red-700">${dBerat}</div><div class="text-[9px] text-slate-500 uppercase">Berat</div></div></div>`;
     box.innerHTML=sum+items.map(d=>{
         const badge = statusBadge(d);
-        const ri = rawData.indexOf(d);
+        const ri = rawIndexOf(d);
         const editBtn = getWriteUrl() && ri>=0 ? `<button type="button" onclick="openEditModalRaw(${ri})" class="act-btn edit flex-shrink-0" title="Edit laporan ini"><i class="fas fa-pen"></i></button>` : '';
         return `<div class="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
             <div class="flex items-start justify-between gap-2 mb-1">
@@ -3732,7 +3743,7 @@ function openEditModal(globalIdx){
     // globalIdx adalah indeks di filteredData
     const d = filteredData[globalIdx];
     if(!d) return;
-    return openEditModalRaw(rawData.indexOf(d));
+    return openEditModalRaw(rawIndexOf(d));
 }
 // Buka editor berdasarkan indeks di rawData (tidak bergantung pada filter aktif)
 function openEditModalRaw(rawi){
@@ -3916,7 +3927,7 @@ async function submitEdit(){
                 msg.innerHTML=`<div class="text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2"><i class="fas fa-circle-exclamation mr-1"></i>Baris ini tidak ditemukan lagi di spreadsheet (mungkin sudah dihapus atau dipindah). <button type="button" onclick="closeModal('editModal');refreshData(true)" class="ml-1 px-2 py-0.5 rounded bg-slate-900 text-white font-semibold">Refresh data</button></div>`;
                 return;
             }
-            const srvIdx = rawData.indexOf(d);
+            const srvIdx = rawIndexOf(d);
             window.__conflictFresh = conflict.srv;
             msg.innerHTML=`<div class="text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
                 <div class="font-semibold"><i class="fas fa-code-compare mr-1"></i>Baris ini sudah berubah di spreadsheet sejak dimuat:</div>
