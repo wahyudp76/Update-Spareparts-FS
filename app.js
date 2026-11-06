@@ -88,7 +88,7 @@ function validateRecord(d){
     const FO = typeof FORM_OPTIONS!=='undefined' ? FORM_OPTIONS : null;
     if(FO){
         if(!d.damageType || d.damageType==='-') issues.push({field:'damageType',col:'Jenis Kerusakan',type:'missing',msg:'Jenis Kerusakan kosong (wajib di Google Form).'});
-        else if(FO.damageType.length && !FO.damageType.includes(d.damageType)) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'enum',msg:`Jenis Kerusakan "${d.damageType}" tidak ada di pilihan Google Form.`});
+        else if(FO.damageType.length && !FO.damageType.includes(d.damageType) && !(typeof SUMUR_DAMAGES!=='undefined' && SUMUR_DAMAGES.includes(d.damageType))) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'enum',msg:`Jenis Kerusakan "${d.damageType}" tidak ada di pilihan Google Form.`});
         if(d.divisi && d.divisi!=='-' && FO.divisi.length && !FO.divisi.includes(d.divisi)) issues.push({field:'divisi',col:'Divisi',type:'enum',msg:`Divisi "${d.divisi}" tidak ada di pilihan form (${FO.divisi.join('/')}).`});
         if(d.engineType && d.engineType!=='-' && FO.engineType.length && !FO.engineType.includes(d.engineType)) issues.push({field:'engineType',col:'Jenis Engine',type:'enum',msg:`Jenis Engine "${d.engineType}" tidak ada di pilihan form.`});
         if(d.irrType && d.irrType!=='-' && FO.irrType.length && !FO.irrType.includes(d.irrType)) issues.push({field:'irrType',col:'Jenis Irrigator',type:'enum',msg:`Jenis Irrigator "${d.irrType}" tidak ada di pilihan form.`});
@@ -1267,7 +1267,7 @@ function applyFilters() {
     updateTabBadges();
     // Render malas: hanya tab yang sedang terlihat yang dirender sekarang;
     // tab lain ditandai "kotor" dan dirender saat dibuka (hemat ~70% waktu per filter).
-    __dirtyTabs = new Set(['overview','damage','divisi','engine','irrigator','severity','spareparts','calendar','data']);
+    __dirtyTabs = new Set(['overview','damage','divisi','engine','irrigator','sumur','severity','spareparts','calendar','data']);
     renderTabContent(state.tab);
 }
 
@@ -1278,6 +1278,7 @@ const TAB_RENDERERS = {
     divisi:    () => { renderDivisiTab(); },
     engine:    () => { renderEngineTab(); },
     irrigator: () => { renderIrrTab(); },
+    sumur:     () => { renderSumurTab(); },
     severity:  () => { renderSeverityTab(); },
     spareparts:() => { renderSparepartsTab(false); },
     calendar:  () => { renderCalendar(); renderCalDayDetail(); },
@@ -1327,7 +1328,7 @@ function picOptions(){
 function damageOptions(){
     const cnt={}; rawData.forEach(d=>{ const v=d.damageType; if(v&&v!=='-') cnt[v]=(cnt[v]||0)+1; });
     const fromData=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
-    const extra=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.damageType||[]).filter(v=>!cnt[v]).sort();
+    const extra=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.damageType||[]).concat(typeof SUMUR_DAMAGES!=='undefined'?SUMUR_DAMAGES:[]).filter((v,i,a)=>!cnt[v]&&a.indexOf(v)===i).sort();
     return fromData.concat(extra);
 }
 function repop(id,key){
@@ -1608,6 +1609,7 @@ function renderCharts() {
     ['trend','status','lokasi','sparepart','jenis','divisi','divStacked','engine','engineType','irrigator','irrType','pic'].forEach(k=>dk(k));
     renderSeverityCharts();
     renderSparepartCharts();
+    renderSumurCharts();
 
     // ==== TREND (overview tab) ====
     const trendEl = document.getElementById('trendChart');
@@ -2718,6 +2720,98 @@ function openTypeDetail(kind, type){
         </div>`;
     openModal('typeDetailModal');
 }
+// ---------- Tab Sumur ----------
+function openSumurDetail(field, value){
+    const base = d=>isSumur(d);
+    const F = {
+        all:   [d=>true, 'Sumur · semua laporan', 'sumur'],
+        lokasi:[d=>d.lokasi===value, `Sumur · Lokasi ${value}`, value],
+        damageType:[d=>(d.damageType||'-')===value, `Sumur · ${value}`, value],
+        sparepart:[d=>d.sparepart&&d.sparepart!=='-'&&d.sparepart.split(/;\s*/).map(x=>x.trim()).includes(value), `Sumur · Sparepart ${value}`, value],
+        pic:   [d=>picOf(d)===value, `Sumur · PIC ${value}`, value],
+        divisi:[d=>d.divisi===value, `Sumur · Divisi ${value}`, value],
+        tingkat:[d=>effectiveTingkat(d)===value, `Sumur · Tingkat ${value}`, value],
+        open:  [d=>d.status!=='Selesai', 'Sumur · belum ditangani', 'sumur'],
+    }[field]; if(!F) return;
+    openGroupDetail({kind:'sumur', name:`Sumur ${value||''}`.trim(), title:F[1], icon:'fa-water', match:d=>base(d)&&F[0](d), searchQuery:F[2]});
+}
+function renderSumurTab(){
+    const items = filteredData.filter(isSumur);
+    const total=items.length, pend=items.filter(d=>d.status!=='Selesai'), done=total-pend.length;
+    const now=Date.now();
+    const cnt=(fn)=>{ const m={}; items.forEach(d=>{ const k=fn(d); if(k&&k!=='-') m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+    const byLok=cnt(d=>d.lokasi), byPic=cnt(d=>picOf(d)), byDiv=cnt(d=>d.divisi), byTk=cnt(d=>effectiveTingkat(d));
+    const spm={}; items.forEach(d=>{ if(d.sparepart&&d.sparepart!=='-') d.sparepart.split(/;\s*/).forEach(x=>{x=x.trim(); if(x) spm[x]=(spm[x]||0)+1;}); });
+    const bySp=Object.entries(spm).sort((a,b)=>b[1]-a[1]);
+    const ages=pend.map(d=>Math.max(0,Math.floor((now-new Date(d.timestamp))/86400000)));
+    const avgAge=ages.length?Math.round(ages.reduce((a,b)=>a+b,0)/ages.length):0;
+    const berat=items.filter(d=>effectiveTingkat(d)==='Berat').length;
+    const recur=byLok.filter(([,c])=>c>=2).length;
+    const last30=items.filter(d=>now-new Date(d.timestamp)<=30*86400000).length;
+    const prev30=items.filter(d=>{const a=now-new Date(d.timestamp); return a>30*86400000&&a<=60*86400000;}).length;
+    const note=document.getElementById('sumurNote'); if(note) note.innerHTML=`<i class="fas fa-circle-info mr-1 text-cyan-600"></i>${total} laporan sumur dari ${filteredData.length} (${filteredData.length?Math.round(total/filteredData.length*100):0}%) · 30 hari terakhir <b>${last30}</b> vs ${prev30} sebelumnya`;
+    const kp=document.getElementById('sumurKpis');
+    if(kp) kp.innerHTML=[
+        ['Total laporan sumur',total,'fa-water','text-cyan-600','bg-cyan-50',`${byLok.length} lokasi`,'all',''],
+        ['Belum ditangani',pend.length,'fa-hourglass-half','text-red-600','bg-red-50',`${total?Math.round(pend.length/total*100):0}% dari total · ${pend.filter(d=>d.prNumber).length} ada PR`,'open',''],
+        ['Selesai diperbaiki',done,'fa-circle-check','text-emerald-600','bg-emerald-50',`${total?Math.round(done/total*100):0}% tingkat penyelesaian`,'',''],
+        ['Berat',berat,'fa-triangle-exclamation','text-amber-600','bg-amber-50',`${recur} lokasi rusak berulang`,'tingkat','Berat'],
+        ['Rata-rata usia tertunda',avgAge,'fa-clock','text-slate-700','bg-slate-100',ages.length?`hari · terlama ${Math.max(...ages)} hari`:'tidak ada yang tertunda','open',''],
+    ].map(([t,v,ic,tc,bg,sub,f,val])=>`<div class="card card-hover p-4 ${f?'cursor-pointer':''}" ${f?`onclick="openSumurDetail('${f}','${val}')"`:''}>
+        <div class="flex items-start justify-between"><div><div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">${t}</div><div class="stat-number text-3xl mt-1 ${tc}">${v}</div><div class="text-[11px] text-slate-500 mt-0.5">${sub}</div></div><div class="w-9 h-9 rounded-lg ${bg} ${tc} flex items-center justify-center"><i class="fas ${ic}"></i></div></div></div>`).join('');
+    const bar=(rows,field,color,max=8)=> rows.length ? rows.slice(0,max).map(([k,v])=>`<button type="button" onclick="openSumurDetail('${field}','${escapeHtml(k).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-1 hover:bg-slate-100 text-left group"><span class="w-24 truncate font-medium text-slate-700 group-hover:text-sky-700">${escapeHtml(k)}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(6,v/rows[0][1]*100)}%;background:${color}"></div></div><span class="w-7 text-right font-bold text-slate-700">${v}</span><i class="fas fa-chevron-right text-[9px] text-slate-300 group-hover:text-sky-500"></i></button>`).join('') + (rows.length>max?`<div class="text-[10px] text-slate-400 px-1 mt-1">+${rows.length-max} lainnya</div>`:'') : '<div class="text-xs text-slate-400 italic">Tidak ada data</div>';
+    const set=(id,h)=>{ const el=document.getElementById(id); if(el) el.innerHTML=h; };
+    set('sumurLok', bar(byLok,'lokasi','#ef4444'));
+    set('sumurSp', bar(bySp,'sparepart','#f59e0b'));
+    set('sumurPic', `<div class="text-[9px] font-bold text-slate-400 uppercase mb-1">PIC</div>${bar(byPic,'pic','#8b5cf6',5)}<div class="text-[9px] font-bold text-slate-400 uppercase mt-3 mb-1">Divisi</div>${bar(byDiv,'divisi','#0ea5e9',5)}`);
+    const tkC={Berat:'#ef4444',Sedang:'#f59e0b',Ringan:'#10b981'};
+    set('sumurTk', `${byTk.length?byTk.map(([k,v])=>`<button type="button" onclick="openSumurDetail('tingkat','${k}')" class="w-full flex items-center gap-2 text-xs rounded-md px-1 py-1 hover:bg-slate-100 text-left"><span class="w-16 font-medium text-slate-700">${k}</span><div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full" style="width:${Math.round(v/total*100)}%;background:${tkC[k]||'#94a3b8'}"></div></div><span class="w-16 text-right font-bold text-slate-700">${v} <span class="font-normal text-slate-400">(${Math.round(v/total*100)}%)</span></span></button>`).join(''):'<div class="text-xs text-slate-400 italic">Tidak ada data</div>'}
+        <div class="mt-3 grid grid-cols-3 gap-1.5 text-center">
+            <div class="rounded-md bg-slate-50 py-1.5"><div class="text-sm font-bold text-slate-800">${ages.filter(a=>a<=14).length}</div><div class="text-[9px] text-slate-500">≤14 hari</div></div>
+            <div class="rounded-md bg-amber-50 py-1.5"><div class="text-sm font-bold text-amber-700">${ages.filter(a=>a>14&&a<=30).length}</div><div class="text-[9px] text-slate-500">15–30 hari</div></div>
+            <div class="rounded-md bg-red-50 py-1.5"><div class="text-sm font-bold text-red-700">${ages.filter(a=>a>30).length}</div><div class="text-[9px] text-slate-500">&gt;30 hari</div></div>
+        </div><div class="text-[10px] text-slate-400 mt-1">Usia laporan yang belum ditangani</div>`);
+    const open=[...pend].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp)).slice(0,12);
+    set('sumurOpen', open.length ? `<div class="space-y-1.5">${open.map(d=>{ const age=Math.max(0,Math.floor((now-new Date(d.timestamp))/86400000)); const ri=rawIndexOf(d); return `<div class="flex items-center justify-between gap-2 text-xs p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50">
+        <div class="min-w-0"><div class="flex items-center gap-1.5 flex-wrap"><span class="font-semibold text-slate-800"><i class="fas fa-location-dot text-red-400 text-[9px] mr-1"></i>${escapeHtml(d.lokasi)}</span><span class="text-slate-400">· ${escapeHtml(d.divisi)}</span>${tingkatBadge(effectiveTingkat(d))}${d.prNumber?`<span class="text-[10px] text-sky-700 font-semibold">PR ${escapeHtml(d.prNumber)}</span>`:'<span class="text-[10px] text-slate-400">belum ada PR</span>'}</div>
+        <div class="text-slate-700 mt-0.5"><b>${escapeHtml(d.damageType||'-')}</b>${d.keterangan?` — ${escapeHtml(d.keterangan)}`:''}</div>
+        ${d.sparepart&&d.sparepart!=='-'?`<div class="text-[10.5px] text-amber-700 mt-0.5"><i class="fas fa-cog text-[8px] mr-1"></i>${escapeHtml(d.sparepart)}</div>`:''}</div>
+        <div class="flex items-center gap-2 flex-shrink-0"><div class="text-right"><div class="font-bold ${age>30?'text-red-700':age>14?'text-amber-700':'text-slate-700'}">${age} hari</div><div class="text-[10px] text-slate-400">${fmtDateShort(d.timestamp)} · ${escapeHtml(picOf(d))}</div></div>${getWriteUrl()&&ri>=0?`<button type="button" onclick="openEditModalRaw(${ri})" class="act-btn edit" title="Edit"><i class="fas fa-pen"></i></button>`:''}</div></div>`; }).join('')}</div>${pend.length>12?`<div class="text-[11px] text-slate-500 mt-2">Menampilkan 12 terlama dari ${pend.length} — klik "Semua laporan sumur" untuk daftar lengkap.</div>`:''}`
+        : '<div class="text-center py-8 text-sm text-emerald-700"><i class="fas fa-circle-check text-3xl mb-2 block text-emerald-300"></i>Semua laporan sumur sudah ditangani ✓</div>');
+    renderSumurCharts();
+}
+function renderSumurCharts(){
+    dk('sumurTrend'); dk('sumurDmg');
+    const items = filteredData.filter(isSumur);
+    const tEl=document.getElementById('sumurTrendChart');
+    if(tEl && isElVisible(tEl)){
+        const {groups, getKey, labelFmt} = buildTrendBuckets();
+        const pendG={}; Object.keys(groups).forEach(k=>pendG[k]=0);
+        items.forEach(d=>{ const t=new Date(d.timestamp); if(isNaN(t)) return; const k=getKey(t); groups[k]=(groups[k]||0)+1; if(d.status!=='Selesai') pendG[k]=(pendG[k]||0)+1; });
+        const keys=Object.keys(groups).sort(); const vals=keys.map(k=>groups[k]); const pv=keys.map(k=>pendG[k]||0);
+        const sub=document.getElementById('sumurTrendSub'); const pk=vals.reduce((m,v,i)=>v>vals[m]?i:m,0);
+        if(sub) sub.textContent = items.length ? `${items.length} laporan · puncak ${labelFmt(keys[pk])} (${vals[pk]} laporan)` : 'Tidak ada laporan sumur pada filter ini';
+        const ctx=tEl.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,240); g.addColorStop(0,'rgba(8,145,178,0.35)'); g.addColorStop(1,'rgba(8,145,178,0)');
+        const showPts = keys.length<=31;
+        charts.sumurTrend=new Chart(ctx,{type:'line',data:{labels:keys.map(labelFmt),datasets:[
+            {label:'Laporan sumur',data:vals,borderColor:'#0891b2',backgroundColor:g,fill:true,tension:.35,borderWidth:2.5,pointRadius:showPts?3:0,pointBackgroundColor:'#0891b2'},
+            {label:'Belum ditangani',data:pv,borderColor:'#ef4444',borderDash:[4,3],fill:false,tension:.35,borderWidth:1.5,pointRadius:0}]},
+            options:mkOpts(false,{plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10}}},valueLabels:keys.length<=16,tooltip:mkOpts().plugins.tooltip}})});
+    }
+    const dEl=document.getElementById('sumurDmgChart');
+    if(dEl && isElVisible(dEl)){
+        const m={}; items.forEach(d=>{ const k=d.damageType||'-'; (m[k]=m[k]||{o:0,d:0}); if(d.status!=='Selesai') m[k].o++; else m[k].d++; });
+        const rows=Object.entries(m).sort((a,b)=>(b[1].o+b[1].d)-(a[1].o+a[1].d));
+        if(rows.length){
+            const o=mkOpts(true,{plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:10}}},tooltip:mkOpts().plugins.tooltip},
+                onClick:(e,els)=>{ if(els.length) openSumurDetail('damageType', rows[els[0].index][0]); }});
+            o.indexAxis='y'; o.scales.x.stacked=true; o.scales.y.stacked=true;
+            charts.sumurDmg=new Chart(dEl.getContext('2d'),{type:'bar',data:{labels:rows.map(r=>r[0]),datasets:[
+                {label:'Belum ditangani',data:rows.map(r=>r[1].o),backgroundColor:'#ef4444',borderRadius:3,maxBarThickness:22},
+                {label:'Selesai',data:rows.map(r=>r[1].d),backgroundColor:'#06b6d4',borderRadius:3,maxBarThickness:22}]},options:o});
+        }
+    }
+}
 function renderUnitDetailGrid(gridId, byUnit, colorMap, defaultColor, codeLabel){
     const g = document.getElementById(gridId);
     if(!g) return;
@@ -3295,6 +3389,7 @@ function updateTabBadges(){
     if(bd) bd.textContent = types;
     if(bv) bv.textContent = divs;
     if(be) be.textContent = engUnits;
+    const bsu=document.getElementById('badgeSumur'); if(bsu) bsu.textContent = filteredData.filter(d=>isSumur(d)&&isOpen(d)).length;
     const bs=document.getElementById('badgeSeverity'); if(bs) bs.textContent = filteredData.filter(d=>isOpen(d)&&effectiveTingkat(d)==='Berat').length;
     // Badge spareparts: jumlah jenis sparepart yang masih dibutuhkan (laporan belum selesai) — murah, tanpa render tab
     const bsp=document.getElementById('badgeSpareparts'); if(bsp){ const ks=new Set(); filteredData.forEach(d=>{ if(isOpen(d)) splitSpareparts(d.sparepart).forEach(x=>ks.add(x.key)); }); bsp.textContent = ks.size; }
@@ -3557,11 +3652,16 @@ function applyUnitToForm(u, overwrite){
     const setSel=(id,val,opts)=>{ const el=document.getElementById(id); if(!el) return false; if(!val) return false; if(!overwrite && el.value) return false; fillSelect(id, opts, val, el.options[0]&&el.options[0].value===''?el.options[0].textContent:undefined); return el.value===val; };
     const setTxt=(id,val)=>{ const el=document.getElementById(id); if(!el||!val) return false; if(!overwrite && el.value.trim()) return false; el.value=val; el.classList.remove('border-red-400'); return true; };
     let n=0;
+    const asset=(document.getElementById('f_asset')||{}).value||'';
     if(FORM_OPTIONS.divisi.includes(u.divisi) && setSel('f_divisi', u.divisi, FORM_OPTIONS.divisi)) n++;
-    if(setSel('f_engineType', u.engineType, FORM_OPTIONS.engineType)) n++;
-    if(setTxt('f_engineCode', u.engineCode)) n++;
-    if(setSel('f_irrType', u.irrType, FORM_OPTIONS.irrType)) n++;
-    if(setTxt('f_irrCode', u.irrCode)) n++;
+    if(asset!=='irrigator' && asset!=='sumur'){
+        if(setSel('f_engineType', u.engineType, FORM_OPTIONS.engineType)) n++;
+        if(setTxt('f_engineCode', u.engineCode)) n++;
+    }
+    if(asset!=='engine' && asset!=='sumur'){
+        if(setSel('f_irrType', u.irrType, FORM_OPTIONS.irrType)) n++;
+        if(setTxt('f_irrCode', u.irrCode)) n++;
+    }
     return n;
 }
 let __lokT=null;
@@ -3630,6 +3730,63 @@ const FORM_OPTIONS = {
     repair:     ['Sudah','Belum'],
     pic:        ['Internal','Maintenance','Cogen','Engineering','Sumur Bor']
 };
+// ---- Kategori "yang rusak": Engine / Irrigator / Sumur ----
+// Jenis kerusakan per kategori. Engine = semua jenis di form yang bukan irrigator/sumur (+ Ban).
+const IRR_DAMAGES   = ['Gearbox','Turbin','Transmisi','Gun','Hidrolik','Pipa PE','Rantai','Impeler','Sproket','Ban'];
+const SUMUR_DAMAGES = ['Pompa Sumur Bor','Gland Packing','Pipa Kolom','Baut Kolom','As Kolom'];
+const _dmgKey = v => String(v||'').trim().toLowerCase();
+function damagesFor(asset){
+    const all = FORM_OPTIONS.damageType || [];
+    const irr = new Set(IRR_DAMAGES.map(_dmgKey)), sum = new Set(SUMUR_DAMAGES.map(_dmgKey));
+    if(asset==='irrigator') return IRR_DAMAGES.slice();
+    if(asset==='sumur') return SUMUR_DAMAGES.slice();
+    if(asset==='engine') return all.filter(v=>!irr.has(_dmgKey(v)) && !sum.has(_dmgKey(v))).concat(['Ban']);
+    // tanpa kategori: gabungan semua (urut form + tambahan sumur)
+    const seen=new Set(all.map(_dmgKey)); return all.concat(SUMUR_DAMAGES.filter(v=>!seen.has(_dmgKey(v))));
+}
+// Klasifikasi record data: sumur jika jenis kerusakannya kerusakan sumur (atau tanpa unit & PIC Sumur Bor),
+// engine jika ada jenis engine, irrigator jika ada jenis irrigator / jenis kerusakan khas irrigator.
+function assetKind(d){
+    const k=_dmgKey(d.damageType);
+    if(SUMUR_DAMAGES.some(x=>_dmgKey(x)===k)) return 'sumur';
+    const hasE = d.engineType && d.engineType!=='-', hasI = d.irrType && d.irrType!=='-';
+    if(!hasE && !hasI && /sumur/i.test(d.pic||'')) return 'sumur';
+    if(hasE && !hasI) return 'engine';
+    if(hasI && !hasE) return 'irrigator';
+    if(IRR_DAMAGES.some(x=>_dmgKey(x)===k) && k!=='ban') return 'irrigator';
+    if(hasE) return 'engine';
+    if(hasI) return 'irrigator';
+    return 'engine';
+}
+const isSumur = d => assetKind(d)==='sumur';
+// Pilihan kategori di form Tambah/Edit
+function setAsset(asset, opts={}){
+    const el=document.getElementById('f_asset'); if(!el) return;
+    el.value = asset||'';
+    document.querySelectorAll('#f_assetWrap .asset-btn').forEach(b=>b.classList.toggle('active', b.dataset.asset===asset));
+    const on = (id,yes)=>{ const w=document.getElementById(id); if(!w) return; const box=w.closest('div'); if(box) box.classList.toggle('asset-off',!yes); w.disabled=!yes; };
+    const useE = asset==='engine', useI = asset==='irrigator';
+    if(asset){
+        if(!useE){ document.getElementById('f_engineType').value=''; document.getElementById('f_engineCode').value=''; }
+        if(!useI){ document.getElementById('f_irrType').value=''; document.getElementById('f_irrCode').value=''; }
+    }
+    on('f_engineType', !asset || useE); on('f_engineCode', !asset || useE);
+    on('f_irrType', !asset || useI); on('f_irrCode', !asset || useI);
+    // daftar jenis kerusakan mengikuti kategori; nilai yang sudah dipilih dipertahankan bila masih valid
+    const dSel=document.getElementById('f_damageType'); const cur=dSel?dSel.value:'';
+    const list=damagesFor(asset);
+    const keep = cur && (list.some(v=>_dmgKey(v)===_dmgKey(cur)) || opts.keepValue) ? cur : '';
+    fillSelect('f_damageType', list, keep, asset ? `— pilih jenis kerusakan ${asset==='engine'?'engine':asset==='irrigator'?'irrigator':'sumur'} —` : '— pilih jenis kerusakan —');
+    const hint=document.getElementById('assetHint');
+    if(hint) hint.innerHTML = asset==='engine' ? '<i class="fas fa-oil-can mr-1 text-sky-600"></i>Kolom <b>Irrigator</b> dikosongkan. Jenis kerusakan: khusus engine.'
+        : asset==='irrigator' ? '<i class="fas fa-spray-can mr-1 text-sky-600"></i>Kolom <b>Engine</b> dikosongkan. Jenis kerusakan: gearbox, turbin, transmisi, gun, hidrolik, pipa PE, rantai, impeler, sproket, ban.'
+        : asset==='sumur' ? '<i class="fas fa-water mr-1 text-sky-600"></i>Kolom <b>Engine &amp; Irrigator</b> dikosongkan. Jenis kerusakan: pompa sumur bor, gland packing, pipa kolom, baut kolom, as kolom.'
+        : 'Pilih dulu: menentukan kolom unit yang aktif dan daftar jenis kerusakan.';
+    // Mode tambah: isi ulang kolom unit dari data unit terpasang untuk kategori yang baru dipilih
+    if(!opts.silent && document.getElementById('editMode').value==='create' && (useE||useI)){
+        const u=findUnit(document.getElementById('f_lokasi').value); if(u) applyUnitToForm(u,false);
+    }
+}
 // Isi <select> dari daftar form; nilai lama yang tidak ada di daftar (data historis) tetap
 // ditampilkan sebagai opsi agar edit tidak diam-diam mengubah data.
 async function loadFormOptions(){
@@ -3657,7 +3814,7 @@ function fillFormSelects(d){
     fillSelect('f_divisi', FORM_OPTIONS.divisi, d.divisi && d.divisi!=='-' ? d.divisi : 'PG2');
     fillSelect('f_engineType', FORM_OPTIONS.engineType, d.engineType, '— tidak ada —');
     fillSelect('f_irrType', FORM_OPTIONS.irrType, d.irrType, '— tidak ada —');
-    fillSelect('f_damageType', FORM_OPTIONS.damageType, d.damageType, '— pilih jenis kerusakan —');
+    fillSelect('f_damageType', damagesFor(''), d.damageType, '— pilih jenis kerusakan —');
     fillSelect('f_pic', FORM_OPTIONS.pic, d.pic, '— pilih PIC —');
 }
 function fillDatalists(){
@@ -3693,6 +3850,7 @@ function openCreateModal(){
     document.getElementById('f_tanggal').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
     ['f_lokasi','f_engineCode','f_irrCode','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
     fillFormSelects({ divisi: (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2' });
+    setAsset('', {silent:true});
     document.getElementById('f_repair').value = 'Belum';
     document.getElementById('f_tingkat').value = '';
     document.getElementById('editMsg').innerHTML='';
@@ -3708,6 +3866,7 @@ async function submitCreate(){
     const errs=validateFormNumbers();
     if(!g('f_lokasi')) errs.unshift('Lokasi wajib diisi.');
     if(!g('f_damageType')) errs.unshift('Jenis Kerusakan wajib diisi.');
+    if(!g('f_asset')) errs.unshift('Pilih dulu <b>Yang Rusak</b> (Engine / Irrigator / Sumur).');
     if(!g('f_tanggal')) errs.unshift('Tanggal Inspeksi wajib diisi.');
     if(!g('f_keterangan')) errs.push('Keterangan Kerusakan wajib diisi (sesuai Google Form).');
     if(!g('f_tingkat')) errs.push('Tingkat Kerusakan wajib dipilih (Ringan/Sedang/Berat).');
@@ -3817,6 +3976,9 @@ function openEditModalRaw(rawi){
     document.getElementById('f_tingkat').value = d.tingkat || '';
     document.getElementById('f_engineCode').value = d.engineCode==='-'?'':d.engineCode;
     document.getElementById('f_irrCode').value = d.irrCode==='-'?'':d.irrCode;
+    // kategori "yang rusak" ditebak dari data; nilai jenis kerusakan lama dipertahankan walau di luar daftar kategori
+    setAsset(assetKind(d), {silent:true, keepValue:true});
+    document.getElementById('f_damageType').value = d.damageType && d.damageType!=='-' ? d.damageType : document.getElementById('f_damageType').value;
     document.getElementById('f_keterangan').value = d.keterangan || '';
     document.getElementById('f_sparepart').value = d.sparepart==='-'?'':d.sparepart;
     document.getElementById('f_prNumber').value = d.prNumber || '';

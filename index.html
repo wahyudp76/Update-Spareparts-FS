@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=49">
+    <link rel="stylesheet" href="assets/tailwind.css?v=50">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v49";</script>
-    <script src="config.js?v=49"></script>
+    <script>window.APP_VERSION="v50";</script>
+    <script src="config.js?v=50"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -135,6 +135,10 @@
         .form-input.textarea{min-height:68px;resize:vertical}
         .row-actions{display:flex;align-items:center;gap:4px}
         .act-btn{width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;border:none;cursor:pointer}
+        .asset-btn{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid #e2e8f0;background:#fff;color:#475569;transition:all .15s}
+        .asset-btn:hover{border-color:#7dd3fc;color:#0369a1}
+        .asset-btn.active{background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border-color:transparent;box-shadow:0 3px 8px rgba(14,165,233,.3)}
+        .asset-off{opacity:.45;pointer-events:none}
         .act-btn.edit{background:#e0f2fe;color:#0284c7}.act-btn.edit:hover{background:#0ea5e9;color:#fff}
         .act-btn.del{background:#fef2f2;color:#dc2626}.act-btn.del:hover{background:#dc2626;color:#fff}
         @media (max-width: 640px){
@@ -306,6 +310,9 @@
                 </button>
                 <button class="tab-btn" data-tab="irrigator" onclick="switchTab('irrigator')">
                     <span class="tab-icon"><i class="fas fa-spray-can"></i></span>Irigator<span class="tab-badge" id="badgeIrr">0</span>
+                </button>
+                <button class="tab-btn" data-tab="sumur" onclick="switchTab('sumur')">
+                    <span class="tab-icon"><i class="fas fa-water"></i></span>Sumur<span class="tab-badge" id="badgeSumur">0</span>
                 </button>
                 <button class="tab-btn" data-tab="severity" onclick="switchTab('severity')">
                     <span class="tab-icon"><i class="fas fa-gauge"></i></span>Tingkat Kerusakan<span class="tab-badge" id="badgeSeverity">0</span>
@@ -571,6 +578,43 @@
 
         <!-- ==================== TAB: KALENDER ==================== -->
         <!-- ==================== TAB: TINGKAT KERUSAKAN ==================== -->
+        <!-- ==================== TAB: SUMUR ==================== -->
+        <div class="tab-pane" id="tab-sumur">
+            <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-water text-cyan-600 mr-2"></i>Analisa Kerusakan Sumur</h2>
+                    <p class="text-xs text-slate-500 ml-6">Laporan kerusakan <b>sumur bor</b>: pompa sumur bor, gland packing, pipa kolom, baut kolom, as kolom. Mengikuti filter global di atas.</p>
+                </div>
+                <div id="sumurNote" class="text-[11px] text-slate-500 bg-white border border-slate-200 rounded-lg px-3 py-1.5"></div>
+            </div>
+            <div id="sumurKpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-3"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 mb-3">
+                <div class="card p-4 lg:col-span-3">
+                    <h3 class="font-bold text-slate-800 text-sm mb-1"><span class="h-accent bg-cyan-600"><i class="fas fa-chart-line text-[11px]"></i></span>Tren Kerusakan Sumur</h3>
+                    <p id="sumurTrendSub" class="text-[11px] text-slate-500 mb-2 ml-9"></p>
+                    <div class="chart-wrap h-[260px]"><canvas id="sumurTrendChart"></canvas></div>
+                </div>
+                <div class="card p-4 lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 text-sm mb-2"><span class="h-accent bg-cyan-500"><i class="fas fa-chart-bar text-[11px]"></i></span>Jenis Kerusakan Sumur</h3>
+                    <p class="text-[11px] text-slate-500 mb-2 ml-9">Belum ditangani vs selesai · klik batang untuk detail</p>
+                    <div class="chart-wrap h-[260px]"><canvas id="sumurDmgChart"></canvas></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
+                <div class="card p-4"><h3 class="font-bold text-slate-800 text-sm mb-3"><span class="h-accent bg-red-500"><i class="fas fa-map-marker-alt text-[11px]"></i></span>Lokasi Sumur Rawan</h3><div id="sumurLok" class="space-y-1"></div></div>
+                <div class="card p-4"><h3 class="font-bold text-slate-800 text-sm mb-3"><span class="h-accent bg-amber-500"><i class="fas fa-cog text-[11px]"></i></span>Sparepart Dibutuhkan</h3><div id="sumurSp" class="space-y-1"></div></div>
+                <div class="card p-4"><h3 class="font-bold text-slate-800 text-sm mb-3"><span class="h-accent bg-violet-500"><i class="fas fa-user-gear text-[11px]"></i></span>PIC &amp; Divisi</h3><div id="sumurPic" class="space-y-1"></div></div>
+                <div class="card p-4"><h3 class="font-bold text-slate-800 text-sm mb-3"><span class="h-accent bg-slate-600"><i class="fas fa-gauge-high text-[11px]"></i></span>Tingkat &amp; Usia</h3><div id="sumurTk" class="space-y-1"></div></div>
+            </div>
+            <div class="card p-4 border-red-100">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <h3 class="font-bold text-slate-800 text-sm"><span class="h-accent bg-red-600"><i class="fas fa-hourglass-half text-[11px]"></i></span>Sumur Belum Ditangani (terlama di atas)</h3>
+                    <button type="button" onclick="openSumurDetail('all','')" class="text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-700 px-3 py-1.5 rounded-lg"><i class="fas fa-list mr-1"></i>Semua laporan sumur</button>
+                </div>
+                <div id="sumurOpen"></div>
+            </div>
+        </div>
+
         <div class="tab-pane" id="tab-severity">
             <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
                 <div>
@@ -871,6 +915,15 @@
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
                 <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="Ketik lokasi, mis. 104I — data unit terpasang terisi otomatis" list="dl_lokasi" autocomplete="off" oninput="onLokasiInput(this.value)" onchange="onLokasiInput(this.value,true)"><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
+                <div class="full"><label class="form-label">Yang Rusak <span class="text-red-500">*</span></label>
+                    <div class="flex gap-1.5 flex-wrap" id="f_assetWrap">
+                        <button type="button" data-asset="engine" onclick="setAsset('engine')" class="asset-btn"><i class="fas fa-oil-can mr-1"></i>Engine</button>
+                        <button type="button" data-asset="irrigator" onclick="setAsset('irrigator')" class="asset-btn"><i class="fas fa-spray-can mr-1"></i>Irrigator</button>
+                        <button type="button" data-asset="sumur" onclick="setAsset('sumur')" class="asset-btn"><i class="fas fa-water mr-1"></i>Sumur</button>
+                    </div>
+                    <input type="hidden" id="f_asset" value="">
+                    <div id="assetHint" class="text-[10.5px] text-slate-500 mt-1">Pilih dulu: menentukan kolom unit yang aktif dan daftar jenis kerusakan.</div>
+                </div>
                 <div><label class="form-label">Divisi</label>
                     <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
                 </div>
@@ -935,7 +988,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=49"></script>
+    <script src="app.js?v=50"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -946,7 +999,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v49').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v50').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
