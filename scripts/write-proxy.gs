@@ -204,15 +204,38 @@ function doPost(e) {
       var dmgOk = dmgCol < 0 || _dmg(rowVals[dmgCol]) === _dmg(p.matchDamage);
       return lokOk && dmgOk;
     }
+    // Pemecah seri bila ada beberapa baris serupa (laporan duplikat): keterangan dan/atau
+    // Timestamp asli yang dikirim dashboard (matchKeterangan / matchRawTs; opsional).
+    var ketCol = col('Keterangan Kerusakan');
+    function narrow(found, p) {
+      if (found.length <= 1) return found;
+      var f2 = found;
+      if (p.matchKeterangan !== undefined && p.matchKeterangan !== null && ketCol >= 0) {
+        var wk = _norm(p.matchKeterangan);
+        var k2 = found.filter(function (r) { return _norm(data[r - 2][ketCol]) === wk; });
+        if (k2.length) f2 = k2;
+      }
+      if (f2.length > 1 && p.matchRawTs && tsCol >= 0) {
+        var wt = _tsFull(p.matchRawTs);
+        var t2 = f2.filter(function (r) { var h = _tsFull(data[r - 2][tsCol]); return h && wt && Math.abs(h - wt) < 1000; });
+        if (t2.length) f2 = t2;
+      }
+      return f2;
+    }
     function findRow(p) {
       var sr = parseInt(p.sheetRow, 10);
-      if (sr >= 2 && sr <= lastRow && rowMatches(data[sr - 2], p)) return sr;
-      if (sr >= 2 && sr <= lastRow && rowMatchesLoose(data[sr - 2], p)) return sr;
-      // fallback: cari di seluruh sheet
       var found = [];
       for (var i = 0; i < data.length; i++) if (rowMatches(data[i], p)) found.push(i + 2);
+      // Nomor baris dari dashboard cocok persis & tidak ada baris kembar → pakai langsung
+      if (sr >= 2 && sr <= lastRow && rowMatches(data[sr - 2], p) && found.length === 1) return sr;
+      found = narrow(found, p);
       if (found.length === 1) return found[0];
       if (found.length > 1 && sr >= 2 && found.indexOf(sr) >= 0) return sr;
+      if (!found.length && sr >= 2 && sr <= lastRow && rowMatchesLoose(data[sr - 2], p)) {
+        // Tanggal di sheet mungkin salah (itu yang mau diperbaiki) → terima bila lokasi+jenis
+        // (+keterangan bila dikirim) sama di baris tersebut.
+        if (p.matchKeterangan === undefined || ketCol < 0 || _norm(data[sr - 2][ketCol]) === _norm(p.matchKeterangan)) return sr;
+      }
       // >1 kandidat dan nomor baris tidak cocok → JANGAN menebak (bisa mengubah/menghapus
       // baris lain yang mirip, mis. laporan duplikat). Minta pengguna refresh lalu ulangi.
       if (found.length > 1) return -2;
@@ -262,6 +285,16 @@ function doPost(e) {
 function _norm(v) { return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().toLowerCase(); }
 // Tahun salah ketik ("0026" → 26, "26") dianggap 2026 agar baris tetap bisa dicocokkan & diperbaiki
 function _fixYear(y) { return (y >= 0 && y < 100) ? 2000 + y : y; }
+// Timestamp lengkap (tanggal + jam) untuk membandingkan kolom Timestamp secara presisi
+function _tsFull(v) {
+  if (v instanceof Date) return v.getTime();
+  if (!v) return 0;
+  var s = String(v).trim();
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m) return new Date(_fixYear(+m[3]), +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)).getTime();
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
 function _ts(v) {
   if (v instanceof Date) { var y = v.getFullYear(); return y < 100 ? new Date(_fixYear(y), v.getMonth(), v.getDate()).getTime() : v.getTime(); }
   if (!v) return 0;

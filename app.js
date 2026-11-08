@@ -71,6 +71,19 @@ function validateRecord(d){
     if(d.irrCode && d.irrCode!=='-'){ const r=auditNumericField(d.irrCode,{label:'Kode Irrigator',digits:4}); add('irrCode','Kode Irrigator',r); if(r.issues.length && /^\d+$/.test(r.fixed)){ d.irrCode=r.fixed; d.irrigator=(d.irrType&&d.irrType!=='-'&&d.irrType!==d.irrCode)?`${d.irrType} – ${d.irrCode}`:d.irrCode; } }
     if(d.irrCode && d.irrCode!=='-' && (!d.irrType || d.irrType==='-')) issues.push({field:'irrType',col:'Jenis Irrigator',type:'missing',msg:`Kode Irrigator ${d.irrCode} diisi tetapi Jenis Irrigator kosong.`});
     if(d.engineCode && d.engineCode!=='-' && (!d.engineType || d.engineType==='-')) issues.push({field:'engineType',col:'Jenis Engine',type:'missing',msg:`Kode Engine ${d.engineCode} diisi tetapi Jenis Engine kosong.`});
+    if(d.engineType && d.engineType!=='-' && (!d.engineCode || d.engineCode==='-')) issues.push({field:'engineCode',col:'Kode Engine',type:'missing',msg:`Jenis Engine ${d.engineType} diisi tetapi Kode Engine kosong.`});
+    if(d.irrType && d.irrType!=='-' && (!d.irrCode || d.irrCode==='-')) issues.push({field:'irrCode',col:'Kode Irrigator',type:'missing',msg:`Jenis Irrigator ${d.irrType} diisi tetapi Kode Irrigator kosong.`});
+    // Konsistensi jenis kerusakan vs unit yang terisi (kategori Engine / Irrigator / Sumur)
+    if(typeof IRR_DAMAGES!=='undefined' && d.damageType && d.damageType!=='-'){
+        const hasE = d.engineType && d.engineType!=='-', hasI = d.irrType && d.irrType!=='-';
+        const irrOnly = IRR_DAMAGES.includes(d.damageType) && d.damageType!=='Ban';
+        const sumur = SUMUR_DAMAGES.includes(d.damageType);
+        const engOnly = !irrOnly && !sumur && d.damageType!=='Ban' && (typeof FORM_OPTIONS!=='undefined' && FORM_OPTIONS.damageType||[]).includes(d.damageType);
+        if(irrOnly && hasE && !hasI) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'suspect',msg:`"${d.damageType}" adalah komponen irrigator, tetapi hanya kolom Engine yang terisi — periksa pilihan "Yang Rusak".`});
+        else if(engOnly && hasI && !hasE) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'suspect',msg:`"${d.damageType}" adalah komponen engine, tetapi hanya kolom Irrigator yang terisi — periksa pilihan "Yang Rusak".`});
+        else if(sumur && (hasE || hasI)) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'suspect',msg:`"${d.damageType}" adalah kerusakan sumur, tetapi kolom Engine/Irrigator terisi — untuk sumur kolom unit sebaiknya kosong.`});
+        else if(!sumur && !hasE && !hasI && !/sumur/i.test(d.pic||'')) issues.push({field:'engineType',col:'Jenis Engine / Irrigator',type:'missing',msg:`Jenis & kode Engine/Irrigator kosong untuk kerusakan "${d.damageType}" — lengkapi lewat Edit.`});
+    }
     if(d.__rawTingkat && !d.tingkat) issues.push({field:'tingkat',col:'Tingkat Kerusakan',type:'enum',msg:`Tingkat Kerusakan "${d.__rawTingkat}" tidak dikenali (gunakan Berat/Sedang/Ringan).`});
     if(d.__rawRepair && !normRepair(d.__rawRepair)) issues.push({field:'repairStatus',col:'Status Perbaikan',type:'enum',msg:`Status Perbaikan "${d.__rawRepair}" tidak dikenali (gunakan Sudah/Belum).`});
     if(d.__rawTgl && d.__yearFixed) issues.push({field:'tanggalInspeksi',col:'Tanggal Inspeksi',type:'year',msg:`Tanggal Inspeksi "${d.__rawTgl}" memiliki tahun tidak wajar — dibaca sebagai ${d.tanggalInspeksi}.`});
@@ -1013,7 +1026,7 @@ async function refreshData(forceLive=false, opts={}) {
         if (source==='live-sheet' || source==='github-cache') {
             // Simpan di latar (idle) tanpa field turunan agar cache kecil & parse cepat
             const persist = () => { try {
-                const slim = data.map(d=>{ const o={}; for(const k in d){ if(!k.startsWith('__') || k==='__row') o[k]=d[k]; } return o; });
+                const slim = data.map(d=>{ const o={}; for(const k in d){ if(!k.startsWith('__') || k==='__row' || k==='__rawTs' || k==='__rawDamage') o[k]=d[k]; } return o; });
                 localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ts:Date.now(), src:source, data:slim}));
             } catch(e) {} };
             (window.requestIdleCallback ? requestIdleCallback(persist,{timeout:3000}) : setTimeout(persist,500));
@@ -4087,9 +4100,18 @@ const _FIELD_LABEL = {tanggalInspeksi:'Tanggal',lokasi:'Lokasi',divisi:'Divisi',
 // langsung di Sheets). Mengembalikan {fresh, diffs} atau null bila tidak ada konflik / tidak bisa dicek.
 async function detectEditConflict(d){
     const fresh = await fetchLiveCSV(); if(!fresh || !fresh.length) return null;
-    let srv = fresh.find(x=>x.__row===d.__row && lokKey(x.lokasi)===lokKey(d.lokasi) && x.damageType===d.damageType);
-    if(!srv){ const c=fresh.filter(x=>_wkey(x)===_wkey(d)); if(c.length===1) srv=c[0]; }
+    // Identitas lengkap dulu (tanggal+lokasi+jenis, lalu keterangan/timestamp asli sebagai pemecah
+    // seri bila ada duplikat), baru nomor baris. Nomor baris bisa bergeser bila ada baris lain
+    // yang dihapus/disisipkan di sheet sejak data dimuat.
+    const nk=v=>String(v==null?'':v).replace(/\s+/g,' ').trim().toLowerCase();
+    let cand=fresh.filter(x=>_wkey(x)===_wkey(d));
+    if(cand.length>1){ const c2=cand.filter(x=>nk(x.keterangan)===nk(d.keterangan)); if(c2.length) cand=c2; }
+    if(cand.length>1 && d.__rawTs){ const c3=cand.filter(x=>x.__rawTs===d.__rawTs); if(c3.length) cand=c3; }
+    let srv = cand.length===1 ? cand[0] : (cand.find(x=>x.__row===d.__row) || null);
+    if(!srv && !cand.length) srv = fresh.find(x=>x.__row===d.__row && lokKey(x.lokasi)===lokKey(d.lokasi) && x.damageType===d.damageType) || null;
     if(!srv) return {fresh, srv:null, diffs:[], missing:true};
+    d.__freshRow = srv.__row; // nomor baris segar untuk payload update
+    if(srv.__row!==d.__row) console.info(`Nomor baris bergeser: ${d.__row} → ${srv.__row} (${d.lokasi} · ${d.damageType})`);
     const a=JSON.parse(openEditModalRaw._snapshot||'{}'), b=_fieldsOf(srv);
     const diffs=_EDIT_FIELDS.filter(f=>a[f]!==undefined && a[f]!==b[f]).map(f=>({f,label:_FIELD_LABEL[f],was:a[f],now:b[f]}));
     return diffs.length ? {fresh, srv, diffs} : null;
@@ -4099,6 +4121,33 @@ function _writeFailHtml(e, retryFn){
         + (retryFn ? ` <button onclick="${retryFn}" class="ml-2 px-2 py-0.5 rounded bg-slate-900 text-white text-[11px] font-semibold"><i class="fas fa-rotate-right mr-1"></i>Coba lagi</button>` : '');
 }
 
+
+// ── Verifikasi nomor baris SEBELUM update/delete ───────────────────────────────
+// Nomor baris (__row) bisa basi bila ada baris lain yang dihapus/disisipkan di sheet sejak
+// data dimuat (mis. dashboard masih memakai data.json/cache). Sebelum menulis, baca ulang
+// sheet dan cari baris dengan identitas lengkap (tanggal + lokasi + jenis + keterangan).
+// Hasil: nomor baris segar, atau Error bila baris tidak ditemukan / ambigu.
+async function resolveSheetRow(d, fallbackRow){
+    let fresh=null;
+    try{ fresh = await fetchLiveCSV(); }catch(e){ fresh=null; }
+    if(!fresh || !fresh.length) return fallbackRow; // sheet tidak terbaca → serahkan ke pencocokan server
+    const nk=v=>String(v==null?'':v).replace(/\s+/g,' ').trim().toLowerCase();
+    const dmg=d.__rawDamage||d.damageType;
+    const same=x => nk(x.lokasi)===nk(d.lokasi) && nk(x.__rawDamage||x.damageType)===nk(dmg) && x.tanggalInspeksi===d.tanggalInspeksi;
+    let cand=fresh.filter(same);
+    if(cand.length>1){
+        const c2=cand.filter(x=>nk(x.keterangan)===nk(d.keterangan)); if(c2.length) cand=c2;
+    }
+    if(cand.length>1 && d.__rawTs){
+        const c3=cand.filter(x=>x.__rawTs===d.__rawTs); if(c3.length) cand=c3;
+    }
+    if(cand.length===1) return cand[0].__row;
+    if(cand.length>1){
+        if(cand.some(x=>x.__row===fallbackRow)) return fallbackRow;
+        const err=new Error('Ada beberapa baris serupa di sheet dan nomor baris tidak cocok (data dashboard mungkin basi). Klik Refresh lalu coba lagi.'); err.stale=true; throw err;
+    }
+    const err=new Error('Baris tidak ditemukan di spreadsheet (mungkin sudah dihapus/diubah dari perangkat lain). Klik Refresh lalu coba lagi.'); err.stale=true; throw err;
+}
 async function submitEdit(){
     if(document.getElementById('editMode').value==='create') return submitCreate();
     const numErrs=validateFormNumbers();
@@ -4108,11 +4157,13 @@ async function submitEdit(){
     const d = rawData[rawi];
     if(!d) return;
     const payload = {
-        sheetRow: sheetRow ? parseInt(sheetRow) : null,
+        sheetRow: d.__freshRow || (sheetRow ? parseInt(sheetRow) : null),
         // Identitas untuk mencari baris bila sheetRow tidak akurat
         matchTs: d.timestamp,
         matchLokasi: d.lokasi,
         matchDamage: d.__rawDamage || d.damageType,   // nilai ASLI di sheet (alias 'Panel' hanya di tampilan)
+        matchKeterangan: d.keterangan || '',
+        matchRawTs: d.__rawTs || '',
         // Field-field baru
         tanggalInspeksi: document.getElementById('f_tanggal').value,
         lokasi: lokCanon(document.getElementById('f_lokasi').value) || '-',
@@ -4156,6 +4207,7 @@ async function submitEdit(){
         }
         openEditModalRaw._conflictChecked = true;
     }
+    if(d.__freshRow) payload.sheetRow = d.__freshRow;
     setStatus('Menyimpan ke spreadsheet…'); window.__writeBusy=true;
     // opId dipertahankan antar klik "Coba lagi" agar proxy tidak menulis dua kali
     submitEdit._opId = submitEdit._opId && submitEdit._opKey===rawi ? submitEdit._opId : null; submitEdit._opKey = rawi;
@@ -4230,17 +4282,23 @@ async function submitDelete(){
     const msg=document.getElementById('delMsg');
     const btn=document.getElementById('delConfirmBtn');
     const setStatus = t => { msg.innerHTML=`<span class="text-red-600"><i class="fas fa-spinner spin mr-1"></i>${escapeHtml(t)}</span>`; };
-    setStatus('Menghapus…');
+    setStatus('Memeriksa baris di spreadsheet…');
     btn.disabled=true;
     submitDelete._opId = submitDelete._opKey===rawi ? submitDelete._opId : null; submitDelete._opKey = rawi;
+    let liveRow = sheetRow?parseInt(sheetRow):null;
     try{
+        try{ liveRow = await resolveSheetRow(d, liveRow); }
+        catch(e){ if(e.stale){ msg.innerHTML=_writeFailHtml(e); btn.disabled=false; window.__writeBusy=false; return; } }
+        setStatus('Menghapus…');
         try {
             await callWriteProxy({
                 action:'delete',
-                sheetRow: sheetRow?parseInt(sheetRow):null,
+                sheetRow: liveRow,
                 matchTs: d.timestamp,
                 matchLokasi: d.lokasi,
                 matchDamage: d.__rawDamage || d.damageType,
+                matchKeterangan: d.keterangan || '',
+                matchRawTs: d.__rawTs || '',
                 ...(submitDelete._opId?{opId:submitDelete._opId}:{})
             }, {onStatus:setStatus});
             submitDelete._opId = null;
@@ -4255,7 +4313,7 @@ async function submitDelete(){
         }
         closeModal('deleteModal');
         showToast('Baris dihapus dari spreadsheet.','success');
-        const deletedRow = d.__row;
+        const deletedRow = (typeof liveRow==='number' && liveRow>=2) ? liveRow : d.__row;
         notePendingWrite('delete', d, deletedRow);
         rawData.splice(rawi,1);
         // Baris di bawah yang dihapus bergeser naik 1 di spreadsheet → koreksi __row lokal

@@ -244,6 +244,7 @@ function mapRows(rows) {
       repairStatus: repair,
       tingkat,
       __rawTingkat: get('tingkat'), __rawRepair: get('repair'), __rawTgl: get('tanggalInspeksi'),
+      __rawTs: get('timestamp'), __rawDamage: get('damageType'),
       __yearFixed: /\/0\d{3}$|\/\d{2}$/.test(get('tanggalInspeksi')),
       __issues_sync: issues,
       unit: lokasi || '-',
