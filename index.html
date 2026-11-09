@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=51">
+    <link rel="stylesheet" href="assets/tailwind.css?v=52">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v51";</script>
-    <script src="config.js?v=51"></script>
+    <script>window.APP_VERSION="v52";</script>
+    <script src="config.js?v=52"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -583,7 +583,7 @@
             <div class="mb-3 flex items-center justify-between flex-wrap gap-2">
                 <div>
                     <h2 class="display-font font-bold text-slate-900 text-lg"><i class="fas fa-water text-cyan-600 mr-2"></i>Analisa Kerusakan Sumur</h2>
-                    <p class="text-xs text-slate-500 ml-6">Laporan kerusakan <b>sumur bor</b>: pompa sumur bor, gland packing, pipa kolom, baut kolom, as kolom. Mengikuti filter global di atas.</p>
+                    <p class="text-xs text-slate-500 ml-6">Laporan kerusakan <b>sumur bor</b>: pompa sumur bor, gearbox sumur, gland packing, pipa kolom, baut kolom, as kolom. Mengikuti filter global di atas.</p>
                 </div>
                 <div id="sumurNote" class="text-[11px] text-slate-500 bg-white border border-slate-200 rounded-lg px-3 py-1.5"></div>
             </div>
@@ -988,7 +988,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=51"></script>
+    <script src="app.js?v=52"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -999,7 +999,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v51').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v52').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

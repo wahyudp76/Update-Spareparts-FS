@@ -3746,7 +3746,8 @@ const FORM_OPTIONS = {
 // ---- Kategori "yang rusak": Engine / Irrigator / Sumur ----
 // Jenis kerusakan per kategori. Engine = semua jenis di form yang bukan irrigator/sumur (+ Ban).
 const IRR_DAMAGES   = ['Gearbox','Turbin','Transmisi','Gun','Hidrolik','Pipa PE','Rantai','Impeler','Sproket','Ban'];
-const SUMUR_DAMAGES = ['Pompa Sumur Bor','Gland Packing','Pipa Kolom','Baut Kolom','As Kolom'];
+// 'Gearbox Sumur' dibedakan dari 'Gearbox' (irrigator) agar laporan lama irrigator tidak ikut terhitung sumur.
+const SUMUR_DAMAGES = ['Pompa Sumur Bor','Gearbox Sumur','Gland Packing','Pipa Kolom','Baut Kolom','As Kolom'];
 const _dmgKey = v => String(v||'').trim().toLowerCase();
 function damagesFor(asset){
     const all = FORM_OPTIONS.damageType || [];
