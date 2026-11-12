@@ -4363,17 +4363,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     const si=document.getElementById('searchInput');
     if(si) si.addEventListener('input', e => onSearchInput(e.target.value));
     refreshData(false);
-    // Auto-refresh diam-diam tiap 5 menit (tanpa reset halaman / kedip loading)
-    setInterval(()=>refreshData(false,{silent:true}),5*60*1000);
-    // Saat tab/PWA kembali aktif setelah lama di background (timer browser
-    // di-throttle di mobile), langsung sinkron ulang.
-    let lastHidden = 0;
-    document.addEventListener('visibilitychange',()=>{
-        if(document.hidden){ lastHidden=Date.now(); return; }
-        if(Date.now()-lastHidden > 60*1000) refreshData(false,{silent:true});
-    });
-    // Koneksi pulih → sinkron ulang
-    window.addEventListener('online',()=>refreshData(false,{silent:true}));
+    // Sinkronisasi HANYA saat halaman dimuat/reload dan saat tombol Sync (Refresh) ditekan.
+    // Auto-refresh berkala, sinkron saat tab kembali aktif, dan saat koneksi pulih DINONAKTIFKAN
+    // (permintaan pengguna). Sinkron ulang singkat setelah Tambah/Edit/Hapus tetap berjalan agar
+    // hasil tulis terverifikasi dengan isi spreadsheet.
 
     // Setup banner edit/hapus
     initWriteSetup();

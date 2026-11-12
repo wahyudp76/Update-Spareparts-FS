@@ -201,8 +201,9 @@ python3 -m http.server 8080  # buka http://localhost:8080
 
 ## Alur sinkronisasi data (diperbarui 2026-09-19)
 
-Setiap kali halaman dibuka, di-reload, ditekan tombol **Refresh**, auto-refresh 5 menit,
-tab kembali aktif, atau koneksi pulih — urutan sumber data SELALU sama:
+Sinkronisasi dilakukan **hanya** saat halaman dibuka/di-reload dan saat tombol **Sync** ditekan
+(auto-refresh berkala, sinkron saat tab aktif kembali, dan saat koneksi pulih sudah dinonaktifkan sejak v53).
+Urutan sumber data SELALU sama:
 
 1. **Google Sheets langsung** (CSV publik) → label hijau `Live (Sheets)`.
 2. **`data.json`** hasil sync GitHub Actions → label biru `Sync GitHub (cadangan)`,
@@ -334,6 +335,7 @@ Kartu divisi (PG2/FM4/OP2) dan tombol **Detail lengkap** di tab *Per Divisi* mem
 - Tabel "Kerusakan per lokasi" dan "Daftar laporan" dihapus dari modal. Sebagai gantinya, baris pada kartu **Lokasi kerusakan, Jenis kerusakan, Unit terdampak, Sparepart, Tingkat, PIC, Per divisi** bisa diklik → membuka modal detail generik (ringkasan + daftar laporan berpaging + tombol edit) yang sudah difilter ke jenis engine tsb., dengan tombol **Kembali** ke modal jenis.
 - Resume baru: tingkat penyelesaian (%), rata-rata usia laporan tertunda & jumlah yang sudah ber-PR, 30 hari terakhir vs 30 hari sebelumnya (arah tren), unit paling bermasalah (klik → detail unit), distribusi tingkat kerusakan, PIC penanganan, tren per bulan, per divisi, lokasi rusak berulang (≥2×), daftar "belum ditangani paling lama" (usia hari + tombol edit), dan tombol "Lihat semua laporan".
 - Workflow deploy: langkah commit data.json kini retry 3× dan `continue-on-error`, sehingga gangguan push di sisi GitHub tidak lagi membatalkan deploy Pages.
+- **v53** — Auto-sync di web dihapus (tidak ada lagi refresh berkala 5 menit / saat tab aktif / saat online). Data disinkronkan hanya saat halaman dimuat/reload dan saat tombol **Sync** ditekan. Sinkron ulang singkat setelah Tambah/Edit/Hapus tetap ada untuk verifikasi hasil tulis.
 - **v52** — Jenis kerusakan sumur baru: **Gearbox Sumur** (form Tambah/Edit kategori Sumur, filter, tab Sumur).
 - **v51** — Audit data & stabilitas: verifikasi nomor baris sebelum Edit/Hapus (identitas lengkap tanggal+lokasi+jenis+keterangan+timestamp asli; aman walau baris di sheet bergeser), pencocokan baris di write-proxy lebih ketat (pemecah seri keterangan/Timestamp — **deploy ulang Apps Script**), data.json kini menyertakan Timestamp & jenis kerusakan asli, pemeriksaan kualitas baru: jenis kerusakan vs unit terisi (engine/irrigator/sumur), jenis tanpa kode.
 - **v50** — Form Tambah/Edit: pilihan **Yang Rusak** (Engine / Irrigator / Sumur) di bawah Lokasi; kolom unit otomatis dikosongkan & dinonaktifkan sesuai pilihan, daftar Jenis Kerusakan menyesuaikan (sumur: Pompa Sumur Bor, Gland Packing, Pipa Kolom, Baut Kolom, As Kolom). Tab baru **Sumur** dengan KPI, tren, jenis kerusakan, lokasi rawan, sparepart, PIC/divisi, tingkat & usia, dan daftar belum ditangani.
