@@ -673,6 +673,14 @@ function parseDate(s) {
     // ISO lengkap dengan jam/zona (timestamp di data.json) → instan absolut, aman.
     let d = new Date(s);
     if (!isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(s)) return d;
+    // d-Mon-yyyy / d Mon yyyy (mis. "8-Nov-2026", "13 Nov 2026", "6-Jun-2026", "1 Agu 2026") — format
+    // tanggal di sheet unit terpasang. Nama bulan Inggris & Indonesia (3 huruf / lengkap).
+    const mMon = s.match(/^(\d{1,2})[-\s\/]([A-Za-z]{3,9})[-\s\/](\d{2,4})(?:\s+(\d{1,2}):(\d{1,2}))?$/);
+    if (mMon) {
+        const MON = {jan:1,feb:2,peb:2,mar:3,apr:4,may:5,mei:5,jun:6,jul:7,aug:8,agu:8,agt:8,ags:8,sep:9,sept:9,oct:10,okt:10,nov:11,nop:11,dec:12,des:12};
+        const mm = MON[mMon[2].toLowerCase().slice(0,4)] || MON[mMon[2].toLowerCase().slice(0,3)];
+        if (mm) { d = tryDMY(mMon[1], mm, mMon[3], mMon[4], mMon[5]); if (d) return d; }
+    }
     // dd-mm-yyyy
     const m2 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?$/);
     if (m2) {
@@ -3616,7 +3624,10 @@ function parseUnitsCSV(text){
         };
         const k = lokKey(lok); const prev = map[k];
         // Lokasi yang tercatat >1× → ambil catatan terbaru (tanggal, lalu nomor urut)
-        if(!prev || ((u.tanggal?u.tanggal.getTime():0) > (prev.tanggal?prev.tanggal.getTime():0)) || (((u.tanggal?u.tanggal.getTime():0) === (prev.tanggal?prev.tanggal.getTime():0)) && u.no>=prev.no)) map[k]=u;
+        // Lokasi yang tercatat >1× → ambil catatan terbaru: tanggal terbaru; bila tanggal sama/kosong,
+        // baris paling ATAS (No terkecil) — sheet unit terpasang diurutkan dari yang terbaru.
+        const tu=u.tanggal?u.tanggal.getTime():0, tp=prev&&prev.tanggal?prev.tanggal.getTime():0;
+        if(!prev || tu>tp || (tu===tp && (u.no||1e9) < (prev.no||1e9))) map[k]=u;
     });
     return map;
 }
