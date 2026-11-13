@@ -3652,12 +3652,13 @@ async function loadUnits(force=false){
             if(!res.ok) throw new Error('HTTP '+res.status);
             const txt=await res.text(); if(txt.length<30 || /^<!doctype|^<html/i.test(txt.trim())) throw new Error('bukan CSV');
             const map=parseUnitsCSV(txt); if(!map || !Object.keys(map).length) throw new Error('kosong');
-            unitsByLokasi=map; unitsMeta={loadedAt:Date.now(),count:Object.keys(map).length,source:'live'};
+            unitsByLokasi=map; unitsMeta={loadedAt:Date.now(),count:Object.keys(map).length,source:'live',error:null};
             if(rawData && rawData.length){ validateAll(rawData); renderQualityBanner(); } // isu "unit terpasang" butuh data unit
             try{ localStorage.setItem(UNITS_CACHE_KEY, JSON.stringify({ts:Date.now(), map})); }catch(e){}
             fillDatalists();
             const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true, {noFill:true});
-        }catch(e){ console.warn('Unit terpasang: gagal memuat —', e.message); }
+        }catch(e){ console.warn('Unit terpasang: gagal memuat —', e.message); unitsMeta.error=e.message; unitsMeta.errorAt=Date.now();
+            const em=document.getElementById('editModal'); if(em && em.classList.contains('show')) renderLokasiInfo(document.getElementById('f_lokasi').value, true, {noFill:true}); }
         finally{ __unitsPromise=null; }
         return unitsByLokasi;
     })();
@@ -3703,7 +3704,9 @@ function onLokasiInput(val, commit=false){
 function renderLokasiInfo(val, commit, o={}){
     const info=document.getElementById('lokasiUnitInfo'); if(!info) return;
     const v=String(val||'').trim();
-    if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis · ${unitsMeta.source==='live'?'disinkron':'cache'} ${new Date(unitsMeta.loadedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>` : ''; return; }
+    if(!v){ info.innerHTML = unitsByLokasi ? `<span class="text-slate-400"><i class="fas fa-link mr-1"></i>${unitsMeta.count} lokasi unit terpasang siap diisi otomatis · ${unitsMeta.source==='live'?'disinkron':'cache'} ${new Date(unitsMeta.loadedAt).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>`
+            : (unitsMeta.error ? `<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>Data unit terpasang tidak bisa dimuat (${escapeHtml(unitsMeta.error)}) — isi kode engine/irrigator manual atau <button type="button" class="underline font-semibold" onclick="unitsMeta.error=null;loadUnits(true).then(()=>renderLokasiInfo(document.getElementById('f_lokasi').value,true))">coba lagi</button>.</span>` : ''); return; }
+    if(!unitsByLokasi && unitsMeta.error){ info.innerHTML=`<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>Data unit terpasang tidak tersedia — isi kode engine/irrigator manual.</span>`; return; }
     if(!unitsByLokasi){ info.innerHTML='<span class="text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</span>'; loadUnits().then(()=>renderLokasiInfo(val, commit, o)); return; }
     const u=findUnit(v);
     if(!u){
@@ -3775,7 +3778,9 @@ function onUnitSearch(val){
         const box=document.getElementById('unitSearchResults'); if(!box) return;
         const v=String(val||'').trim();
         if(!v){ box.classList.add('hidden'); box.innerHTML=''; return; }
-        if(!unitsByLokasi){ box.innerHTML='<div class="px-3 py-2 text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</div>'; box.classList.remove('hidden'); loadUnits().then(()=>onUnitSearch(document.getElementById('f_unitSearch').value)); return; }
+        if(!unitsByLokasi){
+            if(unitsMeta.error){ box.innerHTML=`<div class="px-3 py-2 text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>Data unit terpasang tidak bisa dimuat (${escapeHtml(unitsMeta.error)}). Isi Lokasi & kode manual.</div>`; box.classList.remove('hidden'); return; }
+            box.innerHTML='<div class="px-3 py-2 text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</div>'; box.classList.remove('hidden'); loadUnits().then(()=>onUnitSearch(document.getElementById('f_unitSearch').value)); return; }
         const res=searchUnits(v);
         onUnitSearch._res=res; onUnitSearch._idx=-1;
         if(!res.length){ box.innerHTML=`<div class="px-3 py-2 text-amber-700"><i class="fas fa-circle-question mr-1"></i>Tidak ada unit terpasang yang cocok dengan "${escapeHtml(v)}".</div>`; box.classList.remove('hidden'); return; }
