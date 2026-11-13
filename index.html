@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=53">
+    <link rel="stylesheet" href="assets/tailwind.css?v=54">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v53";</script>
-    <script src="config.js?v=53"></script>
+    <script>window.APP_VERSION="v54";</script>
+    <script src="config.js?v=54"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -914,6 +914,10 @@
             <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib — sama dengan Google Form. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
+                <div class="full"><label class="form-label">Cari Unit Terpasang <span class="text-slate-400 font-normal normal-case">(lokasi / kode engine / kode irrigator)</span></label>
+                    <div class="relative"><i class="fas fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="f_unitSearch" class="form-input pl-8" autocomplete="off" spellcheck="false" placeholder="mis. 104I, 0195, SPC0195, ITI 0032" oninput="onUnitSearch(this.value)" onfocus="onUnitSearch(this.value)" onkeydown="onUnitSearchKey(event)">
+                    <div id="unitSearchResults" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto text-xs"></div></div>
+                    <div class="text-[11px] text-slate-400 mt-1">Pilih hasil → Lokasi, Divisi, jenis &amp; kode Engine/Irrigator yang masih kosong terisi otomatis dari data unit terpasang terbaru.</div></div>
                 <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span></label><input type="text" id="f_lokasi" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="Ketik lokasi, mis. 104I — data unit terpasang terisi otomatis" list="dl_lokasi" autocomplete="off" oninput="onLokasiInput(this.value)" onchange="onLokasiInput(this.value,true)"><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
                 <div class="full"><label class="form-label">Yang Rusak <span class="text-red-500">*</span></label>
                     <div class="flex gap-1.5 flex-wrap" id="f_assetWrap">
@@ -988,7 +992,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=53"></script>
+    <script src="app.js?v=54"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -999,7 +1003,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v53').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v54').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

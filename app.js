@@ -3697,9 +3697,10 @@ function renderLokasiInfo(val, commit, o={}){
     const u=findUnit(v);
     if(!u){
         // saran lokasi mirip
-        const k=lokKey(v); const sug=Object.values(unitsByLokasi).filter(x=>lokKey(x.lokasi).startsWith(k)).slice(0,6);
+        const k=lokKey(v); let sug=Object.values(unitsByLokasi).filter(x=>lokKey(x.lokasi).startsWith(k)).slice(0,6); let lbl='Lokasi mirip';
+        if(!sug.length){ const byCode=searchUnits(v,6).filter(r=>r.why!=='lokasi'); if(byCode.length){ sug=byCode.map(r=>r.u); lbl='Unit dengan kode tersebut'; } }
         info.innerHTML = sug.length
-            ? `<span class="text-slate-500">Lokasi mirip: ${sug.map(x=>`<button type="button" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-700 font-semibold" onclick="pickLokasi('${escapeHtml(x.lokasi)}')">${escapeHtml(x.lokasi)}</button>`).join(' ')}</span>`
+            ? `<span class="text-slate-500">${lbl}: ${sug.map(x=>`<button type="button" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-700 font-semibold" onclick="pickLokasi('${escapeHtml(x.lokasi)}')" title="${escapeHtml(unitSummary(x))}">${escapeHtml(x.lokasi)}</button>`).join(' ')}</span>`
             : `<span class="text-amber-700"><i class="fas fa-circle-question mr-1"></i>Lokasi "${escapeHtml(v)}" tidak ada di data unit terpasang — isi kode engine/irrigator manual.</span>`;
         return;
     }
@@ -3729,6 +3730,77 @@ function renderLokasiInfo(val, commit, o={}){
         + (diffs.length ? ` <span class="text-amber-700 block mt-0.5"><i class="fas fa-triangle-exclamation mr-1"></i>Berbeda dari isian saat ini (${escapeHtml(diffs.join(', '))}). <button type="button" class="px-1.5 py-0.5 rounded bg-amber-600 text-white font-semibold" onclick="applyUnitToForm(findUnit(document.getElementById('f_lokasi').value), true); renderLokasiInfo(document.getElementById('f_lokasi').value, true)">Samakan dengan unit terpasang</button></span>` : '');
 }
 function pickLokasi(lok){ const el=document.getElementById('f_lokasi'); el.value=lok; renderLokasiInfo(lok, true); }
+
+// ── Pencarian unit terpasang: lokasi / kode engine / kode irrigator ────────────
+// "0195" → unit dengan kode engine ATAU irrigator 0195; "SPC0195" / "SPC 0195" → jenis+kode engine;
+// "ITI 0032" → jenis+kode irrigator; "104I" / "104" → lokasi (awalan). Hasil diurutkan: cocok persis dulu.
+function searchUnits(q, limit=8){
+    if(!unitsByLokasi) return [];
+    const raw=String(q||'').trim().toUpperCase(); if(!raw) return [];
+    const key=raw.replace(/[^A-Z0-9]/g,'');
+    const m=key.match(/^([A-Z]*)(\d+)$/);
+    const typ=m?m[1]:'', num=m?m[2]:'';
+    const num4 = num && num.length<=4 ? num.padStart(4,'0') : num;
+    const out=[];
+    Object.values(unitsByLokasi).forEach(u=>{
+        const lk=lokKey(u.lokasi); let score=0, why='';
+        if(lk===key) { score=100; why='lokasi'; }
+        else if(lk.startsWith(key)) { score=60; why='lokasi'; }
+        if(num){
+            const eOk = u.engineCode && (u.engineCode===num4 || u.engineCode.endsWith(num)) && (!typ || u.engineType===typ);
+            const iOk = u.irrCode && (u.irrCode===num4 || u.irrCode.endsWith(num)) && (!typ || u.irrType===typ);
+            if(eOk){ const sc = u.engineCode===num4 ? 95 : 50; if(sc>score){ score=sc; why='kode engine'; } }
+            if(iOk){ const sc = u.irrCode===num4 ? 94 : 49; if(sc>score){ score=sc; why='kode irrigator'; } }
+        }
+        if(score) out.push({u,score,why});
+    });
+    out.sort((a,b)=>b.score-a.score||a.u.lokasi.localeCompare(b.u.lokasi));
+    return out.slice(0,limit);
+}
+let __usT=null;
+function onUnitSearch(val){
+    clearTimeout(__usT);
+    __usT=setTimeout(()=>{
+        const box=document.getElementById('unitSearchResults'); if(!box) return;
+        const v=String(val||'').trim();
+        if(!v){ box.classList.add('hidden'); box.innerHTML=''; return; }
+        if(!unitsByLokasi){ box.innerHTML='<div class="px-3 py-2 text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</div>'; box.classList.remove('hidden'); loadUnits().then(()=>onUnitSearch(document.getElementById('f_unitSearch').value)); return; }
+        const res=searchUnits(v);
+        onUnitSearch._res=res; onUnitSearch._idx=-1;
+        if(!res.length){ box.innerHTML=`<div class="px-3 py-2 text-amber-700"><i class="fas fa-circle-question mr-1"></i>Tidak ada unit terpasang yang cocok dengan "${escapeHtml(v)}".</div>`; box.classList.remove('hidden'); return; }
+        const hl=(t,q)=>{ t=String(t||''); if(!q) return escapeHtml(t); const i=t.toUpperCase().indexOf(q.toUpperCase()); return i<0?escapeHtml(t):escapeHtml(t.slice(0,i))+'<mark class="bg-yellow-100 rounded px-0.5">'+escapeHtml(t.slice(i,i+q.length))+'</mark>'+escapeHtml(t.slice(i+q.length)); };
+        const q=(v.replace(/^[A-Za-z]+\s*-?\s*/,'')||v).replace(/\s+/g,'');
+        box.innerHTML = res.map((r,i)=>{ const u=r.u; return `<button type="button" class="us-item w-full text-left px-3 py-2 hover:bg-sky-50 border-b border-slate-100 last:border-0 flex items-start gap-2" data-i="${i}" onclick="pickUnitResult(${i})">
+            <span class="font-bold text-slate-800 min-w-[52px]">${hl(u.lokasi,v)}</span>
+            <span class="text-slate-600 flex-1">${u.engineType||u.engineCode?`<span class="mr-2"><i class="fas fa-oil-can text-[10px] text-slate-400 mr-1"></i>${escapeHtml(u.engineType||'')} ${hl(u.engineCode,q)}</span>`:''}${u.irrType||u.irrCode?`<span><i class="fas fa-spray-can text-[10px] text-slate-400 mr-1"></i>${escapeHtml(u.irrType||'')} ${hl(u.irrCode,q)}</span>`:''}${u.divisi?`<span class="ml-2 text-[10px] text-slate-400">${escapeHtml(u.divisi)}</span>`:''}</span>
+            <span class="text-[10px] text-sky-700 whitespace-nowrap">${r.why}</span></button>`; }).join('');
+        box.classList.remove('hidden');
+    }, 120);
+}
+function onUnitSearchKey(e){
+    const res=onUnitSearch._res||[]; const box=document.getElementById('unitSearchResults');
+    if(e.key==='Escape'){ if(box) box.classList.add('hidden'); return; }
+    if(!res.length || !box || box.classList.contains('hidden')) { if(e.key==='Enter') e.preventDefault(); return; }
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+        e.preventDefault(); let i=(onUnitSearch._idx==null?-1:onUnitSearch._idx); i += e.key==='ArrowDown'?1:-1; i=Math.max(0,Math.min(res.length-1,i)); onUnitSearch._idx=i;
+        box.querySelectorAll('.us-item').forEach((b,j)=>b.classList.toggle('bg-sky-50',j===i)); const act=box.querySelector(`.us-item[data-i="${i}"]`); if(act) act.scrollIntoView({block:'nearest'});
+    } else if(e.key==='Enter'){ e.preventDefault(); pickUnitResult(onUnitSearch._idx>=0?onUnitSearch._idx:0); }
+}
+function pickUnitResult(i){
+    const r=(onUnitSearch._res||[])[i]; if(!r) return;
+    const u=r.u; const box=document.getElementById('unitSearchResults'); if(box) box.classList.add('hidden');
+    const si=document.getElementById('f_unitSearch'); if(si) si.value=u.lokasi;
+    const el=document.getElementById('f_lokasi'); if(el){ el.value=u.lokasi; el.classList.remove('border-red-400'); }
+    // Isi kolom KOSONG dari unit terpasang TERBARU (hasil sync) — pilihan eksplisit user, boleh isi lagi
+    renderLokasiInfo._filledFor = null;
+    renderLokasiInfo(u.lokasi, true);
+    const isCreate = document.getElementById('editMode').value==='create';
+    if(!isCreate){ // mode edit: renderLokasiInfo tidak mengisi otomatis → isi hanya kolom yang kosong
+        const n=applyUnitToForm(u,false); if(n){ showToast(`${n} kolom kosong diisi dari unit terpasang ${u.lokasi}.`,'info'); renderLokasiInfo(u.lokasi, true); }
+    }
+    const dmg=document.getElementById('f_damageType'); if(dmg && !dmg.value) dmg.focus();
+}
+document.addEventListener('click', e=>{ const box=document.getElementById('unitSearchResults'); if(box && !box.classList.contains('hidden') && !e.target.closest('#unitSearchResults') && e.target.id!=='f_unitSearch') box.classList.add('hidden'); });
 
 // Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2".
 // Daftar bawaan di bawah ini adalah cadangan; saat dimuat, dashboard menimpanya dengan
@@ -3854,6 +3926,7 @@ function validateFormNumbers(){
 }
 function openCreateModal(){
     renderLokasiInfo._filledFor = null;
+    { const si=document.getElementById('f_unitSearch'); if(si) si.value=''; const bx=document.getElementById('unitSearchResults'); if(bx){ bx.classList.add('hidden'); bx.innerHTML=''; } }
     if(!requireWriteEndpoint()) return;
     fillDatalists();
     setEditMode('create');
