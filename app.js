@@ -1181,9 +1181,17 @@ document.addEventListener('click', (e) => {
 });
 
 // ---------- Tabs ----------
+// Petunjuk visual bahwa bilah tab bisa digeser (gradasi di kanan) — hilang saat sudah di ujung
+function updateTabScrollHint(){
+    const nav=document.getElementById('tabNav'), card=document.getElementById('tabCard'); if(!nav||!card) return;
+    const more = nav.scrollWidth - nav.clientWidth - nav.scrollLeft > 8;
+    card.classList.toggle('has-more', more);
+}
+document.addEventListener('DOMContentLoaded', ()=>{ const nav=document.getElementById('tabNav'); if(nav){ nav.addEventListener('scroll', updateTabScrollHint, {passive:true}); window.addEventListener('resize', updateTabScrollHint); setTimeout(updateTabScrollHint, 300); } });
 function switchTab(tab) {
     state.tab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    try{ const ab=document.querySelector(`.tab-btn[data-tab="${tab}"]`); if(ab && ab.scrollIntoView) ab.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); updateTabScrollHint(); }catch(e){}
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-'+tab));
     // Render konten tab ini bila belum (lazy) + chart yang sekarang visible
     if(__dirtyTabs.has(tab)) renderTabContent(tab);
@@ -3180,6 +3188,34 @@ function renderTable(){
         </tr>`;
     }).join('');
 
+    // Tampilan kartu untuk layar sempit (HP) — isi sama dengan tabel, tombol aksi besar & selalu terlihat
+    const cards=document.getElementById('dataCards');
+    if(cards) cards.innerHTML = page.map(d=>{
+        const fi=filteredData.indexOf(d); const sb=statusBadge(d);
+        const unit=[d.engine&&d.engine!=='-'?`<i class="fas fa-oil-can text-[10px] text-slate-400 mr-1"></i>${escapeHtml(d.engine)}`:'', d.irrigator&&d.irrigator!=='-'?`<i class="fas fa-spray-can text-[10px] text-slate-400 mr-1"></i>${escapeHtml(d.irrigator)}`:''].filter(Boolean).join('<span class="mx-1.5 text-slate-300">·</span>');
+        return `<div class="dcard">
+            <div class="dc-row">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 px-2 py-1 rounded text-xs font-bold"><i class="fas fa-map-marker-alt text-[9px]"></i>${escapeHtml(d.lokasi)}</span>
+                    <span class="text-[11px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">${escapeHtml(d.divisi)}</span>
+                    <span class="text-[11px] text-slate-400 whitespace-nowrap">${fmtDateShort(d.timestamp)}</span>
+                </div>
+                <div class="row-actions flex-shrink-0">
+                    <button class="act-btn edit" title="Edit laporan" onclick="openEditModal(${fi})"><i class="fas fa-pen"></i></button>
+                    <button class="act-btn del" title="Hapus laporan" onclick="openDeleteModal(${fi})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="mt-2 text-[13px] font-semibold text-slate-800">${escapeHtml(d.damageType||'-')}${d.__issues&&d.__issues.length?` <i class="fas fa-triangle-exclamation text-amber-500 ml-1" title="${escapeHtml(d.__issues.map(i=>i.msg).join(' | '))}"></i>`:''}</div>
+            ${d.keterangan?`<div class="text-xs text-slate-600 mt-0.5">${escapeHtml(d.keterangan)}</div>`:''}
+            ${unit?`<div class="text-[11px] text-slate-600 mt-1.5">${unit}</div>`:''}
+            <div class="dc-grid">
+                <div><div class="dc-k">Sparepart</div><div class="dc-v">${d.sparepart!=='-'?escapeHtml(d.sparepart):'<span class="text-slate-400 italic">Belum ditentukan</span>'}</div></div>
+                <div><div class="dc-k">No PR</div><div class="dc-v">${d.prNumber?`<span class="font-mono font-semibold text-sky-700">${escapeHtml(d.prNumber)}</span>`:'<span class="text-slate-400">—</span>'}</div></div>
+                <div><div class="dc-k">PIC</div><div class="dc-v">${d.pic&&d.pic!=='-'?escapeHtml(d.pic):'<span class="text-slate-400">—</span>'}</div></div>
+                <div><div class="dc-k">Tingkat · Status</div><div class="dc-v flex items-center gap-1.5 flex-wrap">${tingkatBadge(effectiveTingkat(d))}${sb}</div></div>
+            </div>
+        </div>`;
+    }).join('');
     const tc=document.getElementById('tableCount'); if(tc) tc.textContent=`Menampilkan ${page.length} dari ${sorted.length} data`;
     const pi=document.getElementById('pageInfo'); if(pi) pi.textContent=`Halaman ${state.page} / ${totalPages}`;
     const pb=document.getElementById('prevBtn'); if(pb) pb.disabled=state.page===1;
@@ -3732,10 +3768,13 @@ function renderLokasiInfo(val, commit, o={}){
     const g=id=>document.getElementById(id).value.trim();
     const diffs=[];
     const show=v=>v||'kosong';
-    if(u.engineType && g('f_engineType')!==u.engineType) diffs.push(`jenis engine ${show(g('f_engineType'))}→${u.engineType}`);
-    if(u.engineCode && g('f_engineCode')!==u.engineCode) diffs.push(`kode engine ${show(g('f_engineCode'))}→${u.engineCode}`);
-    if(u.irrType && g('f_irrType')!==u.irrType) diffs.push(`jenis irrigator ${show(g('f_irrType'))}→${u.irrType}`);
-    if(u.irrCode && g('f_irrCode')!==u.irrCode) diffs.push(`kode irrigator ${show(g('f_irrCode'))}→${u.irrCode}`);
+    // Kolom yang sengaja dikosongkan oleh pilihan "Yang Rusak" (engine saat Irrigator/Sumur, dst.) tidak dianggap berbeda
+    const assetNow=(document.getElementById('f_asset')||{}).value||'';
+    const chkE = assetNow!=='irrigator' && assetNow!=='sumur', chkI = assetNow!=='engine' && assetNow!=='sumur';
+    if(chkE && u.engineType && g('f_engineType')!==u.engineType) diffs.push(`jenis engine ${show(g('f_engineType'))}→${u.engineType}`);
+    if(chkE && u.engineCode && g('f_engineCode')!==u.engineCode) diffs.push(`kode engine ${show(g('f_engineCode'))}→${u.engineCode}`);
+    if(chkI && u.irrType && g('f_irrType')!==u.irrType) diffs.push(`jenis irrigator ${show(g('f_irrType'))}→${u.irrType}`);
+    if(chkI && u.irrCode && g('f_irrCode')!==u.irrCode) diffs.push(`kode irrigator ${show(g('f_irrCode'))}→${u.irrCode}`);
     if(FORM_OPTIONS.divisi.includes(u.divisi) && g('f_divisi')!==u.divisi) diffs.push(`divisi ${g('f_divisi')}→${u.divisi}`);
     const tgl = u.tanggal ? ` · dicatat ${fmtDateShort(u.tanggal)}` : '';
     const divNote = !FORM_OPTIONS.divisi.includes(u.divisi) && u.divisi ? ` · bengkel ${escapeHtml(u.divisi)} (bukan pilihan divisi form)` : '';

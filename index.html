@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=57">
+    <link rel="stylesheet" href="assets/tailwind.css?v=58">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v57";</script>
-    <script src="config.js?v=57"></script>
+    <script>window.APP_VERSION="v58";</script>
+    <script src="config.js?v=58"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -141,6 +141,7 @@
         .asset-off{opacity:.45;pointer-events:none}
         .act-btn.edit{background:#e0f2fe;color:#0284c7}.act-btn.edit:hover{background:#0ea5e9;color:#fff}
         .act-btn.del{background:#fef2f2;color:#dc2626}.act-btn.del:hover{background:#dc2626;color:#fff}
+        #dataCards{display:none}
         @media (max-width: 640px){
             .stat-number{font-size:1.5rem!important}
             .tab-btn{padding:10px 10px;font-size:12px}
@@ -164,7 +165,45 @@
             #filterPanel .filter-btn{padding:6px 9px;font-size:11.5px}
             .kpi-row > :nth-child(5){grid-column:1/-1}
             .kpi-row .stat-number{font-size:1.75rem!important}
+            /* ── Audit mobile: target sentuh ≥ 40px, teks terbaca, tanpa zoom otomatis ── */
+            header button, header a.w-8{min-width:36px;min-height:36px}
+            header #addBtn{min-width:40px;min-height:36px;padding:0 8px}
+            header button[title^="Sinkronkan"]{min-height:36px;padding:0 10px}
+            header .gap-2\.5{gap:4px}
+            #filterPanel .filter-btn{min-height:36px;padding:6px 10px}
+            #filterPanel .ms-btn{min-height:40px}
+            #filterPanel #searchInput{min-height:40px;font-size:16px}
+            .tab-btn{min-height:44px;padding:10px 12px;scroll-snap-align:start}
+            #tabNav{scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+            #tabNav::-webkit-scrollbar{display:none}
+            #tabCard{position:relative}
+            #tabCard.has-more::after{content:'';position:absolute;top:3px;right:0;bottom:0;width:36px;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0),#fff 80%)}
+            .act-btn{width:36px;height:36px;font-size:13px}
+            .row-actions{gap:6px}
+            .asset-btn{min-height:40px;font-size:13px}
+            /* Input 16px: Android & iOS tidak memperbesar halaman saat fokus; tinggi nyaman untuk jari */
+            #editModal .form-input, #editModal select.form-input, #editModal input[type=date], #editModal textarea{font-size:16px;min-height:44px}
+            #editModal .modal-footer button, #deleteModal button, #editSaveBtn, #delConfirmBtn{min-height:44px}
+            .modal .close-btn, .modal button[onclick^="closeModal"]{min-width:40px;min-height:40px}
+            #tab-calendar button.w-7{width:36px;height:36px}
+            .cal-cnt{font-size:9.5px!important}
+            .text-\[8px\]{font-size:9px!important}
+            /* Tombol daftar (lokasi rawan, jenis kerusakan, sparepart): area sentuh lebih tinggi */
+            #tab-damage button.w-full, #tab-sumur button.w-full, #tab-spareparts div.cursor-pointer, #tab-divisi button{min-height:36px}
+            #tab-spareparts span[onclick]{padding:5px 10px;font-size:11px;min-height:30px;display:inline-flex;align-items:center}
+            #tab-severity button{min-height:36px}
+            #tab-severity button.min-w-\[28px\]{min-width:36px}
+            #prevBtn,#nextBtn{min-width:40px;min-height:40px}
+            /* Tabel data: kartu di HP (tabel lebar tetap tersedia di ≥640px) */
+            #dataTableWrap{display:none}
+            #dataCards{display:block}
         }
+        .dcard{padding:12px 14px;border-bottom:1px solid #f1f5f9}
+        .dcard:last-child{border-bottom:0}
+        .dcard .dc-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .dcard .dc-k{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;font-weight:600}
+        .dcard .dc-v{font-size:12px;color:#334155}
+        .dcard .dc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:8px}
     </style>
 </head>
 <body>
@@ -820,7 +859,8 @@
                 </button>
             </div>
             <div class="card overflow-hidden">
-                <div class="overflow-x-auto">
+                <div id="dataCards"></div>
+                <div class="overflow-x-auto" id="dataTableWrap">
                     <table class="w-full text-[12px]">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 text-[10px] uppercase tracking-wider">
@@ -992,7 +1032,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=57"></script>
+    <script src="app.js?v=58"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -1003,7 +1043,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v57').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v58').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
