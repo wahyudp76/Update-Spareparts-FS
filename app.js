@@ -3749,6 +3749,7 @@ function renderLokasiInfo(val, commit, o={}){
         // saran lokasi mirip
         const k=lokKey(v); let sug=Object.values(unitsByLokasi).filter(x=>lokKey(x.lokasi).startsWith(k)).slice(0,6); let lbl='Lokasi mirip';
         if(!sug.length){ const byCode=searchUnits(v,6).filter(r=>r.why!=='lokasi'); if(byCode.length){ sug=byCode.map(r=>r.u); lbl='Unit dengan kode tersebut'; } }
+        const box=document.getElementById('unitSearchResults'); if(box && !box.classList.contains('hidden') && box.querySelector('.us-item')){ info.innerHTML=`<span class="text-slate-400"><i class="fas fa-arrow-up mr-1"></i>Pilih unit dari daftar di atas.</span>`; return; }
         info.innerHTML = sug.length
             ? `<span class="text-slate-500">${lbl}: ${sug.map(x=>`<button type="button" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-700 font-semibold" onclick="pickLokasi('${escapeHtml(x.lokasi)}')" title="${escapeHtml(unitSummary(x))}">${escapeHtml(x.lokasi)}</button>`).join(' ')}</span>`
             : `<span class="text-amber-700"><i class="fas fa-circle-question mr-1"></i>Lokasi "${escapeHtml(v)}" tidak ada di data unit terpasang — isi kode engine/irrigator manual.</span>`;
@@ -3794,6 +3795,7 @@ function searchUnits(q, limit=8){
     const m=key.match(/^([A-Z]*)(\d+)$/);
     const typ=m?m[1]:'', num=m?m[2]:'';
     const num4 = num && num.length<=4 ? num.padStart(4,'0') : num;
+    const fullCode = !!typ || (num && num.length>=4); // "SPC0193" / "0193" = kode lengkap; "110" = awalan (lokasi diutamakan)
     const out=[];
     Object.values(unitsByLokasi).forEach(u=>{
         const lk=lokKey(u.lokasi); let score=0, why='';
@@ -3802,8 +3804,8 @@ function searchUnits(q, limit=8){
         if(num){
             const eOk = u.engineCode && (u.engineCode===num4 || u.engineCode.endsWith(num)) && (!typ || u.engineType===typ);
             const iOk = u.irrCode && (u.irrCode===num4 || u.irrCode.endsWith(num)) && (!typ || u.irrType===typ);
-            if(eOk){ const sc = u.engineCode===num4 ? 95 : 50; if(sc>score){ score=sc; why='kode engine'; } }
-            if(iOk){ const sc = u.irrCode===num4 ? 94 : 49; if(sc>score){ score=sc; why='kode irrigator'; } }
+            if(eOk){ const sc = (fullCode && u.engineCode===num4) ? 95 : 50; if(sc>score){ score=sc; why='kode engine'; } }
+            if(iOk){ const sc = (fullCode && u.irrCode===num4) ? 94 : 49; if(sc>score){ score=sc; why='kode irrigator'; } }
         }
         if(score) out.push({u,score,why});
     });
@@ -3819,9 +3821,10 @@ function onUnitSearch(val){
         if(!v){ box.classList.add('hidden'); box.innerHTML=''; return; }
         if(!unitsByLokasi){
             if(unitsMeta.error){ box.innerHTML=`<div class="px-3 py-2 text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>Data unit terpasang tidak bisa dimuat (${escapeHtml(unitsMeta.error)}). Isi Lokasi & kode manual.</div>`; box.classList.remove('hidden'); return; }
-            box.innerHTML='<div class="px-3 py-2 text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</div>'; box.classList.remove('hidden'); loadUnits().then(()=>onUnitSearch(document.getElementById('f_unitSearch').value)); return; }
+            box.innerHTML='<div class="px-3 py-2 text-slate-400"><i class="fas fa-spinner spin mr-1"></i>Memuat data unit terpasang…</div>'; box.classList.remove('hidden'); loadUnits().then(()=>onUnitSearch(document.getElementById('f_lokasi').value)); return; }
         const res=searchUnits(v);
         onUnitSearch._res=res; onUnitSearch._idx=-1;
+        if(res.length===1 && res[0].why==='lokasi' && lokKey(res[0].u.lokasi)===lokKey(v)){ box.classList.add('hidden'); box.innerHTML=''; return; } // lokasi sudah persis → info di bawah kolom sudah cukup
         if(!res.length){ box.innerHTML=`<div class="px-3 py-2 text-amber-700"><i class="fas fa-circle-question mr-1"></i>Tidak ada unit terpasang yang cocok dengan "${escapeHtml(v)}".</div>`; box.classList.remove('hidden'); return; }
         const hl=(t,q)=>{ t=String(t||''); if(!q) return escapeHtml(t); const i=t.toUpperCase().indexOf(q.toUpperCase()); return i<0?escapeHtml(t):escapeHtml(t.slice(0,i))+'<mark class="bg-yellow-100 rounded px-0.5">'+escapeHtml(t.slice(i,i+q.length))+'</mark>'+escapeHtml(t.slice(i+q.length)); };
         const q=(v.replace(/^[A-Za-z]+\s*-?\s*/,'')||v).replace(/\s+/g,'');
@@ -3844,8 +3847,8 @@ function onUnitSearchKey(e){
 function pickUnitResult(i){
     const r=(onUnitSearch._res||[])[i]; if(!r) return;
     const u=r.u; const box=document.getElementById('unitSearchResults'); if(box) box.classList.add('hidden');
-    const si=document.getElementById('f_unitSearch'); if(si) si.value=u.lokasi;
     const el=document.getElementById('f_lokasi'); if(el){ el.value=u.lokasi; el.classList.remove('border-red-400'); }
+    onUnitSearch._res=[];
     // Isi kolom KOSONG dari unit terpasang TERBARU (hasil sync) — pilihan eksplisit user, boleh isi lagi
     renderLokasiInfo._filledFor = null;
     renderLokasiInfo(u.lokasi, true);
@@ -3855,7 +3858,7 @@ function pickUnitResult(i){
     }
     const dmg=document.getElementById('f_damageType'); if(dmg && !dmg.value) dmg.focus();
 }
-document.addEventListener('click', e=>{ const box=document.getElementById('unitSearchResults'); if(box && !box.classList.contains('hidden') && !e.target.closest('#unitSearchResults') && e.target.id!=='f_unitSearch') box.classList.add('hidden'); });
+document.addEventListener('click', e=>{ const box=document.getElementById('unitSearchResults'); if(box && !box.classList.contains('hidden') && !e.target.closest('#unitSearchResults') && e.target.id!=='f_lokasi') box.classList.add('hidden'); });
 
 // Pilihan dropdown — SAMA PERSIS dengan Google Form "Update Service / Maintenance FS PG2".
 // Daftar bawaan di bawah ini adalah cadangan; saat dimuat, dashboard menimpanya dengan
@@ -3981,7 +3984,7 @@ function validateFormNumbers(){
 }
 function openCreateModal(){
     renderLokasiInfo._filledFor = null;
-    { const si=document.getElementById('f_unitSearch'); if(si) si.value=''; const bx=document.getElementById('unitSearchResults'); if(bx){ bx.classList.add('hidden'); bx.innerHTML=''; } }
+    { const bx=document.getElementById('unitSearchResults'); if(bx){ bx.classList.add('hidden'); bx.innerHTML=''; } }
     if(!requireWriteEndpoint()) return;
     fillDatalists();
     setEditMode('create');
