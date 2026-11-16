@@ -1188,6 +1188,25 @@ function updateTabScrollHint(){
     card.classList.toggle('has-more', more);
 }
 document.addEventListener('DOMContentLoaded', ()=>{ const nav=document.getElementById('tabNav'); if(nav){ nav.addEventListener('scroll', updateTabScrollHint, {passive:true}); window.addEventListener('resize', updateTabScrollHint); setTimeout(updateTabScrollHint, 300); } });
+// ── Tombol hapus isi (×) untuk kolom pencarian (header, sparepart, lokasi form) ──
+function attachClearButtons(root){
+    (root||document).querySelectorAll('input[data-clear]').forEach(inp=>{
+        if(inp.__clearBtn) return;
+        const wrap=inp.parentElement; if(!wrap) return;
+        if(getComputedStyle(wrap).position==='static') wrap.style.position='relative';
+        const btn=document.createElement('button'); btn.type='button'; btn.className='clear-x'; btn.title='Hapus isi'; btn.setAttribute('aria-label','Hapus isi'); btn.innerHTML='<i class="fas fa-xmark"></i>';
+        btn.addEventListener('mousedown', e=>e.preventDefault()); // jangan ambil fokus dari input
+        btn.addEventListener('click', ()=>{ inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); inp.focus(); sync(); });
+        wrap.appendChild(btn); inp.classList.add('has-clear'); inp.__clearBtn=btn;
+        const sync=()=>btn.classList.toggle('show', !!inp.value);
+        inp.addEventListener('input', sync); inp.addEventListener('change', sync); inp.addEventListener('focus', sync);
+        // nilai diubah lewat kode (mis. pilih unit, buka modal edit) → pantau ringan
+        const obs=new MutationObserver(sync); obs.observe(inp,{attributes:true,attributeFilter:['value']});
+        inp.__clearSync=sync; sync();
+    });
+}
+function syncClearButtons(){ document.querySelectorAll('input[data-clear]').forEach(i=>i.__clearSync&&i.__clearSync()); }
+document.addEventListener('DOMContentLoaded', ()=>attachClearButtons());
 function switchTab(tab) {
     state.tab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -3783,7 +3802,7 @@ function renderLokasiInfo(val, commit, o={}){
         + (filled ? ` <span class="text-slate-500">— ${filled} kolom terisi otomatis</span>` : '')
         + (diffs.length ? ` <span class="text-amber-700 block mt-0.5"><i class="fas fa-triangle-exclamation mr-1"></i>Berbeda dari isian saat ini (${escapeHtml(diffs.join(', '))}). <button type="button" class="px-1.5 py-0.5 rounded bg-amber-600 text-white font-semibold" onclick="applyUnitToForm(findUnit(document.getElementById('f_lokasi').value), true); renderLokasiInfo(document.getElementById('f_lokasi').value, true)">Samakan dengan unit terpasang</button></span>` : '');
 }
-function pickLokasi(lok){ const el=document.getElementById('f_lokasi'); el.value=lok; renderLokasiInfo(lok, true); }
+function pickLokasi(lok){ const el=document.getElementById('f_lokasi'); el.value=lok; renderLokasiInfo(lok, true); syncClearButtons(); }
 
 // ── Pencarian unit terpasang: lokasi / kode engine / kode irrigator ────────────
 // "0195" → unit dengan kode engine ATAU irrigator 0195; "SPC0195" / "SPC 0195" → jenis+kode engine;
@@ -3848,7 +3867,7 @@ function pickUnitResult(i){
     const r=(onUnitSearch._res||[])[i]; if(!r) return;
     const u=r.u; const box=document.getElementById('unitSearchResults'); if(box) box.classList.add('hidden');
     const el=document.getElementById('f_lokasi'); if(el){ el.value=u.lokasi; el.classList.remove('border-red-400'); }
-    onUnitSearch._res=[];
+    onUnitSearch._res=[]; syncClearButtons();
     // Isi kolom KOSONG dari unit terpasang TERBARU (hasil sync) — pilihan eksplisit user, boleh isi lagi
     renderLokasiInfo._filledFor = null;
     renderLokasiInfo(u.lokasi, true);
@@ -3985,6 +4004,7 @@ function validateFormNumbers(){
 function openCreateModal(){
     renderLokasiInfo._filledFor = null;
     { const bx=document.getElementById('unitSearchResults'); if(bx){ bx.classList.add('hidden'); bx.innerHTML=''; } }
+    setTimeout(syncClearButtons,0);
     if(!requireWriteEndpoint()) return;
     fillDatalists();
     setEditMode('create');
@@ -4115,7 +4135,7 @@ function openEditModalRaw(rawi){
     document.getElementById('editRowLabel').textContent = `· ${d.lokasi} · ${d.damageType||'-'} · ${fmtDateShort(d.timestamp)}`;
     // Isi form
     document.getElementById('f_tanggal').value = d.tanggalInspeksi;
-    document.getElementById('f_lokasi').value = d.lokasi==='-'?'':d.lokasi;
+    document.getElementById('f_lokasi').value = d.lokasi==='-'?'':d.lokasi; setTimeout(syncClearButtons,0);
     fillFormSelects(d);
     document.getElementById('f_repair').value = d.repairStatus==='Sudah'?'Sudah':'Belum';
     document.getElementById('f_tingkat').value = d.tingkat || '';

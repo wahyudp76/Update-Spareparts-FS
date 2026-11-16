@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=59">
+    <link rel="stylesheet" href="assets/tailwind.css?v=60">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v59";</script>
-    <script src="config.js?v=59"></script>
+    <script>window.APP_VERSION="v60";</script>
+    <script src="config.js?v=60"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -141,6 +141,12 @@
         .asset-off{opacity:.45;pointer-events:none}
         .act-btn.edit{background:#e0f2fe;color:#0284c7}.act-btn.edit:hover{background:#0ea5e9;color:#fff}
         .act-btn.del{background:#fef2f2;color:#dc2626}.act-btn.del:hover{background:#dc2626;color:#fff}
+        /* Tombol hapus isi (×) pada kolom pencarian */
+        .has-clear{padding-right:30px!important}
+        .clear-x{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:999px;border:0;background:#e2e8f0;color:#475569;font-size:11px;display:none;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+        .clear-x:hover{background:#cbd5e1;color:#0f172a}
+        .clear-x.show{display:inline-flex}
+        @media (max-width:640px){.clear-x{width:32px;height:32px;font-size:13px;right:6px}.has-clear{padding-right:42px!important}}
         #dataCards{display:none}
         @media (max-width: 640px){
             .stat-number{font-size:1.5rem!important}
@@ -314,7 +320,7 @@
                     </div>
                     <div class="relative">
                         <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
-                        <input type="text" id="searchInput" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+                        <input type="text" id="searchInput" data-clear="1" placeholder="Cari…" class="pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-md text-xs w-40 focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
                     </div>
                 </div>
             </div>
@@ -732,7 +738,7 @@
                     <label class="text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer"><input type="checkbox" id="spOpenOnly" onchange="spToggleOpenOnly(this.checked)" class="accent-teal-600">Hanya kebutuhan yang masih terbuka</label>
                     <div class="relative">
                         <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
-                        <input type="text" id="spSearch" oninput="spSetSearch(this.value)" placeholder="Cari sparepart…" class="pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white w-44">
+                        <input type="text" id="spSearch" data-clear="1" oninput="spSetSearch(this.value)" placeholder="Cari sparepart…" class="pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white w-44">
                     </div>
                 </div>
             </div>
@@ -954,7 +960,7 @@
             <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib — sama dengan Google Form. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
-                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span> <span class="text-slate-400 font-normal normal-case">(cari lokasi / kode engine / kode irrigator)</span></label><div class="relative"><input type="text" id="f_lokasi" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="mis. 104I, 0195, SPC0195, ITI 0032" autocomplete="off" oninput="onLokasiInput(this.value);onUnitSearch(this.value)" onfocus="onUnitSearch(this.value)" onkeydown="onUnitSearchKey(event)" onchange="onLokasiInput(this.value,true)"><div id="unitSearchResults" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto text-xs"></div></div><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
+                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span> <span class="text-slate-400 font-normal normal-case">(cari lokasi / kode engine / kode irrigator)</span></label><div class="relative"><input type="text" id="f_lokasi" data-clear="1" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="mis. 104I, 0195, SPC0195, ITI 0032" autocomplete="off" oninput="onLokasiInput(this.value);onUnitSearch(this.value)" onfocus="onUnitSearch(this.value)" onkeydown="onUnitSearchKey(event)" onchange="onLokasiInput(this.value,true)"><div id="unitSearchResults" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto text-xs"></div></div><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
                 <div class="full"><label class="form-label">Yang Rusak <span class="text-red-500">*</span></label>
                     <div class="flex gap-1.5 flex-wrap" id="f_assetWrap">
                         <button type="button" data-asset="engine" onclick="setAsset('engine')" class="asset-btn"><i class="fas fa-oil-can mr-1"></i>Engine</button>
@@ -1028,7 +1034,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=59"></script>
+    <script src="app.js?v=60"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -1039,7 +1045,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v59').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v60').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
