@@ -101,7 +101,7 @@ function validateRecord(d){
     const FO = typeof FORM_OPTIONS!=='undefined' ? FORM_OPTIONS : null;
     if(FO){
         if(!d.damageType || d.damageType==='-') issues.push({field:'damageType',col:'Jenis Kerusakan',type:'missing',msg:'Jenis Kerusakan kosong (wajib di Google Form).'});
-        else if(FO.damageType.length && !FO.damageType.includes(d.damageType) && !(typeof SUMUR_DAMAGES!=='undefined' && SUMUR_DAMAGES.includes(d.damageType))) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'enum',msg:`Jenis Kerusakan "${d.damageType}" tidak ada di pilihan Google Form.`});
+        else if(FO.damageType.length && !FO.damageType.includes(d.damageType) && !(typeof SUMUR_DAMAGES!=='undefined' && SUMUR_DAMAGES.concat(IRR_DAMAGES, ENGINE_EXTRA_DAMAGES).includes(d.damageType))) issues.push({field:'damageType',col:'Jenis Kerusakan',type:'enum',msg:`Jenis Kerusakan "${d.damageType}" tidak ada di pilihan Google Form.`});
         if(d.divisi && d.divisi!=='-' && FO.divisi.length && !FO.divisi.includes(d.divisi)) issues.push({field:'divisi',col:'Divisi',type:'enum',msg:`Divisi "${d.divisi}" tidak ada di pilihan form (${FO.divisi.join('/')}).`});
         if(d.engineType && d.engineType!=='-' && FO.engineType.length && !FO.engineType.includes(d.engineType)) issues.push({field:'engineType',col:'Jenis Engine',type:'enum',msg:`Jenis Engine "${d.engineType}" tidak ada di pilihan form.`});
         if(d.irrType && d.irrType!=='-' && FO.irrType.length && !FO.irrType.includes(d.irrType)) issues.push({field:'irrType',col:'Jenis Irrigator',type:'enum',msg:`Jenis Irrigator "${d.irrType}" tidak ada di pilihan form.`});
@@ -1376,7 +1376,7 @@ function picOptions(){
 function damageOptions(){
     const cnt={}; rawData.forEach(d=>{ const v=d.damageType; if(v&&v!=='-') cnt[v]=(cnt[v]||0)+1; });
     const fromData=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b));
-    const extra=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.damageType||[]).concat(typeof SUMUR_DAMAGES!=='undefined'?SUMUR_DAMAGES:[]).filter((v,i,a)=>!cnt[v]&&a.indexOf(v)===i).sort();
+    const extra=(typeof FORM_OPTIONS!=='undefined'&&FORM_OPTIONS.damageType||[]).concat(typeof SUMUR_DAMAGES!=='undefined'?SUMUR_DAMAGES.concat(ENGINE_EXTRA_DAMAGES,['Drawbar']):[]).filter((v,i,a)=>!cnt[v]&&a.indexOf(v)===i).sort();
     return fromData.concat(extra);
 }
 function repop(id,key){
@@ -3894,7 +3894,9 @@ const FORM_OPTIONS = {
 };
 // ---- Kategori "yang rusak": Engine / Irrigator / Sumur ----
 // Jenis kerusakan per kategori. Engine = semua jenis di form yang bukan irrigator/sumur (+ Ban).
-const IRR_DAMAGES   = ['Gearbox','Turbin','Transmisi','Gun','Hidrolik','Pipa PE','Rantai','Impeler','Sproket','Ban'];
+const IRR_DAMAGES   = ['Gearbox','Turbin','Transmisi','Gun','Hidrolik','Pipa PE','Rantai','Impeler','Sproket','Drawbar','Ban'];
+// Jenis kerusakan engine tambahan yang belum ada di Google Form (ditulis langsung ke sheet lewat proxy)
+const ENGINE_EXTRA_DAMAGES = ['Chasis'];
 // 'Gearbox Sumur' dibedakan dari 'Gearbox' (irrigator) agar laporan lama irrigator tidak ikut terhitung sumur.
 const SUMUR_DAMAGES = ['Pompa Sumur Bor','Gearbox Sumur','Gland Packing','Pipa Kolom','Baut Kolom','As Kolom'];
 const _dmgKey = v => String(v||'').trim().toLowerCase();
@@ -3903,9 +3905,9 @@ function damagesFor(asset){
     const irr = new Set(IRR_DAMAGES.map(_dmgKey)), sum = new Set(SUMUR_DAMAGES.map(_dmgKey));
     if(asset==='irrigator') return IRR_DAMAGES.slice();
     if(asset==='sumur') return SUMUR_DAMAGES.slice();
-    if(asset==='engine') return all.filter(v=>!irr.has(_dmgKey(v)) && !sum.has(_dmgKey(v))).concat(['Ban']);
-    // tanpa kategori: gabungan semua (urut form + tambahan sumur)
-    const seen=new Set(all.map(_dmgKey)); return all.concat(SUMUR_DAMAGES.filter(v=>!seen.has(_dmgKey(v))));
+    if(asset==='engine'){ const base=all.filter(v=>!irr.has(_dmgKey(v)) && !sum.has(_dmgKey(v))); const bk=new Set(base.map(_dmgKey)); return base.concat(ENGINE_EXTRA_DAMAGES.filter(v=>!bk.has(_dmgKey(v)))).concat(['Ban']); }
+    // tanpa kategori: gabungan semua (urut form + tambahan engine/irrigator/sumur)
+    const seen=new Set(all.map(_dmgKey)); return all.concat(ENGINE_EXTRA_DAMAGES.concat(IRR_DAMAGES, SUMUR_DAMAGES).filter(v=>{ if(seen.has(_dmgKey(v))) return false; seen.add(_dmgKey(v)); return true; }));
 }
 // Klasifikasi record data: sumur jika jenis kerusakannya kerusakan sumur (atau tanpa unit & PIC Sumur Bor),
 // engine jika ada jenis engine, irrigator jika ada jenis irrigator / jenis kerusakan khas irrigator.
@@ -3942,7 +3944,7 @@ function setAsset(asset, opts={}){
     fillSelect('f_damageType', list, keep, asset ? `— pilih jenis kerusakan ${asset==='engine'?'engine':asset==='irrigator'?'irrigator':'sumur'} —` : '— pilih jenis kerusakan —');
     const hint=document.getElementById('assetHint');
     if(hint) hint.innerHTML = asset==='engine' ? '<i class="fas fa-oil-can mr-1 text-sky-600"></i>Kolom <b>Irrigator</b> dikosongkan. Jenis kerusakan: khusus engine.'
-        : asset==='irrigator' ? '<i class="fas fa-spray-can mr-1 text-sky-600"></i>Kolom <b>Engine</b> dikosongkan. Jenis kerusakan: gearbox, turbin, transmisi, gun, hidrolik, pipa PE, rantai, impeler, sproket, ban.'
+        : asset==='irrigator' ? '<i class="fas fa-spray-can mr-1 text-sky-600"></i>Kolom <b>Engine</b> dikosongkan. Jenis kerusakan: gearbox, turbin, transmisi, gun, hidrolik, pipa PE, rantai, impeler, sproket, drawbar, ban.'
         : asset==='sumur' ? '<i class="fas fa-water mr-1 text-sky-600"></i>Kolom <b>Engine &amp; Irrigator</b> dikosongkan. Jenis kerusakan: pompa sumur bor, gland packing, pipa kolom, baut kolom, as kolom.'
         : 'Pilih dulu: menentukan kolom unit yang aktif dan daftar jenis kerusakan.';
     // Mode tambah: isi ulang kolom unit dari data unit terpasang untuk kategori yang baru dipilih
