@@ -1356,9 +1356,9 @@ function renderActiveChips() {
     container.innerHTML = chips.map((c,i)=>
         `<span class="inline-flex items-center gap-1 bg-sky-50 text-sky-700 text-xs px-2 py-1 rounded-full">
             ${c.label}
-            <button onclick="window.__chipAction(${i})" class="hover:text-sky-900"><i class="fas fa-times text-[9px]"></i></button>
+            <button onclick="window.__chipAction(${i})" class="chip-x hover:text-sky-900" title="Hapus filter ini" aria-label="Hapus filter"><i class="fas fa-times text-[9px]"></i></button>
         </span>`
-    ).join('') + `<button onclick="clearAllFilters()" class="text-xs text-slate-500 hover:text-red-600 font-medium">Reset semua</button>`;
+    ).join('') + `<button onclick="clearAllFilters()" class="chip-reset text-xs text-slate-500 hover:text-red-600 font-medium">Reset semua</button>`;
     window.__chipActions = chips.map(c=>c.clear);
     window.__chipAction = i => { window.__chipActions[i](); applyFilters(); };
 }
@@ -3483,8 +3483,8 @@ function onSearchInput(v){
 // ---------- Export ----------
 function exportCSV(){
     const headers=['Timestamp','Tanggal Inspeksi','Lokasi','Divisi','Jenis Engine','Kode Engine','Jenis Irrigator','Kode Irrigator','Jenis Kerusakan','Keterangan Kerusakan','Spareparts Yang Dibutuhkan','Nomor PR / Notifikasi','Status','Tingkat Kerusakan','Status Perbaikan','PIC'];
-    const rows=filteredData.map(d=>[new Date(d.timestamp).toISOString(),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status,effectiveTingkat(d),d.repairStatus||'Belum',d.pic&&d.pic!=='-'?d.pic:'']);
-    const csv=[headers.join(','),...rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(','))].join('\n');
+    const rows=filteredData.map(d=>[(isNaN(new Date(d.timestamp))?String(d.__rawTs||''):new Date(d.timestamp).toISOString()),d.tanggalInspeksi,d.lokasi,d.divisi,d.engineType,d.engineCode,d.irrType,d.irrCode,d.damageType,d.keterangan,d.sparepart,d.prNumber||'',d.status,effectiveTingkat(d),d.repairStatus||'Belum',d.pic&&d.pic!=='-'?d.pic:'']);
+    const csv=[headers.join(','),...rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(','))].join('\n');
     const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
@@ -4534,6 +4534,8 @@ document.addEventListener('DOMContentLoaded',()=>{
                 showToast('Write-proxy Apps Script versi lama/tidak valid ('+(t.slice(0,40)||'no response')+'). Edit Tingkat/Status Perbaikan tidak akan tersimpan — deploy ulang scripts/write-proxy.gs (lihat SETUP-EDIT.md).','warning');
             } else if(ver<7){
                 showToast('Write-proxy masih v'+ver+'. Versi terbaru (v7) menyimpan kolom PIC — salin scripts/write-proxy.gs terbaru ke Apps Script lalu Deploy → Manage deployments → Edit → New version.','warning');
+            } else if(ver<11){
+                showToast('Write-proxy Apps Script masih v'+ver+' (terbaru v11: pencocokan baris lebih ketat saat ada laporan kembar). Salin scripts/write-proxy.gs terbaru → Apps Script → Deploy → Manage deployments → Edit → New version.','warning');
             }
             window.__proxyVersion = ver;
         }catch(e){}

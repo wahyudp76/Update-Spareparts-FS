@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=61">
+    <link rel="stylesheet" href="assets/tailwind.css?v=62">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v61";</script>
-    <script src="config.js?v=61"></script>
+    <script>window.APP_VERSION="v62";</script>
+    <script src="config.js?v=62"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -147,6 +147,10 @@
         .clear-x:hover{background:#cbd5e1;color:#0f172a}
         .clear-x.show{display:inline-flex}
         @media (max-width:640px){.clear-x{width:32px;height:32px;font-size:13px;right:6px}.has-clear{padding-right:42px!important}}
+        .chip-x{display:inline-flex;align-items:center;justify-content:center;min-width:22px;min-height:22px;margin:-4px -6px -4px 0;border-radius:999px}
+        .chip-x:hover{background:#bae6fd}
+        .chip-reset{min-height:28px;padding:0 8px;border-radius:6px}
+        @media (max-width:640px){.chip-x{min-width:30px;min-height:30px}.chip-reset{min-height:36px}}
         #dataCards{display:none}
         @media (max-width: 640px){
             .stat-number{font-size:1.5rem!important}
@@ -1034,7 +1038,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=61"></script>
+    <script src="app.js?v=62"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -1045,7 +1049,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v61').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v62').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;
