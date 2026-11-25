@@ -3564,7 +3564,18 @@ document.addEventListener('click',(e)=>{
 // Close modal on ESC
 document.addEventListener('keydown',(e)=>{
     if(e.key==='Escape'){
-        document.querySelectorAll('.modal-backdrop.show').forEach(m=>m.classList.remove('show'));
+        // Dropdown filter multi-pilih yang terbuka ditutup lebih dulu
+        const ms=document.querySelectorAll('.ms-wrap.open'); if(ms.length){ ms.forEach(w=>w.classList.remove('open')); return; }
+        const open=[...document.querySelectorAll('.modal-backdrop.show')]; if(!open.length) return;
+        // Tutup hanya modal paling atas (terakhir dibuka)
+        const top=open[open.length-1];
+        if(top.id==='editModal'){
+            const g=id=>{ const el=document.getElementById(id); return el?String(el.value||'').trim():''; };
+            const dirty = g('f_lokasi')||g('f_keterangan')||g('f_sparepart')||g('f_prNumber');
+            if(dirty && !confirm('Tutup form? Isian yang belum disimpan akan hilang.')) return;
+            closeModal('editModal'); return;
+        }
+        top.classList.remove('show');
     }
 });
 
@@ -3733,7 +3744,13 @@ function applyUnitToForm(u, overwrite){
     const setTxt=(id,val)=>{ const el=document.getElementById(id); if(!el||!val) return false; if(!overwrite && el.value.trim()) return false; el.value=val; el.classList.remove('border-red-400'); return true; };
     let n=0;
     const asset=(document.getElementById('f_asset')||{}).value||'';
-    if(FORM_OPTIONS.divisi.includes(u.divisi) && setSel('f_divisi', u.divisi, FORM_OPTIONS.divisi)) n++;
+    if(FORM_OPTIONS.divisi.includes(u.divisi)){
+        const dv=document.getElementById('f_divisi');
+        const isAuto = dv && dv.dataset.auto==='1';           // nilai awal form, belum dipilih user
+        if(isAuto && dv.value!==u.divisi){ fillSelect('f_divisi', FORM_OPTIONS.divisi, u.divisi); n++; }
+        else if(setSel('f_divisi', u.divisi, FORM_OPTIONS.divisi)) n++;
+        if(overwrite && dv) delete dv.dataset.auto;
+    }
     if(asset!=='irrigator' && asset!=='sumur'){
         if(setSel('f_engineType', u.engineType, FORM_OPTIONS.engineType)) n++;
         if(setTxt('f_engineCode', u.engineCode)) n++;
@@ -3856,7 +3873,7 @@ function onUnitSearch(val){
 }
 function onUnitSearchKey(e){
     const res=onUnitSearch._res||[]; const box=document.getElementById('unitSearchResults');
-    if(e.key==='Escape'){ if(box) box.classList.add('hidden'); return; }
+    if(e.key==='Escape'){ if(box && !box.classList.contains('hidden')){ box.classList.add('hidden'); e.stopPropagation(); e.preventDefault(); } return; }
     if(!res.length || !box || box.classList.contains('hidden')) { if(e.key==='Enter') e.preventDefault(); return; }
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){
         e.preventDefault(); let i=(onUnitSearch._idx==null?-1:onUnitSearch._idx); i += e.key==='ArrowDown'?1:-1; i=Math.max(0,Math.min(res.length-1,i)); onUnitSearch._idx=i;
@@ -4017,6 +4034,8 @@ function openCreateModal(){
     document.getElementById('f_tanggal').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
     ['f_lokasi','f_engineCode','f_irrCode','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
     fillFormSelects({ divisi: (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2' });
+    // Divisi di atas hanya nilai AWAL (bukan pilihan user) → boleh ditimpa oleh bengkel unit terpasang
+    { const dv=document.getElementById('f_divisi'); if(dv){ dv.dataset.auto='1'; if(!dv.__autoBound){ dv.__autoBound=true; dv.addEventListener('change',()=>{ delete dv.dataset.auto; }); } } }
     setAsset('', {silent:true});
     document.getElementById('f_repair').value = 'Belum';
     document.getElementById('f_tingkat').value = '';
@@ -4130,6 +4149,7 @@ function openEditModalRaw(rawi){
     if(!requireWriteEndpoint()) return;
     fillDatalists();
     setEditMode('update');
+    { const dv=document.getElementById('f_divisi'); if(dv) delete dv.dataset.auto; } // divisi laporan lama = pilihan user, jangan ditimpa
     const d = rawData[rawi];
     if(!d){ showToast('Baris tidak ditemukan di data lokal. Klik Refresh lalu coba lagi.','warning'); return; }
     document.getElementById('editRowIdx').value = rawi;
