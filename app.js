@@ -4677,3 +4677,13 @@ document.addEventListener('DOMContentLoaded',()=>{
     ['setAsset','applyUnitToForm','fillFormSelects','pickLokasi','pickUnitResult'].forEach(wrap);
     const _rli=renderLokasiInfo; renderLokasiInfo=function(){ const r=_rli.apply(this,arguments); try{ renderUnitCard(); }catch(e){} return r; };
 })();
+
+// ── Tombol "kembali ke atas": muncul setelah scroll > 1 layar / 400px, disembunyikan saat modal terbuka ──
+document.addEventListener('DOMContentLoaded', function(){
+    const btn=document.getElementById('backToTop'); if(!btn) return;
+    let ticking=false;
+    const update=()=>{ ticking=false; const y=window.scrollY||document.documentElement.scrollTop; const modalOpen=!!document.querySelector('.modal-backdrop.show'); btn.classList.toggle('show', y>Math.min(320, window.innerHeight*0.6) && !modalOpen); };
+    window.addEventListener('scroll', ()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } }, {passive:true});
+    const mo=new MutationObserver(update); document.querySelectorAll('.modal-backdrop').forEach(m=>mo.observe(m,{attributes:true,attributeFilter:['class']}));
+    update();
+});
