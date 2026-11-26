@@ -3697,6 +3697,51 @@ function parseUnitsCSV(text){
     });
     return map;
 }
+// ── Master Lokasi (sheet "Master lokasi" di Draft Dashboard): lokasi → wilayah (AW08…AW15) ──
+// Dipakai sebagai acuan DIVISI bila lokasi belum ada di Unit Terpasang.
+let masterLokasi = null; let __masterPromise = null;
+const MASTER_CACHE_KEY = 'pg2_master_lokasi_v1';
+const WIL_DIVISI = {AW08:'PG2',AW09:'PG2',AW11:'FM4',AW12:'FM4',AW14:'OP2',AW15:'OP2'}; // AW10/AW13 = perbatasan → pakai blok
+async function loadMasterLokasi(force=false){
+    const cfg=window.PG2_CONFIG||{}; if(!cfg.UNITS_SHEET_ID || !cfg.MASTER_LOKASI_GID) return null;
+    if(masterLokasi && !force) return masterLokasi;
+    if(__masterPromise) return __masterPromise;
+    try{ const c=JSON.parse(localStorage.getItem(MASTER_CACHE_KEY)||'null'); if(c && c.map && (Date.now()-c.ts)<24*3600*1000){ masterLokasi=c.map; return masterLokasi; } }catch(e){}
+    __masterPromise=(async()=>{
+        try{
+            const url=`https://docs.google.com/spreadsheets/d/${cfg.UNITS_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(cfg.MASTER_LOKASI_GID)}&t=${Date.now()}`;
+            const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),12000);
+            const res=await fetch(url,{signal:ctrl.signal,cache:'no-store'}); clearTimeout(tid);
+            if(!res.ok) throw new Error('HTTP '+res.status);
+            const rows=parseCSV(await res.text()); if(!rows.length) throw new Error('kosong');
+            const hdr=rows[0].map(h=>String(h||'').trim().toLowerCase());
+            const iW=hdr.findIndex(h=>/plantation|wil/.test(h)), iL=hdr.findIndex(h=>h==='lokasi');
+            if(iW<0||iL<0) throw new Error('kolom tidak dikenal');
+            const map={};
+            for(let i=1;i<rows.length;i++){ const l=lokKey(rows[i][iL]||''), w=String(rows[i][iW]||'').trim().toUpperCase(); if(l && w) map[l]=w; }
+            if(!Object.keys(map).length) throw new Error('kosong');
+            masterLokasi=map; try{ localStorage.setItem(MASTER_CACHE_KEY, JSON.stringify({ts:Date.now(),map})); }catch(e){}
+        }catch(e){ console.warn('Master lokasi: gagal memuat —', e.message); }
+        finally{ __masterPromise=null; }
+        return masterLokasi;
+    })();
+    return __masterPromise;
+}
+// Tebak divisi untuk lokasi yang TIDAK ada di unit terpasang: 1) blok (angka depan) yang bengkelnya seragam di unit terpasang,
+// 2) wilayah dari Master Lokasi (AW10: blok ≤121 PG2 / lainnya FM4; AW13: blok ≤158 FM4 / lainnya OP2).
+function guessDivisi(lok){
+    const k=lokKey(lok||''); if(!k) return null;
+    const m=k.match(/^\d+/); const blk=m?m[0]:null;
+    if(blk && unitsByLokasi){
+        const set=new Set(Object.values(unitsByLokasi).filter(u=>lokKey(u.lokasi).startsWith(blk) && /^(PG2|FM4|OP2)$/.test(u.divisi||'')).map(u=>u.divisi));
+        if(set.size===1) return {divisi:[...set][0], why:`blok ${blk} di unit terpasang`};
+    }
+    const w=masterLokasi && masterLokasi[k]; if(!w) return null;
+    if(WIL_DIVISI[w]) return {divisi:WIL_DIVISI[w], why:`Master Lokasi wilayah ${w}`};
+    if(w==='AW10' && blk) return {divisi:+blk<=121?'PG2':'FM4', why:`Master Lokasi wilayah ${w} (blok ${blk})`};
+    if(w==='AW13' && blk) return {divisi:+blk<=158?'FM4':'OP2', why:`Master Lokasi wilayah ${w} (blok ${blk})`};
+    return null;
+}
 async function loadUnits(force=false){
     const cfg = window.PG2_CONFIG||{};
     if(!cfg.UNITS_SHEET_ID) return null;
@@ -3710,6 +3755,7 @@ async function loadUnits(force=false){
     }
     const fresh = (Date.now()-unitsMeta.loadedAt) < 6*3600*1000; // segar < 6 jam
     if(unitsByLokasi && fresh && !force) return unitsByLokasi;
+    loadMasterLokasi().catch(()=>{});
     __unitsPromise = (async()=>{
         try{
             const url=`https://docs.google.com/spreadsheets/d/${cfg.UNITS_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${encodeURIComponent(cfg.UNITS_SHEET_GID||'0')}&t=${Date.now()}`;
@@ -3786,9 +3832,21 @@ function renderLokasiInfo(val, commit, o={}){
         const k=lokKey(v); let sug=Object.values(unitsByLokasi).filter(x=>lokKey(x.lokasi).startsWith(k)).slice(0,6); let lbl='Lokasi mirip';
         if(!sug.length){ const byCode=searchUnits(v,6).filter(r=>r.why!=='lokasi'); if(byCode.length){ sug=byCode.map(r=>r.u); lbl='Unit dengan kode tersebut'; } }
         const box=document.getElementById('unitSearchResults'); if(box && !box.classList.contains('hidden') && box.querySelector('.us-item')){ info.innerHTML=`<span class="text-slate-400"><i class="fas fa-arrow-up mr-1"></i>Pilih unit dari daftar di atas.</span>`; return; }
-        info.innerHTML = sug.length
+        // Divisi dari Master Lokasi / blok (lokasi tanpa unit terpasang)
+        let gHtml='';
+        if(!masterLokasi && !__masterPromise) loadMasterLokasi().then(()=>{ const em=document.getElementById('editModal'); if(em && em.classList.contains('show') && document.getElementById('f_lokasi').value.trim()===v) renderLokasiInfo(v, commit, o); });
+        const gs=guessDivisi(v);
+        if(gs){
+            const dv=document.getElementById('f_divisi'); const isCreate=document.getElementById('editMode').value==='create';
+            if(isCreate && dv && dv.dataset.auto==='1' && !o.noFill && dv.value!==gs.divisi){ fillSelect('f_divisi', FORM_OPTIONS.divisi, gs.divisi); dv.dataset.auto='1'; }
+            const cur=dv?dv.value:''; 
+            gHtml = cur===gs.divisi
+                ? ` <span class="text-sky-700 block mt-0.5"><i class="fas fa-map-location-dot mr-1"></i>Divisi <b>${escapeHtml(gs.divisi)}</b> (${escapeHtml(gs.why)})</span>`
+                : ` <span class="text-amber-700 block mt-0.5"><i class="fas fa-map-location-dot mr-1"></i>Menurut ${escapeHtml(gs.why)} divisi seharusnya <b>${escapeHtml(gs.divisi)}</b>, bukan ${escapeHtml(cur||'kosong')}. <button type="button" class="px-1.5 py-0.5 rounded bg-amber-600 text-white font-semibold" onclick="fillSelect('f_divisi',FORM_OPTIONS.divisi,'${gs.divisi}');renderLokasiInfo(document.getElementById('f_lokasi').value,true,{noFill:true})">Pakai ${escapeHtml(gs.divisi)}</button></span>`;
+        }
+        info.innerHTML = (sug.length
             ? `<span class="text-slate-500">${lbl}: ${sug.map(x=>`<button type="button" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-slate-700 font-semibold" onclick="pickLokasi('${escapeHtml(x.lokasi)}')" title="${escapeHtml(unitSummary(x))}">${escapeHtml(x.lokasi)}</button>`).join(' ')}</span>`
-            : `<span class="text-amber-700"><i class="fas fa-circle-question mr-1"></i>Lokasi "${escapeHtml(v)}" tidak ada di data unit terpasang — isi kode engine/irrigator manual.</span>`;
+            : `<span class="text-amber-700"><i class="fas fa-circle-question mr-1"></i>Lokasi "${escapeHtml(v)}" tidak ada di data unit terpasang — isi kode engine/irrigator manual.</span>`) + gHtml;
         return;
     }
     const isCreate = document.getElementById('editMode').value==='create';

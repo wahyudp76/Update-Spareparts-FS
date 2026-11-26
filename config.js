@@ -22,5 +22,9 @@ window.PG2_CONFIG = {
     // Divisi / Jenis & Kode Engine / Jenis & Kode Irrigator saat Lokasi diketik di form
     // Tambah/Edit Laporan. Spreadsheet harus bisa dibaca "Siapa saja yang memiliki link".
     UNITS_SHEET_ID: '1WbGTDqC0Anh6O54twsJfiBiWcTri7FHyQjXIFrOoLz4',
-    UNITS_SHEET_GID: '1884963951'
+    UNITS_SHEET_GID: '1884963951',
+
+    // Sheet "Master lokasi" (spreadsheet yang sama): lokasi → wilayah (Plantation code).
+    // Dipakai untuk menentukan Divisi bila lokasi belum ada di Unit Terpasang.
+    MASTER_LOKASI_GID: '1045019295'
 };
