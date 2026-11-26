@@ -16,13 +16,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://docs.google.com" crossorigin>
-    <link rel="stylesheet" href="assets/tailwind.css?v=64">
+    <link rel="stylesheet" href="assets/tailwind.css?v=65">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Konfigurasi situs (edit config.js untuk mengaktifkan fitur global seperti edit/hapus) -->
-    <script>window.APP_VERSION="v64";</script>
-    <script src="config.js?v=64"></script>
+    <script>window.APP_VERSION="v65";</script>
+    <script src="config.js?v=65"></script>
     <style>
         *{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased}
         /* Tailwind kini dikompilasi statis (assets/tailwind.css) dan dimuat SEBELUM blok ini; pastikan .hidden selalu menang atas display kelas kustom (.chip, .status-badge, dll.) */
@@ -151,6 +151,20 @@
         .chip-x:hover{background:#bae6fd}
         .chip-reset{min-height:28px;padding:0 8px;border-radius:6px}
         @media (max-width:640px){.chip-x{min-width:30px;min-height:30px}.chip-reset{min-height:36px}}
+        .unit-card{margin-top:8px;border:1px solid #bae6fd;background:linear-gradient(135deg,#f0f9ff,#fff);border-radius:10px;padding:8px 10px;font-size:11.5px;color:#0f172a}
+        .unit-card .uc-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+        .unit-card .uc-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .unit-card .uc-item i{color:#0284c7;font-size:10px;width:12px;text-align:center}
+        .unit-card .uc-k{color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.03em}
+        .unit-card .uc-v{font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+        .unit-card .uc-v.empty{color:#94a3b8;font-weight:500;font-family:inherit}
+        .unit-card .uc-item.off{opacity:.45;text-decoration:line-through}
+        .unit-card .uc-foot{margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10.5px;color:#64748b}
+        .unit-card .uc-btn{white-space:nowrap;color:#0369a1;font-weight:600;background:#e0f2fe;border-radius:6px;padding:3px 8px;min-height:24px}
+        .unit-card .uc-btn:hover{background:#bae6fd}
+        .unit-card.warn{border-color:#fcd34d;background:linear-gradient(135deg,#fffbeb,#fff)}
+        .unit-manual{border:1px dashed #cbd5e1;border-radius:10px;padding:10px;background:#f8fafc}
+        @media (max-width:640px){.unit-card .uc-row{gap:4px 10px}.unit-card .uc-btn{min-height:32px;padding:5px 10px}}
         #dataCards{display:none}
         @media (max-width: 640px){
             .stat-number{font-size:1.5rem!important}
@@ -964,7 +978,9 @@
             <div id="createHint" class="hidden text-[11px] text-slate-500 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 mb-3"><i class="fas fa-circle-info text-emerald-600 mr-1"></i>Laporan akan ditambahkan sebagai baris baru di sheet <b>Response</b>. Kolom bertanda <span class="text-red-500">*</span> wajib — sama dengan Google Form. Angka (kode, nomor PR) ditulis <b>tanpa titik/koma</b>.</div>
             <div class="form-grid">
                 <div><label class="form-label">Tanggal Inspeksi</label><input type="date" id="f_tanggal" class="form-input"></div>
-                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span> <span class="text-slate-400 font-normal normal-case">(cari lokasi / kode engine / kode irrigator)</span></label><div class="relative"><input type="text" id="f_lokasi" data-clear="1" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="mis. 104I, 0195, SPC0195, ITI 0032" autocomplete="off" oninput="onLokasiInput(this.value);onUnitSearch(this.value)" onfocus="onUnitSearch(this.value)" onkeydown="onUnitSearchKey(event)" onchange="onLokasiInput(this.value,true)"><div id="unitSearchResults" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto text-xs"></div></div><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div></div>
+                <div class="full"><label class="form-label">Lokasi <span class="text-red-500">*</span> <span class="text-slate-400 font-normal normal-case">(cari lokasi / kode engine / kode irrigator)</span></label><div class="relative"><input type="text" id="f_lokasi" data-clear="1" class="form-input uppercase placeholder:normal-case" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false" placeholder="mis. 104I, 0195, SPC0195, ITI 0032" autocomplete="off" oninput="onLokasiInput(this.value);onUnitSearch(this.value)" onfocus="onUnitSearch(this.value)" onkeydown="onUnitSearchKey(event)" onchange="onLokasiInput(this.value,true)"><div id="unitSearchResults" class="hidden absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto text-xs"></div></div><datalist id="dl_lokasi"></datalist><div id="lokasiUnitInfo" class="text-[11px] mt-1 min-h-[16px]"></div>
+                    <div id="unitCard" class="unit-card hidden"></div>
+                </div>
                 <div class="full"><label class="form-label">Yang Rusak <span class="text-red-500">*</span></label>
                     <div class="flex gap-1.5 flex-wrap" id="f_assetWrap">
                         <button type="button" data-asset="engine" onclick="setAsset('engine')" class="asset-btn"><i class="fas fa-oil-can mr-1"></i>Engine</button>
@@ -974,8 +990,20 @@
                     <input type="hidden" id="f_asset" value="">
                     <div id="assetHint" class="text-[10.5px] text-slate-500 mt-1">Pilih dulu: menentukan kolom unit yang aktif dan daftar jenis kerusakan.</div>
                 </div>
-                <div><label class="form-label">Divisi</label>
-                    <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
+                <div class="full hidden" id="unitFieldsWrap">
+                    <div class="unit-manual">
+                        <div class="flex items-center justify-between mb-2"><span class="text-[11px] font-semibold text-slate-600"><i class="fas fa-pen-to-square mr-1 text-sky-600"></i>Data unit (isi manual)</span><button type="button" onclick="toggleUnitFields(false)" class="text-[11px] text-slate-500 hover:text-slate-800"><i class="fas fa-chevron-up mr-1"></i>Tutup</button></div>
+                        <div class="form-grid">
+                            <div><label class="form-label">Divisi</label>
+                                <select id="f_divisi" class="form-input"><option>PG2</option><option>FM4</option><option>OP2</option></select>
+                            </div>
+                            <div></div>
+                            <div><label class="form-label">Jenis Engine</label><select id="f_engineType" class="form-input"></select></div>
+                            <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
+                            <div><label class="form-label">Jenis Irrigator</label><select id="f_irrType" class="form-input"></select></div>
+                            <div><label class="form-label">Kode Irrigator</label><input type="text" id="f_irrCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
+                        </div>
+                    </div>
                 </div>
                 <div><label class="form-label">Status Perbaikan</label>
                     <select id="f_repair" class="form-input"><option value="Belum">Belum diperbaiki</option><option value="Sudah">Sudah diperbaiki</option></select>
@@ -984,10 +1012,6 @@
                 <div><label class="form-label">Tingkat Kerusakan <span class="text-red-500">*</span></label>
                     <select id="f_tingkat" class="form-input"><option value="">— pilih tingkat —</option><option>Ringan</option><option>Sedang</option><option>Berat</option></select>
                 </div>
-                <div><label class="form-label">Jenis Engine</label><select id="f_engineType" class="form-input"></select></div>
-                <div><label class="form-label">Kode Engine</label><input type="text" id="f_engineCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
-                <div><label class="form-label">Jenis Irrigator</label><select id="f_irrType" class="form-input"></select></div>
-                <div><label class="form-label">Kode Irrigator</label><input type="text" id="f_irrCode" class="form-input" placeholder="0032" inputmode="numeric"></div>
                 <div class="full"><label class="form-label">Jenis Kerusakan <span class="text-red-500">*</span></label><select id="f_damageType" class="form-input"></select></div>
                 <div class="full"><label class="form-label">Keterangan Kerusakan <span class="text-red-500">*</span></label><textarea id="f_keterangan" class="form-input textarea" placeholder="Jelaskan kerusakan yang ditemukan"></textarea></div>
                 <div class="full"><label class="form-label">Spareparts Yang Dibutuhkan</label><textarea id="f_sparepart" class="form-input textarea" placeholder="Pisahkan dengan ; untuk beberapa item"></textarea></div>
@@ -1038,7 +1062,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=64"></script>
+    <script src="app.js?v=65"></script>
     <script>
         // Bersihkan cache HTTP browser lama + service worker lama agar
         // user selalu dapat versi terbaru tanpa perlu Ctrl+Shift+R.
@@ -1049,7 +1073,7 @@
             // Hapus semua CacheStorage bernama lama (v1, v2, v3) sekali saja.
             if ('caches' in window) {
                 caches.keys().then(keys => Promise.all(
-                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v64').map(k => caches.delete(k))
+                    keys.filter(k => k.startsWith('pg2-dashboard-') && k !== 'pg2-dashboard-v65').map(k => caches.delete(k))
                 )).catch(()=>{});
             }
             if (!('serviceWorker' in navigator)) return;

@@ -4000,6 +4000,48 @@ function assetKind(d){
 }
 const isSumur = d => assetKind(d)==='sumur';
 // Pilihan kategori di form Tambah/Edit
+// ── Kartu ringkas data unit (menggantikan kolom Divisi/Engine/Irrigator yang kini tersembunyi) ──
+function toggleUnitFields(show){
+    const w=document.getElementById('unitFieldsWrap'); if(!w) return;
+    const vis = show===undefined ? w.classList.contains('hidden') : !!show;
+    w.classList.toggle('hidden', !vis);
+    if(vis){ const first=w.querySelector('select,input:not([disabled])'); if(first) setTimeout(()=>{ try{ first.focus({preventScroll:false}); }catch(e){} },50); }
+    renderUnitCard();
+}
+function renderUnitCard(){
+    const card=document.getElementById('unitCard'); if(!card) return;
+    const g=id=>{ const el=document.getElementById(id); return el?String(el.value||'').trim():''; };
+    const lok=g('f_lokasi'), dv=g('f_divisi'), et=g('f_engineType'), ec=g('f_engineCode'), it=g('f_irrType'), ic=g('f_irrCode');
+    const asset=g('f_asset'); const isCreate=(document.getElementById('editMode')||{}).value==='create';
+    const manualOpen=!(document.getElementById('unitFieldsWrap')||{classList:{contains:()=>true}}).classList.contains('hidden');
+    if(!lok && (isCreate || (!et && !ec && !it && !ic))){ card.classList.add('hidden'); return; }
+    const useE = !asset || asset==='engine', useI = !asset || asset==='irrigator';
+    const v=(x,ph)=>x?`<span class="uc-v">${escapeHtml(x)}</span>`:`<span class="uc-v empty">${ph||'—'}</span>`;
+    const eng = (et||ec) ? `${et||'?'} ${ec||'?'}`.trim() : '';
+    const irr = (it||ic) ? `${it||'?'} ${ic||'?'}`.trim() : '';
+    const u = unitsByLokasi && lok ? findUnit(lok) : null;
+    const missing = [];
+    if(useE && asset==='engine' && !(et&&ec)) missing.push('engine');
+    if(useI && asset==='irrigator' && !(it&&ic)) missing.push('irrigator');
+    if(!dv) missing.push('divisi');
+    const warn = missing.length>0;
+    card.classList.toggle('warn', warn);
+    const note = warn
+        ? `<span class="text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i>${u?'Data unit belum lengkap':'Lokasi tidak ada di unit terpasang'} — isi ${missing.join(' & ')} manual.</span>`
+        : (u ? `<span><i class="fas fa-circle-check text-emerald-600 mr-1"></i>Dari unit terpasang${asset?` · yang dikirim ke sheet: ${asset==='engine'?'divisi + engine':asset==='irrigator'?'divisi + irrigator':'divisi saja'}`:''}</span>`
+             : `<span><i class="fas fa-keyboard mr-1"></i>Data unit diisi manual</span>`);
+    card.innerHTML = `
+        <div class="uc-row">
+            <span class="uc-item"><i class="fas fa-building"></i><span class="uc-k">Divisi</span>${v(dv)}</span>
+            <span class="uc-item ${useE?'':'off'}" title="${useE?'':'Tidak dikirim (yang rusak bukan engine)'}"><i class="fas fa-oil-can"></i><span class="uc-k">Engine</span>${v(eng, useE?'—':'tidak dipakai')}</span>
+            <span class="uc-item ${useI?'':'off'}" title="${useI?'':'Tidak dikirim (yang rusak bukan irrigator)'}"><i class="fas fa-spray-can"></i><span class="uc-k">Irrigator</span>${v(irr, useI?'—':'tidak dipakai')}</span>
+        </div>
+        <div class="uc-foot">${note}<button type="button" class="uc-btn" onclick="toggleUnitFields()"><i class="fas fa-${manualOpen?'chevron-up':'pen'} mr-1"></i>${manualOpen?'Sembunyikan':'Ubah manual'}</button></div>`;
+    card.classList.remove('hidden');
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+    const w=document.getElementById('unitFieldsWrap'); if(w){ w.addEventListener('input', renderUnitCard); w.addEventListener('change', renderUnitCard); }
+});
 function setAsset(asset, opts={}){
     const el=document.getElementById('f_asset'); if(!el) return;
     el.value = asset||'';
@@ -4093,6 +4135,7 @@ function openCreateModal(){
     ['f_lokasi','f_engineCode','f_irrCode','f_keterangan','f_sparepart','f_prNumber'].forEach(id=>{ const el=document.getElementById(id); el.value=''; el.classList.remove('border-red-400'); });
     fillFormSelects({ divisi: (Array.isArray(state.divisi) && state.divisi.length===1) ? state.divisi[0] : 'PG2' });
     // Divisi di atas hanya nilai AWAL (bukan pilihan user) → boleh ditimpa oleh bengkel unit terpasang
+    { const w=document.getElementById('unitFieldsWrap'); if(w) w.classList.add('hidden'); }
     { const dv=document.getElementById('f_divisi'); if(dv){ dv.dataset.auto='1'; if(!dv.__autoBound){ dv.__autoBound=true; dv.addEventListener('change',()=>{ delete dv.dataset.auto; }); } } }
     setAsset('', {silent:true});
     document.getElementById('f_repair').value = 'Belum';
@@ -4101,7 +4144,7 @@ function openCreateModal(){
     document.getElementById('editSaveBtn').disabled=false;
     submitCreate._opId = null; submitCreate._dupConfirmed = false;
     loadUnits().then(()=>{ fillDatalists(); renderLokasiInfo('', false); }); renderLokasiInfo('', false);
-    openModal('editModal');
+    openModal('editModal'); setTimeout(renderUnitCard,0);
     setTimeout(()=>document.getElementById('f_lokasi').focus(),150);
 }
 async function submitCreate(){
@@ -4208,6 +4251,7 @@ function openEditModalRaw(rawi){
     fillDatalists();
     setEditMode('update');
     { const dv=document.getElementById('f_divisi'); if(dv) delete dv.dataset.auto; } // divisi laporan lama = pilihan user, jangan ditimpa
+    { const w=document.getElementById('unitFieldsWrap'); if(w) w.classList.add('hidden'); }
     const d = rawData[rawi];
     if(!d){ showToast('Baris tidak ditemukan di data lokal. Klik Refresh lalu coba lagi.','warning'); return; }
     document.getElementById('editRowIdx').value = rawi;
@@ -4239,7 +4283,7 @@ function openEditModalRaw(rawi){
     document.getElementById('editSaveBtn').disabled=false;
     const li=document.getElementById('lokasiUnitInfo'); if(li) li.innerHTML='';
     loadUnits().then(()=>{ if(document.getElementById('editMode').value==='update') renderLokasiInfo(document.getElementById('f_lokasi').value, true); });
-    openModal('editModal');
+    openModal('editModal'); setTimeout(renderUnitCard,0);
 }
 
 // Kirim perintah ke Apps Script write-proxy dan terjemahkan responsnya.
@@ -4626,3 +4670,10 @@ document.addEventListener('DOMContentLoaded',()=>{
         resizeT=setTimeout(()=>renderCharts(),150);
     });
 });
+
+// ── Sinkron kartu unit setelah fungsi-fungsi pengisian form ──
+(function(){
+    const wrap=(name)=>{ const f=window[name]; if(typeof f!=='function') return; window[name]=function(){ const r=f.apply(this,arguments); try{ renderUnitCard(); }catch(e){} return r; }; };
+    ['setAsset','applyUnitToForm','fillFormSelects','pickLokasi','pickUnitResult'].forEach(wrap);
+    const _rli=renderLokasiInfo; renderLokasiInfo=function(){ const r=_rli.apply(this,arguments); try{ renderUnitCard(); }catch(e){} return r; };
+})();
